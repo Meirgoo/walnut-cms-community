@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="{{locale}}" class="h-full w-full" style="height: 100%; min-height: 100vh; width: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="/shared/app.css" />
+    <link rel="stylesheet" href="/shared/material-symbols.css" />
+    <script src="/shared/htmx.min.js"></script>
+    {{inline_i18n_script}}
+    <script src="/shared/theme-init.js"></script>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen w-full flex flex-col items-center justify-center p-4 sm:p-6 antialiased" style="min-height: 100vh; width: 100%; margin: 0;">
+    <div class="max-w-xl w-full my-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden" style="margin-top: auto !important; margin-bottom: auto !important;">
+        <div class="bg-slate-900 px-8 py-6 text-white flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="material-symbols-outlined text-emerald-400 text-[28px]">rocket_launch</span>
+                <div>
+                    <h1 class="text-xl font-black">{{title}}</h1>
+                    <p class="text-xs text-slate-400 mt-0.5">{{subtitle}}</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-slate-400 text-[18px]">translate</span>
+                <walnut-select
+                    onchange="window.location.href='/admin/switch-locale?locale=' + this.value + '&redirect=/admin/setup'"
+                    class="bg-slate-800 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-slate-700 outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                    {{setup_locale_options_html}}
+                </walnut-select>
+            </div>
+        </div>
+
+        <div class="p-8">
+            {{cf_notice_html}}
+
+            <form hx-post="/admin/setup/api/init" hx-target="#setup-feedback" class="space-y-5">
+                <div class="space-y-4">
+                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-2">{{sec_admin}}</h2>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_email}} *</label>
+                        <input type="email" name="email" value="{{email}}" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_username}} *</label>
+                            <input type="text" name="username" value="{{username}}" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_password}} {{password_required_mark}}</label>
+                            <input type="password" name="password" {{password_required}} placeholder="••••••••" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-2">
+                    <h2 class="text-sm font-extrabold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 pb-2">{{sec_site}}</h2>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_tenant}} *</label>
+                            <input type="text" name="tenant_name" value="Studio" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_site}} *</label>
+                            <input type="text" name="site_name" value="My Digital Garden" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_domain}} *</label>
+                        <input type="text" name="primary_domain" value="{{primary_domain}}" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-3.5 py-2.5 text-sm font-mono focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 focus:outline-none" />
+                    </div>
+                </div>
+
+                <div id="setup-feedback" class="text-sm font-semibold"></div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-extrabold py-3.5 px-4 rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 cursor-pointer">
+                        <span>{{btn_install}}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="/admin/js/admin.js"></script>
+</body>
+</html>

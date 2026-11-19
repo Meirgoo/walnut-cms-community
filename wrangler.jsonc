@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "walnut",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-05-25",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "ENVIRONMENT": "production",
+    "AUTHER_KEY_PUBLIC": "MCowBQYDK2VwAyEAeT3w83P165k/L4hFv2yB9zK0mN3rP7sT8vW1xY4zD2o=",
+    "AGENCY_KEY_PUBLIC": "MCowBQYDK2VwAyEAfU4x94Q276l/M5iGw3zC0aL1nO4sQ8tU9wX2yZ5aE3p=",
+    "CF_ACCOUNT_ID": "e3b0c44298fc1c149afbf4c8996fb924"
+  },
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "walnut-assets",
+      "preview_bucket_name": "walnut-assets-preview"
+    },
+    {
+      "binding": "BUCKET_BACKUP",
+      "bucket_name": "walnut-assets-backup",
+      "preview_bucket_name": "walnut-assets-backup-preview"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "test_DB",
+      "database_id": "1",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "PAGE_METRICS",
+      "dataset": "walnut_page_metrics"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  }
+}

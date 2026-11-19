@@ -1,0 +1,29 @@
+<div id="trash-theme-{{id}}" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-6 shadow-sm flex flex-col justify-between opacity-80 hover:opacity-100 transition">
+    <div class="space-y-2">
+        <div class="flex justify-between items-center">
+            <span class="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">{{slug}}</span>
+            <span class="text-[10px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">{{status_label}}</span>
+        </div>
+        <h4 class="text-base font-bold text-slate-900 dark:text-white line-through">{{title}}</h4>
+        <p class="text-xs text-slate-400 line-clamp-2">{{summary}}</p>
+    </div>
+    <div class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end items-center space-x-2 text-xs">
+        <button
+            type="button"
+            hx-post="/admin/themes/api/restore/{{id}}"
+            class="px-3 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 transition font-bold flex items-center space-x-1 cursor-pointer"
+        >
+            <span class="material-symbols-outlined text-[14px]">restore</span>
+            <span>{{btn_restore}}</span>
+        </button>
+        <button
+            type="button"
+            hx-delete="/admin/themes/api/purge/{{id}}"
+            hx-confirm="{{confirm_purge}}"
+            class="px-3 py-1.5 rounded-lg text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950 hover:bg-red-100 transition font-bold flex items-center space-x-1 cursor-pointer"
+        >
+            <span class="material-symbols-outlined text-[14px]">delete_forever</span>
+            <span>{{btn_purge}}</span>
+        </button>
+    </div>
+</div>

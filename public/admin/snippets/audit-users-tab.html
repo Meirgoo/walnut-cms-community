@@ -1,0 +1,175 @@
+<div class="space-y-4">
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center flex-wrap gap-2">
+            <div id="users-folder-chips" class="flex items-center flex-wrap gap-2">
+                <button
+                    type="button"
+                    class="folder-chip px-3 py-1 rounded-xl text-xs font-bold bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-sm transition cursor-pointer flex items-center space-x-1"
+                    data-folder="all"
+                    onclick="window.filterByFolder('users-table', 'all', 'users-folder-chips')"
+                >
+                    <span class="material-symbols-outlined text-[14px]">folder_open</span>
+                    <span>{{all_folders}}</span>
+                </button>
+                {{folder_chips_html}}
+            </div>
+            <button
+                type="button"
+                onclick="window.promptCreateFolder('users', 'users-folder-chips', 'users-table')"
+                class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition cursor-pointer flex items-center space-x-1"
+                title="{{title_new_folder}}"
+            >
+                <span class="material-symbols-outlined text-[14px]">create_new_folder</span>
+                <span>{{btn_new_folder}}</span>
+            </button>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2.5">
+            <div class="relative" id="column-picker-wrapper-users">
+                <button
+                    type="button"
+                    onclick="window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('users-table', 'users')"
+                    class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">view_column</span>
+                    <span>{{btn_columns}}</span>
+                </button>
+                <div
+                    id="column-picker-menu-users"
+                    class="hidden absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-3 z-50 text-xs space-y-2"
+                >
+                    <div class="font-bold text-slate-400 text-[10px] uppercase tracking-wider pb-1 border-b border-slate-100 dark:border-slate-700">{{custom_columns}}</div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('users-table', 'folder', this.checked, 'users')" class="col-toggle-folder rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_folder}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('users-table', 'email', this.checked, 'users')" class="col-toggle-email rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_email}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('users-table', 'global-role', this.checked, 'users')" class="col-toggle-global-role rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_global_role}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('users-table', 'site-role', this.checked, 'users')" class="col-toggle-site-role rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_site_role}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('users-table', 'created', this.checked, 'users')" class="col-toggle-created rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_created_at}}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button
+                type="button"
+                onclick="openNewUserModal()"
+                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer {{new_user_btn_class}}"
+            >
+                <span class="material-symbols-outlined text-[16px]">person_add</span>
+                <span>{{btn_new_user}}</span>
+            </button>
+            <div class="px-3.5 py-1.5 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 rounded-xl text-xs font-bold flex items-center space-x-1 {{new_user_lock_class}}">
+                <span class="material-symbols-outlined text-[16px]">lock</span>
+                <span>{{multi_user_locked_text}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between gap-4">
+        <div class="flex-1 flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+            <span class="material-symbols-outlined text-slate-400 text-[18px]">search</span>
+            <input
+                type="text"
+                id="users-search-input"
+                placeholder="{{search_placeholder}}"
+                oninput="window.filterTableRows('users-table', this.value, 'users-filter-count', 'users-empty-state')"
+                class="bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none w-full font-medium"
+            />
+        </div>
+        <div id="users-filter-count" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
+            {{total_records_text}}
+        </div>
+    </div>
+
+    <div id="users-batch-toolbar" class="hidden bg-slate-900 dark:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
+        <div class="flex items-center space-x-4">
+            <span id="users-selected-badge" class="font-bold font-mono text-emerald-400">{{selected_count_zero}}</span>
+            <button type="button" onclick="window.selectAllTableRows('users-table')" class="text-slate-300 hover:text-white underline">{{btn_select_all}}</button>
+            <button type="button" onclick="window.deselectAllTableRows('users-table')" class="text-slate-300 hover:text-white underline">{{btn_deselect_all}}</button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button type="button" onclick="window.batchDeleteSelected('users-table', '/admin/users/api/batch-delete', '{{entity_name}}')" class="bg-red-600 hover:bg-red-700 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+                <span>{{btn_delete}}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div class="overflow-x-auto flex-1">
+            <table id="users-table" class="w-full text-center border-collapse">
+                <thead>
+                <tr class="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <th class="w-12 px-4 py-3.5 text-center">
+                        <input type="checkbox" onchange="window.toggleAllTableRows('users-table', this.checked)" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500" />
+                    </th>
+                    <th class="px-6 py-3.5 text-left cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="username" onclick="window.sortTableByColumn && window.sortTableByColumn('users-table', 1, 'string')">
+                        <div class="flex items-center space-x-1">
+                            <span>{{col_username}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'username')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center user-col-folder" data-col="folder">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_folder}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'folder')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-left user-col-email" data-col="email">
+                        <div class="flex items-center space-x-1">
+                            <span>{{col_email}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'email')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center user-col-global-role" data-col="global-role">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_global_role}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'global-role')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center user-col-site-role" data-col="site-role">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_site_role}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'site-role')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center user-col-created cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="created" onclick="window.sortTableByColumn && window.sortTableByColumn('users-table', 6, 'date')">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_created_at}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'users-table', 'created')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center user-col-actions" data-col="actions">{{col_actions}}</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-sm">
+                    {{users_table_body}}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="users-empty-state" class="hidden p-12 text-center text-slate-400 text-xs">
+            {{no_matching_records}}
+        </div>
+    </div>
+</div>
+
+{{user_modal_html}}
+{{edit_user_modal_html}}

@@ -1,0 +1,46 @@
+<div class="p-8 max-w-2xl mx-auto w-full space-y-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm p-6 space-y-5">
+        <div class="flex items-start space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[22px]">menu_book</span>
+            </div>
+            <div>
+                <h1 class="text-lg font-black text-slate-900 dark:text-white">{{epub_title}}</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{{epub_subtitle}}</p>
+            </div>
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-700 rounded-xl px-4 py-3 text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-2">
+            <span class="material-symbols-outlined text-[16px] text-emerald-500 shrink-0">verified_user</span>
+            <span>{{epub_scope_tip}}</span>
+        </div>
+
+        <div id="epub-pair-result" class="hidden space-y-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
+            <div class="text-xs font-bold text-emerald-800 dark:text-emerald-300">{{epub_pair_success}}</div>
+            <div class="flex items-center space-x-2">
+                <code id="epub-pair-code" class="flex-1 bg-white dark:bg-slate-950 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-emerald-300 select-all break-all"></code>
+                <button type="button" onclick="const c=document.getElementById('epub-pair-code')?.textContent;if(c&&navigator.clipboard){navigator.clipboard.writeText(c);window.showToast&&window.showToast('Copied','success');}" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                </button>
+            </div>
+            <div id="epub-callback-msg" class="hidden text-[11px] text-emerald-700 dark:text-emerald-400">{{epub_callback_tip}}</div>
+        </div>
+
+        <div class="flex justify-end">
+            <button
+                type="button"
+                id="epub-authorize-btn"
+                data-site-id="{{site_id}}"
+                data-app="{{ecosystem_app}}"
+                data-callback="{{callback_url}}"
+                data-label-default="{{epub_btn_authorize}}"
+                data-label-loading="{{epub_btn_authorizing}}"
+                onclick="window.authorizeEpubReader && window.authorizeEpubReader(this)"
+                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-2 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">link</span>
+                <span>{{epub_btn_authorize}}</span>
+            </button>
+        </div>
+    </div>
+</div>

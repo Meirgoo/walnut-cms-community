@@ -1,0 +1,43 @@
+<div id="trash-ver-{{version_id}}" class="p-4 pl-12 flex items-center justify-between text-xs hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition">
+    <div class="flex items-center space-x-3">
+        <span class="bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded font-mono font-bold">
+            v{{version_number}}
+        </span>
+        <div>
+            <div class="font-semibold text-slate-800 dark:text-slate-200">{{commit_message}}</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">
+                {{created_at_prefix}}{{created_at_formatted}}
+                {{deleted_at_info}}
+            </div>
+        </div>
+    </div>
+
+    <div class="flex items-center space-x-2">
+        <button
+            type="button"
+            onclick="openSnapshotPreview('{{safe_title}}', '{{version_number}}', {{content_raw_json}})"
+            class="text-blue-600 dark:text-blue-400 hover:underline font-bold px-2 py-1 cursor-pointer"
+        >
+            {{btn_preview_snapshot}}
+        </button>
+        <button
+            type="button"
+            hx-post="/admin/trash/api/restore-version/{{version_id}}?node_id={{node_id}}"
+            hx-swap="none"
+            hx-confirm="{{confirm_restore}}"
+            class="text-emerald-600 dark:text-emerald-400 hover:underline font-bold px-2 py-1 cursor-pointer"
+        >
+            {{btn_restore_version}}
+        </button>
+        <button
+            type="button"
+            hx-delete="/admin/trash/api/hard-delete-version/{{version_id}}"
+            hx-target="#trash-ver-{{version_id}}"
+            hx-swap="outerHTML"
+            hx-confirm="{{confirm_hard_delete}}"
+            class="text-red-500 hover:underline font-bold px-2 py-1 cursor-pointer"
+        >
+            {{btn_hard_delete}}
+        </button>
+    </div>
+</div>

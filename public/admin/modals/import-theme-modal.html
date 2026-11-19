@@ -1,0 +1,126 @@
+<div id="import-theme-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[20px]">palette</span>
+                <span>{{modal_import_title}}</span>
+            </h3>
+            <button type="button" onclick="document.getElementById('import-theme-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <div class="flex border-b border-slate-200 dark:border-slate-700 text-xs font-bold">
+            <button
+                type="button"
+                id="btn-import-mode-zip"
+                onclick="window.switchThemeImportMode('zip')"
+                class="px-4 py-2 border-b-2 border-slate-900 dark:border-emerald-500 text-slate-900 dark:text-white cursor-pointer transition flex items-center space-x-1.5"
+            >
+                <span class="material-symbols-outlined text-[16px]">folder_zip</span>
+                <span>{{modal_tab_zip_label}}</span>
+            </button>
+            <button
+                type="button"
+                id="btn-import-mode-repo"
+                onclick="window.switchThemeImportMode('repo')"
+                class="px-4 py-2 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer transition flex items-center space-x-1.5"
+            >
+                <span class="material-symbols-outlined text-[16px]">link</span>
+                <span>{{modal_tab_repo_label}}</span>
+            </button>
+        </div>
+
+        <form id="theme-import-form" class="space-y-4" onsubmit="window.handleThemeImportSubmit(event)">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{modal_select_file}} (.zip / .json)</label>
+                <input type="file" id="theme-file-input" name="file" accept=".zip,.json,application/zip,application/x-zip-compressed,application/json" class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-200 cursor-pointer" />
+                <p class="text-[11px] text-slate-400 mt-1">{{modal_zip_tip}}</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{modal_or_paste}}</label>
+                <textarea id="theme-json-input" name="theme_json" placeholder="{{modal_paste_placeholder}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono h-28 resize-none outline-none focus:border-slate-900 dark:focus:border-emerald-500 text-slate-800 dark:text-slate-200"></textarea>
+            </div>
+
+            <div id="theme-import-progress-box" class="hidden space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+                <div class="flex justify-between items-center text-xs">
+                    <span id="theme-import-status" class="font-bold text-slate-700 dark:text-slate-300">{{import_status_preparing}}</span>
+                    <span id="theme-import-percent" class="font-mono text-emerald-600 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="theme-import-bar" class="bg-emerald-500 h-full w-0 transition-all duration-200"></div>
+                </div>
+            </div>
+
+            <div id="import-theme-msg" class="text-xs font-bold"></div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="document.getElementById('import-theme-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+                <button type="submit" id="theme-import-btn" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer">{{btn_confirm_import}}</button>
+            </div>
+        </form>
+
+        <form id="theme-repo-import-form" class="hidden space-y-4" onsubmit="window.handleThemeRepoImportSubmit(event)">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    <span>{{themes.repo_url_label}}</span>
+                    <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="url"
+                    id="theme-repo-url"
+                    required
+                    placeholder="https://github.com/owner/theme-name"
+                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono outline-none focus:border-slate-900 dark:focus:border-emerald-500 text-slate-800 dark:text-slate-200"
+                />
+                <p class="text-[11px] text-slate-400 mt-1">{{themes.repo_url_tip}}</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.repo_branch_label}}</label>
+                    <input
+                        type="text"
+                        id="theme-repo-branch"
+                        value="main"
+                        placeholder="main"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono outline-none focus:border-slate-900 dark:focus:border-emerald-500 text-slate-800 dark:text-slate-200"
+                    />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.repo_token_label}}</label>
+                    <input
+                        type="password"
+                        id="theme-repo-token"
+                        placeholder="{{themes.repo_token_placeholder}}"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-mono outline-none focus:border-slate-900 dark:focus:border-emerald-500 text-slate-800 dark:text-slate-200"
+                    />
+                </div>
+            </div>
+
+            <div class="p-3 bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-xl text-[11px] text-emerald-800 dark:text-emerald-300 space-y-1">
+                <div class="font-bold flex items-center space-x-1">
+                    <span class="material-symbols-outlined text-[14px]">lock</span>
+                    <span>{{themes.repo_token_cipher_title}}</span>
+                </div>
+                <p class="text-[10px] leading-relaxed opacity-90">{{themes.repo_token_cipher_desc}}</p>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="theme-repo-activate" checked class="w-4 h-4 rounded text-emerald-600 border-slate-300 focus:ring-emerald-500 cursor-pointer" />
+                <label for="theme-repo-activate" class="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">{{themes.activate_immediately}}</label>
+            </div>
+
+            <div id="repo-import-msg" class="text-xs font-bold"></div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="document.getElementById('import-theme-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+                <button type="submit" id="theme-repo-import-btn" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px]">cloud_download</span>
+                    <span>{{themes.btn_repo_import}}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

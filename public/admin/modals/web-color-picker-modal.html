@@ -1,0 +1,38 @@
+<div id="web-color-picker-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-5">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[20px]">palette</span>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{color_picker_title}}</h3>
+            </div>
+            <button type="button" onclick="window.closeWebColorPickerModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div id="web-color-preview-swatch" class="w-12 h-12 rounded-xl shadow-md border border-black/10 shrink-0 transition-colors" style="background-color: {{brand_color}};"></div>
+            <div class="flex-1 space-y-1">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{color_picker_hex}}</label>
+                <input
+                    type="text"
+                    id="web-color-hex-input"
+                    value="{{brand_color}}"
+                    oninput="window.selectColorFromPalette(this.value)"
+                    placeholder="#10b981"
+                    class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
+                />
+            </div>
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400">{{color_picker_palette}}</div>
+            <div id="web-color-palette-container" class="grid grid-cols-8 gap-2 p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-700 max-h-56 overflow-y-auto"></div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <button type="button" onclick="window.closeWebColorPickerModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+            <button type="button" onclick="window.applySelectedWebColor()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer">{{color_picker_apply}}</button>
+        </div>
+    </div>
+</div>

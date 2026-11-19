@@ -1,0 +1,56 @@
+<div id="edit-user-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">manage_accounts</span>
+                <span>{{modal_edit_title}}</span>
+            </h3>
+            <button type="button" onclick="closeEditUserModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <form hx-post="/admin/users/api/edit" hx-target="#edit-user-feedback" class="space-y-3.5">
+            <input type="hidden" id="edit-user-id" name="user_id" value="" />
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_username}}</label>
+                <input type="text" id="edit-username" name="username" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_email}}</label>
+                <input type="email" id="edit-email" name="email" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_global_role}}</label>
+                    <walnut-select id="edit-global-role" name="global_role" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500">
+                        <option value="user">{{role_user}}</option>
+                        <option value="superadmin">{{role_superadmin}}</option>
+                    </walnut-select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_site_role}}</label>
+                    <walnut-select id="edit-site-role" name="role" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500">
+                        <option value="admin">{{role_admin}}</option>
+                        <option value="visitor">{{role_visitor}}</option>
+                    </walnut-select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_password}} ({{password_placeholder_edit}})</label>
+                <input type="password" name="password" minlength="6" placeholder="{{password_placeholder_edit}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div id="edit-user-feedback" class="text-xs font-bold"></div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+                <button type="submit" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer">{{btn_save_changes}}</button>
+            </div>
+        </form>
+    </div>
+</div>

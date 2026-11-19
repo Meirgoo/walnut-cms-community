@@ -1,0 +1,14 @@
+<div id="version-card-{{id}}" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-xs space-y-1.5 hover:border-slate-300 dark:hover:border-slate-700 transition">
+    <div class="flex justify-between items-center font-mono">
+        <span class="font-bold text-slate-900 dark:text-white">{{version_tag}}</span>
+        <span class="text-[10px] text-slate-400">{{created_at}}</span>
+    </div>
+    <div class="text-slate-600 dark:text-slate-400 truncate text-[11px]">{{commit_message}}</div>
+    <div class="flex justify-between items-center pt-1.5 border-t border-slate-200/50 dark:border-slate-800">
+        <button type="button" onclick="window.inspectVersionById('{{id}}', {{version_number}})" class="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px] cursor-pointer">{{btn_inspect}}</button>
+        <div class="flex items-center space-x-2">
+            <button type="button" onclick="window.rollbackToVersionById('{{id}}', {{version_number}})" class="text-emerald-700 dark:text-emerald-400 hover:underline font-bold text-[11px] cursor-pointer">{{btn_rollback}}</button>
+            <button type="button" onclick="window.deletePastVersion('{{id}}', {{version_number}})" class="text-red-400 hover:text-red-600 text-[11px] cursor-pointer" title="{{delete_label}}">🗑️</button>
+        </div>
+    </div>
+</div>

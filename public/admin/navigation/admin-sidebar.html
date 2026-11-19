@@ -1,0 +1,332 @@
+<aside
+    id="admin-sidebar"
+    class="w-60 min-w-[240px] max-w-[240px] bg-slate-900 text-slate-300 flex flex-col shadow-xl z-40 shrink-0 select-none border-r border-slate-800/80 h-full relative overflow-hidden"
+    style="flex-shrink: 0; height: 100%; width: 240px; min-width: 240px;"
+    data-user-tz="{{user_timezone}}"
+    data-user-has-tz="{{user_has_explicit_tz}}"
+>
+    <div class="h-14 flex items-center justify-between px-3.5 border-b border-slate-800/80 bg-slate-950/40 shrink-0 sidebar-header-box relative z-10 overflow-hidden">
+        <div class="flex items-center space-x-1.5 overflow-hidden sidebar-text whitespace-nowrap">
+            {{brand_logo_html}}
+            <span class="text-base font-black text-white tracking-widest uppercase">{{sidebar_brand_title}}<span class="text-emerald-500">.</span></span>
+        </div>
+
+        <a href="/admin" class="sidebar-collapsed-only hidden w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-black text-xs items-center justify-center shrink-0" title="{{sidebar_brand_title}}">
+            {{sidebar_brand_initial}}
+        </a>
+
+        <button
+            type="button"
+            id="sidebar-toggle-btn"
+            onclick="window.toggleAdminSidebar()"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out cursor-pointer flex items-center justify-center shrink-0"
+            title="{{toggle_collapse}}"
+        >
+            <span class="material-symbols-outlined text-[20px]">menu_open</span>
+        </button>
+    </div>
+
+    <div class="px-3 py-2 border-b border-slate-800/60 bg-slate-950/20 sidebar-expanded-only shrink-0">
+        {{active_site_block}}
+    </div>
+
+    <div class="sidebar-collapsed-only hidden py-2 border-b border-slate-800/60 bg-slate-950/20 items-center justify-center shrink-0">
+        <button
+            type="button"
+            onclick="window.toggleAdminSidebar(); setTimeout(function(){ document.querySelector('#admin-sidebar .walnut-select-trigger, #admin-sidebar [data-role=trigger]')?.click(); }, 120);"
+            class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 hover:border-emerald-500/60 flex items-center justify-center font-bold text-xs text-emerald-400 cursor-pointer transition-colors duration-75"
+            title="{{active_site_name}}"
+        >
+            {{active_site_initial}}
+        </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-2 py-2.5 flex flex-col justify-between overflow-x-hidden thin-scrollbar">
+        <nav class="space-y-0.5">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2.5 mb-1 sidebar-text whitespace-nowrap">
+                {{content_section}}
+            </div>
+            <div class="sidebar-group-divider hidden"></div>
+            
+            <a
+                href="/admin"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{dashboard}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">dashboard</span>
+                <span class="sidebar-text truncate">{{dashboard}}</span>
+            </a>
+            
+            <a
+                href="/admin/articles"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{articles}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">edit_note</span>
+                <span class="sidebar-text truncate">{{articles}}</span>
+            </a>
+
+            <a
+                href="/admin/pages"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{pages}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">web</span>
+                <span class="sidebar-text truncate">{{pages}}</span>
+            </a>
+
+            <a
+                href="/admin/micros"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{micros}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">lightbulb</span>
+                <span class="sidebar-text truncate">{{micros}}</span>
+            </a>
+
+            <a
+                href="/admin/media"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{media}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">photo_library</span>
+                <span class="sidebar-text truncate">{{media}}</span>
+            </a>
+
+            <a
+                href="/admin/datasets"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{datasets}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">dataset</span>
+                <span class="sidebar-text truncate">{{datasets}}</span>
+            </a>
+
+            <div class="!mt-5 pt-3 border-t border-slate-800/60 mb-1 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sidebar-text whitespace-nowrap">
+                {{group_system}}
+            </div>
+            <div class="sidebar-group-divider hidden"></div>
+
+            <a
+                href="/admin/themes"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{themes}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">palette</span>
+                <span class="sidebar-text truncate">{{themes}}</span>
+            </a>
+
+            <a
+                href="/admin/graph"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap {{topology_nav_class}}"
+                title="{{wiki}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">account_tree</span>
+                <span class="sidebar-text truncate">{{wiki}}</span>
+            </a>
+
+            <a
+                href="/admin/audit"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap {{audit_nav_class}}"
+                title="{{audit}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">policy</span>
+                <span class="sidebar-text truncate">{{audit}}</span>
+            </a>
+
+            {{slot_commercial_sidebar_menu}}
+        </nav>
+
+        <div class="pt-2 border-t border-slate-800/80 space-y-0.5">
+            {{support_link_html}}
+            <a
+                href="{{preview_site_url}}"
+                target="_blank"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{preview_site}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-slate-200 transition-colors duration-75 ease-out shrink-0">open_in_new</span>
+                <span class="sidebar-text truncate">{{preview_site}}</span>
+            </a>
+
+            <a
+                href="/admin/profile"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{user_settings}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">manage_accounts</span>
+                <span class="sidebar-text truncate">{{user_settings}}</span>
+            </a>
+
+            <a
+                href="/admin/settings"
+                class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-75 ease-out group whitespace-nowrap"
+                title="{{settings}}"
+            >
+                <span class="icon material-symbols-outlined text-[19px] mr-2.5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-75 ease-out shrink-0">settings</span>
+                <span class="sidebar-text truncate">{{settings}}</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="border-t border-slate-800 bg-slate-950/50 shrink-0 relative">
+        <div class="py-2 px-1.5 space-y-1 sidebar-footer-expanded">
+            <div class="h-8 flex items-center justify-between gap-1.5 px-1 text-[11px] text-slate-400">
+                <span class="h-6 inline-flex items-center gap-1 font-mono font-bold bg-slate-800/80 px-2 rounded text-slate-300 leading-none whitespace-nowrap shrink-0">
+                    <span>🌐</span>
+                    <span id="sidebar-tz-offset">{{user_tz_offset}}</span>
+                    <span>·</span>
+                    <span>v{{engine_version}}</span>
+                </span>
+
+                <walnut-select
+                    onchange="window.location.href='/admin/switch-locale?locale=' + this.value + '&redirect=' + encodeURIComponent(window.location.pathname + window.location.search)"
+                    class="walnut-select-compact h-6 min-w-0 inline-flex items-center font-mono font-bold bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] leading-none rounded px-2 outline-none focus:ring-1 focus:ring-emerald-500/60 cursor-pointer transition-colors duration-75 whitespace-nowrap"
+                >
+                    {{sidebar_locale_options_html}}
+                </walnut-select>
+            </div>
+
+            <div class="h-9 flex items-center justify-between gap-2 px-2 pt-1 border-t border-slate-800/80">
+                <a href="/admin/profile" class="flex items-center space-x-1.5 overflow-hidden mr-1 hover:text-emerald-400 group transition-colors duration-75 ease-out" title="{{user_email}} • {{user_settings}}">
+                    <span class="text-xs leading-none shrink-0">👤</span>
+                    <span class="text-xs font-bold text-slate-200 group-hover:text-emerald-400 truncate">
+                        {{username}}
+                    </span>
+                </a>
+
+                <div class="flex items-center space-x-1 shrink-0">
+                    <button
+                        type="button"
+                        id="sidebar-theme-toggle-btn"
+                        onclick="window.toggleAdminThemeMode && window.toggleAdminThemeMode()"
+                        class="w-7 h-7 rounded text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors duration-75 ease-out flex items-center justify-center cursor-pointer"
+                        title="{{theme_toggle_title}}"
+                    >
+                        <span id="sidebar-theme-icon" class="theme-icon-light material-symbols-outlined text-[18px]">light_mode</span>
+                        <span class="theme-icon-dark material-symbols-outlined text-[18px]">dark_mode</span>
+                        <span class="theme-icon-system material-symbols-outlined text-[18px]">brightness_auto</span>
+                    </button>
+
+                    <a
+                        href="/admin/logout"
+                        class="w-7 h-7 rounded text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors duration-75 ease-out flex items-center justify-center shrink-0 cursor-pointer"
+                        title="{{logout}}"
+                    >
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="hidden sidebar-footer-collapsed border-t border-slate-800/80">
+            <a
+                href="/admin/profile"
+                class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center justify-center hover:bg-emerald-500/25 transition-colors duration-75"
+                title="{{username}} • {{user_settings}}"
+            >
+                {{user_initial}}
+            </a>
+            <button
+                type="button"
+                onclick="window.toggleAdminThemeMode && window.toggleAdminThemeMode()"
+                class="w-9 h-9 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors duration-75 ease-out flex items-center justify-center cursor-pointer"
+                title="{{theme_toggle_title}}"
+            >
+                <span class="theme-icon-light material-symbols-outlined text-[20px]">light_mode</span>
+                <span class="theme-icon-dark material-symbols-outlined text-[20px]">dark_mode</span>
+                <span class="theme-icon-system material-symbols-outlined text-[20px]">brightness_auto</span>
+            </button>
+            <a
+                href="/admin/logout"
+                class="w-9 h-9 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors duration-75 ease-out flex items-center justify-center cursor-pointer"
+                title="{{logout}}"
+            >
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        window.toggleAdminSidebar = function() {
+            const sb = document.getElementById('admin-sidebar');
+            if (!sb) return;
+            const isCollapsed = sb.classList.toggle('sidebar-collapsed');
+            if (isCollapsed) {
+                document.documentElement.classList.add('is-sidebar-collapsed');
+            } else {
+                document.documentElement.classList.remove('is-sidebar-collapsed');
+            }
+            try {
+                localStorage.setItem('walnut_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+            } catch(e) {}
+            const icon = sb.querySelector('#sidebar-toggle-btn .material-symbols-outlined');
+            if (icon) icon.textContent = isCollapsed ? 'menu' : 'menu_open';
+        };
+
+        window.highlightActiveSidebarItem = function() {
+            var path = window.location.pathname;
+            var links = document.querySelectorAll('#admin-sidebar a.sidebar-item[href^="/admin"]');
+            var bestMatch = null;
+            var bestLen = -1;
+            links.forEach(function(link) {
+                var href = link.getAttribute('href') || '';
+                link.classList.remove('bg-emerald-500/10', 'text-emerald-400', 'font-semibold', 'border-l-2', 'border-emerald-500');
+                var icon = link.querySelector('.icon');
+                if (icon) icon.classList.remove('text-emerald-400');
+                if (href === '/admin') {
+                    if (path === '/admin' || path === '/admin/') {
+                        bestMatch = link;
+                        bestLen = 6;
+                    }
+                } else if (path === href || path.startsWith(href + '/')) {
+                    if (href.length > bestLen) {
+                        bestMatch = link;
+                        bestLen = href.length;
+                    }
+                }
+            });
+            if (bestMatch) {
+                bestMatch.classList.add('bg-emerald-500/10', 'text-emerald-400', 'font-semibold', 'border-l-2', 'border-emerald-500');
+                var icon = bestMatch.querySelector('.icon');
+                if (icon) icon.classList.add('text-emerald-400');
+            }
+        };
+
+        try {
+            var mode = localStorage.getItem('walnut_theme_mode') || 'system';
+            document.documentElement.setAttribute('data-theme-mode', mode);
+        } catch(e) {}
+
+        try {
+            const cached = localStorage.getItem('walnut_sidebar_collapsed');
+            if (cached === 'true') {
+                var sb = document.getElementById('admin-sidebar');
+                if (sb) {
+                    sb.classList.add('sidebar-collapsed');
+                    var icon = sb.querySelector('#sidebar-toggle-btn .material-symbols-outlined');
+                    if (icon) icon.textContent = 'menu';
+                }
+            }
+        } catch(e) {}
+
+        try {
+            window.highlightActiveSidebarItem();
+            var sbEl = document.getElementById('admin-sidebar');
+            var tzOffsetEl = document.getElementById('sidebar-tz-offset');
+            if (sbEl && tzOffsetEl && sbEl.getAttribute('data-user-has-tz') !== 'true') {
+                var browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                if (browserTz) {
+                    var offsetMins = -new Date().getTimezoneOffset();
+                    var sign = offsetMins >= 0 ? '+' : '-';
+                    var absMins = Math.abs(offsetMins);
+                    var hrs = Math.floor(absMins / 60);
+                    var mins = absMins % 60;
+                    tzOffsetEl.textContent = 'UTC' + sign + hrs + (mins > 0 ? ':' + String(mins).padStart(2, '0') : '');
+                }
+            }
+        } catch(e) {}
+    })();
+    </script>
+</aside>

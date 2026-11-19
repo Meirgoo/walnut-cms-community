@@ -1,0 +1,48 @@
+<div id="theme-card-{{id}}" class="bg-white dark:bg-slate-800 rounded-2xl border p-5 shadow-sm flex flex-col justify-between transition h-[200px] min-h-[200px] {{border_class}}">
+    <div class="space-y-2">
+        <div class="flex justify-between items-center h-6">
+            <div class="flex items-center space-x-1.5 truncate">
+                <span class="text-[10px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded truncate max-w-[110px]">{{slug}}</span>
+                <span class="bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold {{repo_badge_class}} flex items-center space-x-1 shrink-0" title="{{repo_url}}"><span class="material-symbols-outlined text-[12px]">code</span><span>{{themes.badge_repo}}</span></span>
+                <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0">v{{version}}</span>
+            </div>
+            <div class="shrink-0">
+                {{status_badge_html}}
+            </div>
+        </div>
+        <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate" title="{{title}}">{{title}}</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mt-1 h-8 overflow-hidden">{{summary}}</p>
+        </div>
+    </div>
+
+    <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs shrink-0 h-11">
+        <div class="flex items-center space-x-1 shrink-0">
+            <button type="button" hx-post="/admin/themes/api/activate/{{id}}" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer shadow-sm {{activate_btn_class}}">
+                {{btn_set_active}}
+            </button>
+            <div class="{{active_indicator_class}} text-emerald-600 dark:text-emerald-400 text-xs font-bold flex items-center space-x-1">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                <span>{{themes.active_status}}</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-1 shrink-0">
+            <button type="button" onclick="window.openThemeVersionsModal('{{id}}', '{{title}}', '{{slug}}')" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer" title="{{themes.tip_version_history}}">
+                <span class="material-symbols-outlined text-[16px]">history</span>
+            </button>
+            <button type="button" hx-post="/admin/themes/api/update/{{id}}" class="p-1.5 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 transition cursor-pointer {{update_btn_class}}" title="{{themes.tip_update_theme}}">
+                <span class="material-symbols-outlined text-[16px]">sync</span>
+            </button>
+            <button type="button" onclick="window.openForkThemeModal('{{id}}', '{{title}}', '{{slug}}')" class="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/60 transition cursor-pointer" title="{{themes.tip_fork_theme}}">
+                <span class="material-symbols-outlined text-[16px]">fork_right</span>
+            </button>
+            <button type="button" onclick="window.openEditThemeModal('{{id}}', '{{title}}', '{{slug}}', '{{summary}}', '{{author}}')" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer" title="{{themes.tip_edit_theme}}">
+                <span class="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+            <button type="button" hx-delete="/admin/themes/api/{{id}}" hx-confirm="{{confirm_delete_theme}}" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition cursor-pointer {{delete_btn_class}}" title="{{themes.tip_move_trash}}">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+            </button>
+        </div>
+    </div>
+</div>

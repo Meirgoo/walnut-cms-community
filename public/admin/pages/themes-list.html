@@ -1,0 +1,182 @@
+<div class="p-8 overflow-y-auto h-full space-y-6 w-full">
+    <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{themes_title}}</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{themes_subtitle}}</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button
+                type="button"
+                onclick="window.openCreateThemeModal && window.openCreateThemeModal()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                <span>{{themes.btn_new_theme}}</span>
+            </button>
+            <button
+                type="button"
+                onclick="document.getElementById('import-theme-modal').classList.remove('hidden')"
+                class="bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">upload</span>
+                <span>{{btn_import_theme}}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="flex space-x-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold shrink-0">
+        <button type="button" onclick="switchThemeSubTab('tab-themes')" id="btn-tab-themes" class="px-4 py-2.5 border-b-2 border-slate-900 dark:border-white text-slate-900 dark:text-white transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">palette</span>
+            <span>{{tab_themes_label}}</span>
+        </button>
+        <button type="button" onclick="switchThemeSubTab('tab-templates')" id="btn-tab-templates" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">web</span>
+            <span>{{tab_templates_label}}</span>
+        </button>
+        <button type="button" onclick="switchThemeSubTab('tab-components')" id="btn-tab-components" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">widgets</span>
+            <span>{{tab_components_label}}</span>
+        </button>
+        <button type="button" onclick="switchThemeSubTab('tab-md-components')" id="btn-tab-md-components" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">code_blocks</span>
+            <span>{{tab_md_components_label}}</span>
+        </button>
+        <button type="button" onclick="switchThemeSubTab('tab-dataset-schemas')" id="btn-tab-dataset-schemas" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">schema</span>
+            <span>{{tab_dataset_schemas_label}}</span>
+        </button>
+        <button type="button" onclick="switchThemeSubTab('tab-themes-trash')" id="btn-tab-themes-trash" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+            <span>{{tab_themes_trash_label}}</span>
+        </button>
+    </div>
+
+    <div id="tab-themes" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{all_themes_grid}}
+        </div>
+    </div>
+
+    <div id="tab-templates" style="display: none;" class="space-y-4">
+        {{template_nodes_content}}
+    </div>
+
+    <div id="tab-components" style="display: none;" class="space-y-4">
+        {{component_nodes_content}}
+    </div>
+
+    <div id="tab-md-components" style="display: none;" class="space-y-4">
+        {{md_components_content}}
+    </div>
+
+    <div id="tab-dataset-schemas" style="display: none;" class="space-y-4">
+        {{dataset_schemas_content}}
+    </div>
+
+    <div id="tab-themes-trash" style="display: none;" class="space-y-4">
+        {{themes_trash_content}}
+    </div>
+</div>
+
+<div id="export-schema-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-emerald-500 text-[20px]">data_object</span>
+                <h3 id="export-schema-modal-title" class="text-sm font-bold text-slate-900 dark:text-white">{{modal_export_schema_header}}</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('export-schema-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <div id="export-schema-modal-info" class="text-xs text-slate-600 dark:text-slate-300 space-y-1"></div>
+        <div>
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">{{themes.json_schema_readonly}}</label>
+            <textarea id="export-schema-modal-json" readonly class="w-full h-56 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 resize-none outline-none select-all leading-relaxed"></textarea>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <button type="button" onclick="document.getElementById('export-schema-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+            <button type="button" onclick="window.copySchemaJsonToClipboard && window.copySchemaJsonToClipboard()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                <span>{{btn_copy_json_schema}}</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="theme-versions-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[85vh] flex flex-col">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">history</span>
+                    <span id="theme-versions-title">{{modal_version_history_title}}</span>
+                </h3>
+                <p id="theme-versions-subtitle" class="text-xs text-slate-400 mt-0.5 font-mono"></p>
+            </div>
+            <button type="button" onclick="document.getElementById('theme-versions-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+        <div id="theme-versions-list" class="space-y-2.5 overflow-y-auto flex-1 pr-1">
+            <div class="text-xs text-slate-400 text-center py-8">{{common.loading}}</div>
+        </div>
+    </div>
+</div>
+
+<div id="component-contract-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[90vh] flex flex-col">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">code</span>
+                    <span id="component-contract-title">{{themes.comp_contract_modal_title}}</span>
+                </h3>
+                <p id="component-contract-subtitle" class="text-xs text-slate-400 mt-0.5 font-mono"></p>
+            </div>
+            <button type="button" onclick="window.closeComponentContractModal && window.closeComponentContractModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <div class="space-y-3 overflow-y-auto flex-1 pr-1">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">{{themes.slots_label}}</label>
+                <div id="component-contract-slots" class="flex flex-wrap gap-1.5 items-center"></div>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono">{{themes.comp_template_source}}</label>
+                    <button type="button" onclick="window.copyComponentTemplateHtml && window.copyComponentTemplateHtml()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1 cursor-pointer">
+                        <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                        <span>{{themes.btn_copy_template}}</span>
+                    </button>
+                </div>
+                <textarea id="component-contract-template" readonly class="w-full h-44 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 resize-none outline-none select-all leading-relaxed"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">{{themes.comp_default_props}}</label>
+                    <textarea id="component-contract-props" readonly class="w-full h-36 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 resize-none outline-none select-all leading-relaxed"></textarea>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 font-mono">{{themes.comp_props_schema}}</label>
+                    <textarea id="component-contract-schema" readonly class="w-full h-36 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-800 dark:text-slate-200 resize-none outline-none select-all leading-relaxed"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <button type="button" onclick="window.closeComponentContractModal && window.closeComponentContractModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{common.close}}</button>
+        </div>
+    </div>
+</div>
+
+{{import_theme_modal}}
+{{theme_form_modal}}
+{{theme_fork_modal}}
+{{clone_template_page_modal}}
+<script src="/admin/js/themes-admin.js?v={{engine_version}}" defer></script>

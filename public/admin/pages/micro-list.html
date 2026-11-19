@@ -1,0 +1,183 @@
+<div class="p-6 md:p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-4 w-full">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center space-x-3">
+            <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">{{title}}</h1>
+            <span class="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
+                {{total_records_text}}
+            </span>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2">
+            <div class="relative" id="column-picker-wrapper-micro">
+                <button
+                    type="button"
+                    onclick="window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('micro-table', 'micro')"
+                    class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">view_column</span>
+                    <span>{{btn_columns}}</span>
+                </button>
+                <div
+                    id="column-picker-menu-micro"
+                    class="hidden absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-3 z-50 text-xs space-y-2"
+                >
+                    <div class="font-bold text-slate-400 text-[10px] uppercase tracking-wider pb-1 border-b border-slate-100 dark:border-slate-700">{{custom_columns}}</div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'folder', this.checked, 'micro')" class="col-toggle-folder rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_folder}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'status', this.checked, 'micro')" class="col-toggle-status rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_status}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'maturity', this.checked, 'micro')" class="col-toggle-maturity rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_maturity}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'locale', this.checked, 'micro')" class="col-toggle-locale rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_locale}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'tags', this.checked, 'micro')" class="col-toggle-tags rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_tags}}</span>
+                        </label>
+                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('micro-table', 'updated', this.checked, 'micro')" class="col-toggle-updated rounded text-emerald-600 focus:ring-0" />
+                            <span>{{col_updated}}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button
+                type="button"
+                onclick="window.openNewMicroModal()"
+                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">add_circle</span>
+                <span>{{btn_new_node}}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800/90 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+        <div class="flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800 w-full sm:w-60 shrink-0">
+            <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
+            <input
+                type="text"
+                id="micro-search-input"
+                placeholder="{{search_placeholder}}"
+                oninput="window.filterTableRows('micro-table', this.value, 'micro-filter-count', 'micro-empty-state')"
+                class="bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none w-full font-medium"
+            />
+        </div>
+
+        <div class="flex items-center flex-wrap gap-1.5 flex-1 min-w-0 justify-start sm:justify-end">
+            <div id="micro-folder-chips" class="flex items-center flex-wrap gap-1.5">
+                <button
+                    type="button"
+                    class="folder-chip px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-2xs transition cursor-pointer flex items-center space-x-1 shrink-0"
+                    data-folder="all"
+                    onclick="window.filterByFolder('micro-table', 'all', 'micro-folder-chips')"
+                >
+                    <span class="material-symbols-outlined text-[13px]">folder_open</span>
+                    <span>{{all_folders}}</span>
+                </button>
+                {{folder_chips_html}}
+            </div>
+            <button
+                type="button"
+                onclick="window.promptCreateFolder('micro', 'micro-folder-chips', 'micro-table')"
+                class="p-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition cursor-pointer flex items-center justify-center shrink-0"
+                title="{{title_new_folder}}"
+            >
+                <span class="material-symbols-outlined text-[15px]">create_new_folder</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="micro-batch-toolbar" class="hidden bg-slate-900 dark:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
+        <div class="flex items-center space-x-4">
+            <span id="micro-selected-badge" class="font-bold font-mono text-emerald-400">{{selected_count_zero}}</span>
+            <button type="button" onclick="window.selectAllTableRows('micro-table')" class="text-slate-300 hover:text-white underline">{{btn_select_all}}</button>
+            <button type="button" onclick="window.deselectAllTableRows('micro-table')" class="text-slate-300 hover:text-white underline">{{btn_deselect_all}}</button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button type="button" onclick="window.batchMoveToFolder('micro-table', '/admin/articles/api/batch-folder', 'micro')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">drive_file_move</span>
+                <span>{{batch_move_folder}}</span>
+            </button>
+            <button type="button" onclick="window.batchDeleteSelected('micro-table', '/admin/micros/api/batch-delete', '{{entity_name}}')" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+                <span>{{btn_soft_delete}}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div class="overflow-x-auto flex-1">
+            <table id="micro-table" class="w-full border-collapse text-sm">
+                <thead>
+                <tr class="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    <th class="w-12 px-4 py-3.5 text-center whitespace-nowrap">
+                        <input type="checkbox" onchange="window.toggleAllTableRows('micro-table', this.checked)" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500" />
+                    </th>
+                    <th class="min-w-[200px] px-6 py-3.5 text-left cursor-pointer select-none hover:text-slate-900 dark:hover:text-white whitespace-nowrap" data-col="title" onclick="window.sortTableByColumn && window.sortTableByColumn('micro-table', 1, 'string')">
+                        <div class="flex items-center space-x-1">
+                            <span>{{col_title}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'title')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-folder whitespace-nowrap" data-col="folder">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_folder}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'folder')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-status hidden whitespace-nowrap" data-col="status">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_status}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'status')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-maturity whitespace-nowrap" data-col="maturity">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_maturity}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'maturity')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-locale hidden font-mono whitespace-nowrap" data-col="locale">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_locale}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'locale')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-tags" data-col="tags">
+                        <span>{{col_tags}}</span>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-updated cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="updated" onclick="window.sortTableByColumn && window.sortTableByColumn('micro-table', 7, 'date')">
+                        <div class="flex items-center justify-center space-x-1">
+                            <span>{{col_updated}}</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'micro-table', 'updated')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                        </div>
+                    </th>
+                    <th class="px-6 py-3.5 text-center col-actions" data-col="actions">{{col_actions}}</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-sm">
+                    {{micro_table_body}}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="micro-empty-state" class="hidden p-12 text-center text-slate-400 text-xs">
+            <span class="material-symbols-outlined text-[36px] text-slate-300 dark:text-slate-600 mb-2">filter_list_off</span>
+            <p>{{no_matching_records}}</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,28 @@
+{
+  "name": "walnut",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "dev": "npm run build:css && wrangler d1 migrations apply DB --local && node scripts/sync-theme-assets.mjs --local && wrangler dev --var ENVIRONMENT:development --var ALLOW_INSECURE_DEV_CF_ACCESS:true --var DEV_CF_ACCESS_EMAIL:admin@localhost",
+    "deploy": "npm run build:css && node scripts/sync-theme-assets.mjs --remote && wrangler deploy --minify",
+    "package": "npm run build:css && node scripts/package.js",
+    "build:css": "tailwindcss -i public/styles/input.css -o public/shared/app.css --minify",
+    "test": "node scripts/run-tests.js",
+    "probe": "npx esbuild tests/probes/cli.ts --bundle --platform=node --format=esm --outfile=tests/.run/probe-cli.mjs '--external:@cloudflare/workers-types' '--external:node:*' '--external:playwright' --log-level=warning && node tests/.run/probe-cli.mjs",
+    "scan:sql": "node scripts/scan-raw-sql-leak.js",
+    "scan:leak": "node scripts/scan-community-leak.js",
+    "scan:i18n": "node scripts/scan-i18n-leak.js"
+  },
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "hono": "4.13.11",
+    "valibot": "^1.5.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260603.1",
+    "playwright": "^1.65.0",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.4.0"
+  }
+}

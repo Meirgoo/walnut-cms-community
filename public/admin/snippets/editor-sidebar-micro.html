@@ -1,0 +1,118 @@
+<div class="flex flex-col h-full justify-between">
+    <div class="p-4 space-y-4 text-xs overflow-y-auto flex-1">
+        <div class="flex items-center space-x-2 pb-3 border-b border-slate-100 dark:border-slate-700/80">
+            <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[18px]">lightbulb</span>
+            <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{micro.sidebar_meta_title}}</span>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_status}}</label>
+            <walnut-select
+                class="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold"
+                name="status"
+                value="{{node_status}}"
+                onchange="document.getElementById('form-status-input').value = this.value"
+            >
+                <option value="published" {{status_published_selected}}>{{common.status_published}}</option>
+                <option value="draft" {{status_draft_selected}}>{{common.status_draft}}</option>
+            </walnut-select>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{common.field_visibility}}</label>
+            <walnut-select
+                class="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold"
+                name="visibility"
+                value="{{node_visibility}}"
+                onchange="const visInput = document.getElementById('form-visibility-input'); if (visInput) visInput.value = this.value;"
+            >
+                <option value="public" {{vis_public_selected}}>{{common.vis_public}}</option>
+                <option value="private" {{vis_private_selected}}>{{common.vis_private}}</option>
+            </walnut-select>
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_locale}}</label>
+            <walnut-select
+                class="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold"
+                name="locale"
+                value="{{current_locale}}"
+                onchange="const locInput = document.getElementById('form-locale-input'); if (locInput) locInput.value = this.value;"
+            >
+                {{locale_options_html}}
+            </walnut-select>
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+                <label class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">{{field_progress}}</label>
+                <span class="text-[10px] text-slate-400 font-mono">{{progress_badge}}</span>
+            </div>
+            <input
+                type="text"
+                id="progress-input-field"
+                name="progress"
+                value="{{current_progress}}"
+                placeholder="{{progress_placeholder}}"
+                oninput="const val = this.value; const matInput = document.getElementById('form-maturity-input'); if (matInput) matInput.value = val; const progInput = document.getElementById('form-progress-input'); if (progInput) progInput.value = val;"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500 shadow-sm"
+            />
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="flex justify-between items-center">
+                <label class="font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_folder}}</label>
+                <span class="text-[10px] text-slate-400 font-mono">{{micro.field_folder}}</span>
+            </div>
+            <input
+                type="text"
+                name="meta_folder"
+                value="{{node_folder}}"
+                placeholder="{{micro.catalog_placeholder}}"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-slate-900 dark:focus:border-emerald-500 shadow-sm font-medium"
+            />
+        </div>
+
+        <div class="space-y-1.5">
+            <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_tags}}</label>
+            <input
+                type="text"
+                name="meta_tags"
+                value="{{existing_tags_string}}"
+                placeholder="{{micro.tags_placeholder}}"
+                oninput="document.getElementById('form-tags-input').value = this.value"
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-slate-900 dark:focus:border-emerald-500 shadow-sm"
+            />
+        </div>
+    </div>
+
+    <div class="p-4 border-t border-slate-200/80 dark:border-slate-700 space-y-2 bg-slate-50/50 dark:bg-slate-900/40 shrink-0">
+        <button
+            type="button"
+            onclick="window.convertMicroToArticle && window.convertMicroToArticle('{{node_id}}')"
+            class="w-full bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs py-2 px-3 rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-2xs transition flex items-center justify-center space-x-1.5 cursor-pointer {{convert_article_class}}"
+        >
+            <span class="material-symbols-outlined text-[15px]">article</span>
+            <span>{{btn_convert_to_article}}</span>
+        </button>
+
+        <button
+            type="button"
+            onclick="submitWithStatus('draft')"
+            class="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition flex items-center justify-center space-x-1.5 cursor-pointer"
+        >
+            <span class="material-symbols-outlined text-[15px] text-slate-500">save</span>
+            <span>{{btn_draft}}</span>
+        </button>
+
+        <button
+            type="button"
+            id="publish-main-btn"
+            onclick="submitWithStatus('published')"
+            class="w-full bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer tracking-wide"
+        >
+            <span class="material-symbols-outlined text-[18px] text-emerald-400 dark:text-white">rocket_launch</span>
+            <span>{{btn_publish}}</span>
+        </button>
+    </div>
+</div>

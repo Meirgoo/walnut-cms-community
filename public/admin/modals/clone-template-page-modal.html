@@ -1,0 +1,78 @@
+<div id="clone-template-page-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in fade-in duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span class="material-symbols-outlined text-emerald-500 text-[20px]">content_copy</span>
+                <span>{{themes.clone_page_title}}</span>
+            </h3>
+            <button
+                type="button"
+                onclick="window.closeCloneTemplatePageModal && window.closeCloneTemplatePageModal()"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+        </div>
+
+        <form id="clone-template-page-form" hx-post="/admin/themes/api/clone-template-page" class="space-y-4">
+            <input type="hidden" id="clone-template-source-id" name="sourceTemplateId" value="" />
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                <span class="text-slate-500">{{themes.clone_page_source}}:</span>
+                <span id="clone-template-source-label" class="font-bold text-slate-800 dark:text-slate-200 ml-1"></span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.clone_page_field_title}} *</label>
+                <input
+                    type="text"
+                    id="clone-template-title"
+                    name="title"
+                    required
+                    placeholder="{{themes.clone_page_field_title_ph}}"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.clone_page_field_slug}} *</label>
+                <input
+                    type="text"
+                    id="clone-template-slug"
+                    name="slug"
+                    required
+                    placeholder="{{themes.clone_page_field_slug_ph}}"
+                    pattern="[a-z0-9_/-]+"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.clone_page_field_summary}}</label>
+                <textarea
+                    id="clone-template-summary"
+                    name="summary"
+                    rows="2"
+                    placeholder="{{themes.clone_page_field_summary_ph}}"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                ></textarea>
+            </div>
+
+            <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                    type="button"
+                    onclick="window.closeCloneTemplatePageModal && window.closeCloneTemplatePageModal()"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                    {{common.cancel}}
+                </button>
+                <button
+                    type="submit"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">check</span>
+                    <span>{{themes.clone_page_confirm}}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

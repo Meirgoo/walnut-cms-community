@@ -1,0 +1,331 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  ::before,
+  ::after,
+  ::backdrop {
+    --tw-shadow-color: rgb(0 0 0 / 0.1);
+  }
+}
+
+#admin-sidebar {
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#admin-sidebar.sidebar-collapsed,
+html.is-sidebar-collapsed #admin-sidebar {
+  width: 4rem !important;
+  min-width: 4rem !important;
+  max-width: 4rem !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-text,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-text,
+#admin-sidebar.sidebar-collapsed .sidebar-expanded-only,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-expanded-only,
+#admin-sidebar.sidebar-collapsed .sidebar-footer-expanded,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-footer-expanded {
+  display: none !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-collapsed-only,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-collapsed-only {
+  display: flex !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-group-divider,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-group-divider {
+  display: block !important;
+  width: 1.5rem;
+  height: 1px;
+  background-color: rgb(30 41 59);
+  margin: 0.5rem auto;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-header-box,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-header-box {
+  flex-direction: column !important;
+  height: auto !important;
+  justify-content: center !important;
+  padding: 0.65rem 0.25rem !important;
+  gap: 0.45rem;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-item,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-item {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-left-width: 0 !important;
+  border-radius: 0.5rem !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-item.bg-emerald-500\/10,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-item.bg-emerald-500\/10 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: rgb(52 211 153) !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-item .icon,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-item .icon,
+#admin-sidebar.sidebar-collapsed .sidebar-toggle-btn,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-toggle-btn {
+  margin-right: 0 !important;
+}
+
+#admin-sidebar.sidebar-collapsed .sidebar-footer-collapsed,
+html.is-sidebar-collapsed #admin-sidebar .sidebar-footer-collapsed {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.75rem 0 !important;
+}
+
+/* Hide inactive theme icons on first paint via data-theme-mode to prevent FOUC before JS runs. */
+html[data-theme-mode="light"] .theme-icon-dark,
+html[data-theme-mode="light"] .theme-icon-system {
+  display: none !important;
+}
+html[data-theme-mode="dark"] .theme-icon-light,
+html[data-theme-mode="dark"] .theme-icon-system {
+  display: none !important;
+}
+html:not([data-theme-mode]) .theme-icon-light,
+html:not([data-theme-mode]) .theme-icon-dark,
+html[data-theme-mode="system"] .theme-icon-light,
+html[data-theme-mode="system"] .theme-icon-dark {
+  display: none !important;
+}
+
+/* Lock icon box dimensions so ligature text does not cause layout shift before the icon font loads. */
+.material-symbols-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  flex-shrink: 0;
+}
+
+/* Reserve height before custom elements upgrade to prevent FOUC and CLS. */
+[data-cloak],
+[walnut-cloak],
+.walnut-cloak {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+walnut-select,
+walnut-color-picker {
+  display: inline-block;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+
+walnut-select:not(:defined),
+walnut-color-picker:not(:defined) {
+  display: inline-block !important;
+  min-height: 36px !important;
+  box-sizing: border-box !important;
+}
+
+walnut-select.walnut-select-compact,
+walnut-select.walnut-select-compact:not(:defined) {
+  display: inline-flex !important;
+  min-height: 0 !important;
+}
+
+walnut-select > option {
+  display: none !important;
+}
+
+html.dark,
+html[data-theme-mode="dark"] {
+  color-scheme: dark;
+}
+
+html:not(.dark) {
+  color-scheme: light;
+}
+
+input[type="checkbox"] {
+  color-scheme: light;
+  accent-color: #059669;
+}
+
+.dark input[type="checkbox"],
+html.dark input[type="checkbox"],
+html[data-theme-mode="dark"] input[type="checkbox"] {
+  color-scheme: dark !important;
+  accent-color: #10b981 !important;
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
+.dark input[type="checkbox"]:checked,
+html.dark input[type="checkbox"]:checked,
+html[data-theme-mode="dark"] input[type="checkbox"]:checked {
+  background-color: #059669 !important;
+  border-color: #059669 !important;
+}
+
+/* Omit .htmx-swapping { opacity: 0 } to prevent blank white flashes during swaps. */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 150ms ease-in-out;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+/* Cap row/item transitions at 75ms to prevent hover lag on high-refresh-rate displays. */
+.sidebar-item,
+.sidebar-item .icon,
+table tbody tr,
+.walnut-table tbody tr {
+  transition-property: color, background-color, border-color !important;
+  transition-duration: 75ms !important;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1) !important;
+}
+
+.thin-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,0.18) transparent; }
+.thin-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+.thin-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.18); border-radius: 9999px; }
+.thin-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.4); }
+
+.preview-dot-grid {
+  background-color: #f8fafc;
+  background-image: radial-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.dark .preview-dot-grid,
+html.dark .preview-dot-grid,
+html[data-theme-mode="dark"] .preview-dot-grid {
+  background-color: #0b0f19;
+  background-image: radial-gradient(rgba(51, 65, 85, 0.3) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+#preview-core [class*="md-"] {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  padding: 0.875rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  border-left-width: 4px;
+  border-left-color: rgb(100 116 139);
+  background-color: rgb(248 250 252);
+  color: rgb(30 41 59);
+}
+
+#preview-core [class*="md-tip"],
+#preview-core [class*="md-quote"] {
+  border-left-color: rgb(16 185 129);
+}
+
+#preview-core [class*="md-warning"] {
+  border-left-color: rgb(245 158 11);
+}
+
+#preview-core [class*="md-step"] {
+  border-left-color: rgb(99 102 241);
+}
+
+html.dark #preview-core [class*="md-"] {
+  border-color: rgb(51 65 85);
+  background-color: rgba(30, 41, 59, 0.8);
+  color: rgb(241 245 249);
+}
+
+html.dark #preview-core [class*="md-tip"],
+html.dark #preview-core [class*="md-quote"] {
+  border-left-color: rgb(16 185 129);
+}
+
+html.dark #preview-core [class*="md-warning"] {
+  border-left-color: rgb(245 158 11);
+}
+
+html.dark #preview-core [class*="md-step"] {
+  border-left-color: rgb(99 102 241);
+}
+
+#preview-core [class*="md-"] * {
+  color: inherit;
+}
+
+table th {
+  position: relative;
+}
+table th > div {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+table th .col-filter-btn,
+table th .sort-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+}
+table th .sort-icon {
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+table th .sort-icon:hover {
+  color: rgb(16 185 129);
+  background-color: rgba(148, 163, 184, 0.15);
+}
+table th .col-filter-btn .material-symbols-outlined,
+table th .sort-icon.material-symbols-outlined {
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+.th-resize-handle {
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 0;
+  width: 6px;
+  cursor: col-resize;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+.th-resize-handle::after {
+  content: '';
+  width: 1px;
+  height: 100%;
+  background-color: rgba(148, 163, 184, 0.35);
+  transition: background-color 75ms ease-out, width 75ms ease-out;
+}
+.th-resize-handle:hover::after,
+.th-resize-handle.is-resizing::after {
+  width: 2px;
+  background-color: rgb(16 185 129);
+}
+

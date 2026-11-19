@@ -1,0 +1,78 @@
+<div id="theme-fork-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-5 animate-in fade-in duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span class="material-symbols-outlined text-purple-500 text-[20px]">fork_right</span>
+                <span>{{themes.modal_fork_title}}</span>
+            </h3>
+            <button
+                type="button"
+                onclick="window.closeThemeForkModal()"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+            >
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+        </div>
+
+        <form id="theme-fork-form-element" hx-post="/admin/themes/api/fork" class="space-y-4">
+            <input type="hidden" id="theme-fork-source-id" name="sourceThemeId" value="" />
+            <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/60 text-xs">
+                <span class="text-slate-500">{{themes.clone_page_source}}:</span>
+                <span id="theme-fork-source-label" class="font-bold text-slate-800 dark:text-slate-200 ml-1"></span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.modal_fork_name}} *</label>
+                <input
+                    type="text"
+                    id="theme-fork-name"
+                    name="name"
+                    required
+                    placeholder="{{themes.modal_fork_name_ph}}"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.modal_fork_slug}} *</label>
+                <input
+                    type="text"
+                    id="theme-fork-slug"
+                    name="slug"
+                    required
+                    placeholder="{{themes.modal_fork_slug_ph}}"
+                    pattern="[a-z0-9_-]+"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{themes.modal_fork_desc}}</label>
+                <textarea
+                    id="theme-fork-description"
+                    name="description"
+                    rows="2"
+                    placeholder="{{themes.modal_fork_desc_ph}}"
+                    class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                ></textarea>
+            </div>
+
+            <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                    type="button"
+                    onclick="window.closeThemeForkModal()"
+                    class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                >
+                    {{common.cancel}}
+                </button>
+                <button
+                    type="submit"
+                    class="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+                >
+                    <span class="material-symbols-outlined text-[16px]">fork_right</span>
+                    <span>{{themes.modal_fork_confirm}}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

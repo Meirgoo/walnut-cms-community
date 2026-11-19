@@ -1,0 +1,7 @@
+<div
+    onclick="document.getElementById('site-switcher-input').value='{{site_id}}';document.getElementById('site-switcher-form').submit();"
+    class="px-2.5 py-1.5 hover:bg-slate-800 text-slate-200 cursor-pointer flex items-center justify-between {{active_class}}"
+>
+    <span class="truncate font-medium">🌐 {{site_name}}</span>
+    <span class="text-[10px] text-slate-400 font-mono ml-1 shrink-0">{{primary_domain}}</span>
+</div>

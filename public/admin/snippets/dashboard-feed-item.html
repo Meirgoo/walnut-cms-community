@@ -1,0 +1,21 @@
+<div class="dashboard-feed-row h-11 px-4 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors duration-75 ease-out" data-feed-module="{{item_module}}">
+    <div class="flex items-center space-x-2 min-w-0 flex-1">
+        <span class="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 {{type_badge_class}}">
+            <span class="material-symbols-outlined text-[12px]">{{type_icon}}</span>
+            <span>{{type_label}}</span>
+        </span>
+        <a href="{{edit_url}}" class="text-xs font-bold text-slate-900 dark:text-white hover:text-emerald-700 dark:hover:text-emerald-400 truncate">
+            {{title}}
+        </a>
+        <span class="text-[11px] text-slate-400 font-mono truncate hidden sm:inline">{{slug_display}}</span>
+    </div>
+    <div class="flex items-center space-x-2.5 shrink-0">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{status_class}}">
+            {{status_text}}
+        </span>
+        <span class="text-[11px] text-slate-400 font-mono hidden md:inline">{{time}}</span>
+        <a href="{{edit_url}}" class="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+            {{edit}}
+        </a>
+    </div>
+</div>

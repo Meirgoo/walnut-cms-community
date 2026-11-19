@@ -1,0 +1,92 @@
+# ====================================================================
+# 1. 依赖包与包管理器缓存（Node & Package Managers）
+# ====================================================================
+node_modules/
+.pnpm-store/
+.yarn/
+.npm/
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ====================================================================
+# 2. TypeScript 编译产物与缓存（TypeScript & Build Artifacts）
+# ====================================================================
+# 如果你的编译输出目录是 build 或 out，请根据实际情况取消注释
+dist/
+dist-community/
+dist-pro/
+# build/
+# out/
+
+# TS 开启 incremental（增量编译）时生成的缓存文件，必须忽略
+*.tsbuildinfo
+
+# ====================================================================
+# 3. WebStorm / JetBrains 专属（IDE Specifics）
+# ====================================================================
+# 忽略整个 .idea 文件夹（包含你的窗口大小、历史光标、本地缓存等无用同步信息）
+.idea/
+
+# 如果你未来想把 WebStorm 的“团队共享运行配置”提交到 Git，可以改用以下精细化忽略：
+# .idea/*
+# !.idea/runConfigurations/
+# !.idea/vcs.xml
+
+# 忽略其他可能产生的特定文件
+*.iml
+*.iws
+*.ipr
+
+# ====================================================================
+# 4. 敏感信息与环境变量（Secrets & Envs）
+# ====================================================================
+# 绝对不能提交的核心隐私，防止把 API 密钥泄露给 GitHub
+.env
+.env.local
+.env.*.local
+*.pem
+
+# ====================================================================
+# 5. 操作系统与系统级临时文件（OS Generated）
+# ====================================================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# prod
+
+# dev
+!.yarn/releases
+.vscode/*
+!.vscode/launch.json
+!.vscode/*.code-snippets
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf
+
+# deps
+.wrangler
+
+# env
+.env.production
+.dev.vars
+
+# logs
+logs/
+lerna-debug.log*
+
+# tests runtime bundle & probe artifacts
+tests/.run/
+tests/probes/artifacts/*.png
+
+# encrypted commercial master keys & release artifacts
+keys/*.enc
+release-artifacts/

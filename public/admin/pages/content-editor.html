@@ -1,0 +1,152 @@
+<form
+    id="article-edit-form"
+    class="flex-1 flex flex-col h-full w-full min-h-0 bg-slate-50 dark:bg-slate-900 overflow-hidden"
+    onsubmit="event.preventDefault(); window.submitWithStatus();"
+>
+    <input type="hidden" id="form-node-id" name="id" value="{{node_id}}" />
+    <input type="hidden" name="site_id" value="{{site_id}}" />
+    <input type="hidden" name="is_edit" value="{{is_edit}}" />
+    <input type="hidden" id="form-type-input" name="type" value="{{initial_type}}" />
+    <input type="hidden" id="form-locale-input" name="locale" value="{{current_locale}}" />
+    <input type="hidden" id="form-maturity-input" name="maturity" value="{{current_maturity}}" />
+    <input type="hidden" id="form-progress-input" name="progress" value="{{current_progress}}" />
+    <input type="hidden" id="form-template-id-input" name="meta_template_id" value="{{selected_template_id}}" />
+    <input type="hidden" id="form-template-slug-input" name="meta_template_slug" value="{{selected_template_slug}}" />
+    <input type="hidden" id="form-schema-input" name="meta_schema_type" value="{{meta_schema_type}}" />
+    <input type="hidden" id="form-status-input" name="status" value="{{node_status}}" />
+    <input type="hidden" id="form-visibility-input" name="visibility" value="{{node_visibility}}" />
+    <input type="hidden" id="form-tags-input" name="meta_tags" value="{{existing_tags_string}}" />
+    <input type="hidden" id="form-translation-group-id" name="translation_group_id" value="{{translation_group_id}}" />
+
+    <header class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700 px-6 flex items-center justify-between shrink-0 z-10 gap-4">
+        <div class="flex items-center space-x-3 flex-1 min-w-0">
+            <a href="{{back_href}}" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0" title="{{return_list}}">
+                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+
+            <input
+                type="text"
+                id="article-title-input"
+                name="title"
+                value="{{node_title}}"
+                placeholder="{{placeholder_title}}"
+                class="text-base font-black text-slate-900 dark:text-white placeholder-slate-400 border-none outline-none w-full bg-transparent focus:ring-0"
+            />
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0">
+            <walnut-select
+                id="top-status-select"
+                onchange="const s = document.getElementById('form-status-input'); if (s) s.value = this.value;"
+                class="bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+            >
+                <option value="published" {{status_published_selected}}>{{editor.status_published}}</option>
+                <option value="draft" {{status_draft_selected}}>{{editor.status_draft}}</option>
+            </walnut-select>
+
+            <button
+                type="button"
+                id="article-preview-top-btn"
+                onclick="const s = document.getElementById('slug-input')?.value || ''; const t = document.getElementById('article-title-input')?.value || ''; window.openSandboxedPreview('/' + s, t);"
+                class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700 transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                title="{{preview}}"
+            >
+                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                <span>{{preview}}</span>
+            </button>
+
+            <button
+                type="button"
+                id="article-save-top-btn"
+                onclick="const st = document.getElementById('top-status-select')?.value || document.getElementById('form-status-input')?.value || 'published'; window.submitWithStatus(st);"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-sm transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>{{common.save}}</span>
+            </button>
+
+            <button
+                type="button"
+                id="editor-sidebar-toggle-btn"
+                onclick="toggleEditorSidebar()"
+                class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition flex items-center justify-center cursor-pointer shadow-sm"
+                title="{{toggle_collapse}}"
+            >
+                <span id="editor-sidebar-toggle-icon" class="material-symbols-outlined text-[18px]">dock_to_right</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex min-h-0 overflow-hidden relative">
+
+        <div class="flex-1 flex flex-col min-w-0 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 overflow-hidden">
+            <div class="h-11 bg-slate-50/90 dark:bg-slate-800/90 border-b border-slate-200/80 dark:border-slate-700 px-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 select-none shrink-0 overflow-x-auto">
+                <div class="flex items-center space-x-0.5">
+                    <button type="button" onclick="insertFormat('**', '**')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-bold cursor-pointer" title="{{format_bold}}">B</button>
+                    <button type="button" onclick="insertFormat('*', '*')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded italic font-serif cursor-pointer" title="{{format_italic}}">I</button>
+                    <button type="button" onclick="insertFormat('~~', '~~')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded line-through cursor-pointer" title="{{format_strikethrough}}">S</button>
+                    <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                    <button type="button" onclick="insertHeading('# ')" class="px-1.5 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-bold text-xs cursor-pointer" title="{{format_h1}}">H1</button>
+                    <button type="button" onclick="insertHeading('## ')" class="px-1.5 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-bold text-xs cursor-pointer" title="{{format_h2}}">H2</button>
+                    <button type="button" onclick="insertHeading('### ')" class="px-1.5 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-bold text-xs cursor-pointer" title="{{format_h3}}">H3</button>
+                    <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                    <button type="button" onclick="insertFormat('> ')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_quote}}">“ ”</button>
+                    <button type="button" onclick="insertFormat('`', '`')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-mono cursor-pointer" title="{{format_code_inline}}">&lt;/&gt;</button>
+                    <button type="button" onclick="insertFormat('```typescript\n', '\n```')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-mono text-xs cursor-pointer" title="{{format_code_block}}">Code</button>
+                    <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                    <button type="button" onclick="insertHeading('- ')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_ul}}">•</button>
+                    <button type="button" onclick="insertHeading('1. ')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_ol}}">1.</button>
+                    <button type="button" onclick="insertHeading('- [ ] ')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_task}}">☑</button>
+                    <span class="text-slate-300 dark:text-slate-600 mx-1">|</span>
+                    <button type="button" onclick="insertTable()" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_table}}">▦</button>
+                    <button type="button" onclick="insertFormat('\n---\n')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_hr}}">―</button>
+                    <button type="button" onclick="insertFormat('[]( ', ')')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_link}}">🔗</button>
+                    <button type="button" onclick="insertFormat('![]( ', ')')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded cursor-pointer" title="{{format_image}}">🖼️</button>
+                    <button type="button" onclick="insertFormat('[[', ']]')" class="px-2 py-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 cursor-pointer" title="{{format_wiki}}">[[Wiki]]</button>
+                </div>
+
+                <div class="text-[11px] text-slate-400 font-mono shrink-0 pl-2">
+                    <span id="view-mode-indicator" class="text-emerald-600 dark:text-emerald-400 font-bold">{{editor_view_mode}}</span>
+                </div>
+            </div>
+
+            <div class="flex-1 flex min-h-0 relative overflow-hidden">
+                <div class="w-1/2 min-w-0 h-full flex flex-col border-r border-slate-200/80 dark:border-slate-700 overflow-hidden relative">
+                    <textarea
+                        id="editor-core"
+                        name="content_raw"
+                        placeholder="{{placeholder_content}}"
+                        spellcheck="false"
+                        class="w-full flex-1 p-6 font-mono text-sm leading-relaxed outline-none resize-none bg-slate-50/20 dark:bg-slate-950/40 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 overflow-y-auto thin-scrollbar"
+                    >{{latest_content_raw}}</textarea>
+                </div>
+
+                <div
+                    id="preview-core"
+                    class="w-1/2 min-w-0 h-full p-6 prose prose-slate dark:prose-invert max-w-none overflow-y-auto thin-scrollbar bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200"
+                ></div>
+
+                <div id="vcs-diff-banner" class="hidden absolute top-3 right-6 bg-slate-900 dark:bg-slate-800 text-white text-xs px-4 py-2 rounded-xl shadow-xl border border-slate-700 flex items-center space-x-3 z-20">
+                    <span id="vcs-diff-label" class="font-bold">{{preview_label}}</span>
+                    <button type="button" onclick="returnToLiveEdit()" class="text-emerald-400 hover:underline font-bold cursor-pointer">{{btn_return_live_edit}}</button>
+                </div>
+            </div>
+        </div>
+
+        <aside
+            id="editor-inspector-sidebar"
+            style="width: 330px; min-width: 330px; max-width: 330px;"
+            class="bg-white dark:bg-slate-800 flex flex-col overflow-y-auto overflow-x-hidden thin-scrollbar shrink-0 border-l border-slate-200/80 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 transition-colors duration-75 ease-out"
+        >
+            {{inspector_sidebar_html}}
+        </aside>
+    </div>
+</form>
+
+<script type="application/json" id="vcs-versions-data">{{vcs_versions_json}}</script>
+<script type="application/json" id="article-tags-data">{{article_tags_json}}</script>
+<script type="application/json" id="theme-md-components-data">WALNUT_MD_COMPONENTS_JSON_PLACEHOLDER</script>
+<input type="hidden" id="msg-no-outgoing-links" value="{{no_outgoing_links}}" />
+
+<script src="/admin/js/md-preview.js" defer></script>
+<script src="/admin/js/editor.js"></script>

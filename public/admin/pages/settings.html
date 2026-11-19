@@ -1,0 +1,463 @@
+<div class="w-full h-full overflow-y-auto thin-scrollbar">
+    <div class="px-8 py-8 md:px-12 md:py-10 max-w-4xl mx-auto w-full space-y-10">
+        <div class="border-b border-slate-200/80 dark:border-slate-800 pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{settings_title}}</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">{{settings_subtitle}}</p>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                    {{primary_domain}}
+                </span>
+            </div>
+        </div>
+
+        <form hx-post="/admin/settings/api/save" hx-target="#settings-msg" class="space-y-10">
+            <input type="hidden" name="site_id" value="{{site_id}}" />
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
+                <div class="flex items-center space-x-2.5">
+                    <span class="material-symbols-outlined text-slate-700 dark:text-slate-300 text-[20px]">info</span>
+                    <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_network}}</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_name}} *</label>
+                        <input type="text" name="name" value="{{site_name}}" required placeholder="Walnut Site" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_subtitle}}</label>
+                        <input type="text" name="subtitle" value="{{site_subtitle}}" placeholder="{{placeholder_subtitle}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_domain}} *</label>
+                        <input type="text" name="primary_domain" value="{{primary_domain}}" required placeholder="example.com" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <walnut-select class="block relative" id="dropdown-box-locale" data-input-id="settings-locale-input" data-label-id="settings-locale-label" data-menu-id="dropdown-menu-locale">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_locale}}</label>
+                        <input type="hidden" name="default_locale" id="settings-locale-input" value="{{default_locale}}" />
+                        <button
+                            type="button"
+                            data-role="trigger"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                        >
+                            <span id="settings-locale-label">{{locale_display_label}}</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        </button>
+                        <div id="dropdown-menu-locale" data-role="menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700">
+                            <div data-value="zh-CN" data-label="{{locale_zh_label}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{locale_zh_label}}</div>
+                            <div data-value="en-US" data-label="{{locale_en_label}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{locale_en_label}}</div>
+                        </div>
+                    </walnut-select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_logo_url}}</label>
+                        <input type="text" name="logo_url" value="{{logo_url}}" placeholder="https://.../logo.png" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_favicon_url}}</label>
+                        <input type="text" name="favicon_url" value="{{favicon_url}}" placeholder="https://.../favicon.ico" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <walnut-select class="block relative" id="dropdown-box-timezone" data-input-id="settings-timezone-input" data-label-id="settings-timezone-label" data-menu-id="dropdown-menu-timezone">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_timezone}}</label>
+                        <input type="hidden" name="timezone" id="settings-timezone-input" value="{{current_timezone}}" />
+                        <button
+                            type="button"
+                            data-role="trigger"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                        >
+                            <span id="settings-timezone-label">{{timezone_display_label}}</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        </button>
+                        <div id="dropdown-menu-timezone" data-role="menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
+                            {{timezone_options_html}}
+                        </div>
+                    </walnut-select>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_copyright}}</label>
+                        <input type="text" name="copyright" value="{{copyright}}" placeholder="© 2026 Walnut CMS. All rights reserved." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                    <walnut-select class="block relative" id="dropdown-box-site-mode" data-input-id="settings-site-mode-input" data-label-id="settings-site-mode-label" data-menu-id="dropdown-menu-site-mode">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_site_mode}} *</label>
+                        <input type="hidden" name="site_mode" id="settings-site-mode-input" value="{{site_mode}}" />
+                        <button
+                            type="button"
+                            data-role="trigger"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                        >
+                            <span id="settings-site-mode-label">{{site_mode_label}}</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        </button>
+                        <div id="dropdown-menu-site-mode" data-role="menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700">
+                            <div data-value="standard" data-label="{{mode_standard}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{mode_standard}}</div>
+                            <div data-value="media_bed" data-label="{{mode_media_bed}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{mode_media_bed}}</div>
+                            <div data-value="maintenance" data-label="{{mode_maintenance}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{mode_maintenance}}</div>
+                        </div>
+                    </walnut-select>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_sitemap_domain}}</label>
+                        <input type="text" name="sitemap_domain" value="{{sitemap_domain}}" placeholder="sitemap.example.com" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                        <span class="text-[11px] text-slate-400 mt-1 block">{{tip_sitemap_domain}}</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
+                <div class="flex items-center space-x-2.5">
+                    <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[20px]">palette</span>
+                    <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_appearance}}</h2>
+                </div>
+
+                <div>
+                    <walnut-select class="block relative max-w-md" id="dropdown-box-theme-mode" data-input-id="settings-theme-mode-input" data-label-id="settings-theme-mode-label" data-menu-id="dropdown-menu-theme-mode">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_theme_mode}}</label>
+                        <input type="hidden" name="theme_mode" id="settings-theme-mode-input" value="{{current_theme_mode}}" />
+                        <button
+                            type="button"
+                            data-role="trigger"
+                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                        >
+                            <span id="settings-theme-mode-label">{{theme_mode_label}}</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        </button>
+                        <div id="dropdown-menu-theme-mode" data-role="menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700">
+                            <div data-value="system" data-label="{{theme_mode_system}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{theme_mode_system}}</div>
+                            <div data-value="dark" data-label="{{theme_mode_dark}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{theme_mode_dark}}</div>
+                            <div data-value="light" data-label="{{theme_mode_light}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{theme_mode_light}}</div>
+                        </div>
+                    </walnut-select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_primary_color}}</label>
+                        <input type="hidden" name="brand_color" value="{{current_brand_color}}" />
+                        <walnut-color-picker class="block space-y-2" data-input-id="primary-color-input" data-swatch-id="primary-color-swatch">
+                            <div class="flex items-center space-x-2">
+                                <button
+                                    type="button"
+                                    id="primary-color-swatch"
+                                    data-role="swatch"
+                                    class="w-10 h-10 rounded-xl shadow-sm border border-slate-300 dark:border-slate-600 shrink-0 transition-transform hover:scale-105 cursor-pointer flex items-center justify-center text-white/80"
+                                    style="background-color: {{current_primary_color_swatch}};"
+                                    title="{{tip_brand_color_btn}}"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]">colorize</span>
+                                </button>
+                                <input
+                                    type="text"
+                                    id="primary-color-input"
+                                    name="primary_color"
+                                    data-role="hex-input"
+                                    value="{{current_primary_color}}"
+                                    placeholder="#2563eb"
+                                    class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    data-role="trigger"
+                                    class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer shrink-0"
+                                >
+                                    {{btn_open_color_picker}}
+                                </button>
+                            </div>
+                        </walnut-color-picker>
+                        <span class="text-[11px] text-slate-400 mt-1 block">{{tip_primary_color}}</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_primary_color_dark}}</label>
+                        <walnut-color-picker class="block space-y-2" data-input-id="primary-color-dark-input" data-swatch-id="primary-color-dark-swatch">
+                            <div class="flex items-center space-x-2">
+                                <button
+                                    type="button"
+                                    id="primary-color-dark-swatch"
+                                    data-role="swatch"
+                                    class="w-10 h-10 rounded-xl shadow-sm border border-slate-300 dark:border-slate-600 shrink-0 transition-transform hover:scale-105 cursor-pointer flex items-center justify-center text-white/80"
+                                    style="background-color: {{current_primary_color_dark_swatch}};"
+                                    title="{{tip_brand_color_btn}}"
+                                >
+                                    <span class="material-symbols-outlined text-[16px]">colorize</span>
+                                </button>
+                                <input
+                                    type="text"
+                                    id="primary-color-dark-input"
+                                    name="primary_color_dark"
+                                    data-role="hex-input"
+                                    value="{{current_primary_color_dark}}"
+                                    placeholder="{{current_primary_color_swatch}}"
+                                    class="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    data-role="trigger"
+                                    class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer shrink-0"
+                                >
+                                    {{btn_open_color_picker}}
+                                </button>
+                            </div>
+                        </walnut-color-picker>
+                        <span class="text-[11px] text-slate-400 mt-1 block">{{tip_primary_color_dark}}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_footer_links}}</label>
+                    <textarea name="footer_links" placeholder="{{placeholder_footer_links}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 h-24 resize-none focus:border-slate-900 dark:focus:border-emerald-500 outline-none leading-relaxed">{{footer_links}}</textarea>
+                    <span class="text-[11px] text-slate-400 mt-1 block">{{tip_footer_links}}</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_quick_action_shortcut}}</label>
+                    <walnut-shortcut-recorder
+                        class="block"
+                        data-default="alt+k,cmd+k"
+                        data-record-label="{{btn_record_shortcut}}"
+                        data-recording-label="{{btn_recording_shortcut}}"
+                        data-add-label="{{btn_add_shortcut}}"
+                        data-reset-label="{{btn_reset_shortcut}}"
+                        data-empty-hint="{{shortcut_empty_hint}}"
+                    >
+                        <input type="hidden" name="quick_action_shortcut" data-role="shortcut-input" value="{{quick_action_shortcut}}" />
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <div
+                                data-role="recorder-box"
+                                tabindex="0"
+                                class="flex-1 min-h-[40px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-1.5 flex flex-wrap items-center gap-1.5 cursor-pointer hover:border-slate-400 dark:hover:border-slate-600 focus:border-emerald-500 dark:focus:border-emerald-500 outline-none transition select-none"
+                            >
+                                <div data-role="badges-container" class="flex flex-wrap items-center gap-1.5"></div>
+                                <span data-role="status-text" class="text-xs font-mono text-slate-400 dark:text-slate-500"></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    data-role="record-btn"
+                                    class="px-3.5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer"
+                                >
+                                    {{btn_record_shortcut}}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-role="add-btn"
+                                    class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                                >
+                                    {{btn_add_shortcut}}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-role="reset-btn"
+                                    class="px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition cursor-pointer"
+                                >
+                                    {{btn_reset_shortcut}}
+                                </button>
+                            </div>
+                        </div>
+                    </walnut-shortcut-recorder>
+                    <span class="text-[11px] text-slate-400 mt-1 block">{{tip_quick_action_shortcut}}</span>
+                </div>
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">analytics</span>
+                        <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_scripts}}</h2>
+                    </div>
+                    <span class="text-[10px] font-bold bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-full font-mono {{pro_script_badge_class}}">
+                        {{pro_scripts_badge}}
+                    </span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_ga}}</label>
+                    <input type="text" name="google_analytics_id" value="{{google_analytics_id}}" placeholder="G-XXXXXXXXXX / UA-XXXXXXXXX" class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    <span class="text-[11px] text-slate-400 mt-1 block">{{tip_ga}}</span>
+                </div>
+
+                <div class="space-y-1.5 {{footer_scripts_class}}">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-slate-900 dark:text-white">{{field_footer_scripts}}</label>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-bold font-mono">{{settings.badge_pro_extension}}</span>
+                    </div>
+                    <textarea name="footer_scripts" placeholder="&lt;script&gt;/* Custom Scripts */&lt;/script&gt;" class="w-full border border-slate-300 dark:border-slate-700 rounded-xl p-3.5 text-xs font-mono h-28 resize-none focus:border-slate-900 dark:focus:border-emerald-500 outline-none bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 leading-relaxed">{{footer_scripts}}</textarea>
+                    <span class="text-[11px] text-slate-400 block">{{tip_footer_scripts}}</span>
+                </div>
+
+                {{slot_commercial_edge_services}}
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
+                <div class="flex items-center space-x-2.5">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">travel_explore</span>
+                    <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_seo}}</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_title_template}}</label>
+                        <input type="text" name="title_template" value="{{title_template}}" placeholder="%s - Walnut CMS" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                        <span class="text-[11px] text-slate-400 mt-1 block">{{tip_title_template}}</span>
+                    </div>
+                    <walnut-select class="block relative" id="dropdown-box-robots" data-input-id="settings-robots-input" data-label-id="settings-robots-label" data-menu-id="dropdown-menu-robots">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_robots_strategy}}</label>
+                        <input type="hidden" name="robots_control" id="settings-robots-input" value="{{current_robots}}" />
+                        <button type="button" data-role="trigger" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer">
+                            <span id="settings-robots-label">{{robots_label}}</span>
+                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        </button>
+                        <div id="dropdown-menu-robots" data-role="menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700">
+                            <div data-value="index, follow" data-label="{{robots_index_follow}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{robots_index_follow}}</div>
+                            <div data-value="noindex, follow" data-label="{{robots_noindex_follow}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{robots_noindex_follow}}</div>
+                            <div data-value="noindex, nofollow" data-label="{{robots_noindex_nofollow}}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{robots_noindex_nofollow}}</div>
+                        </div>
+                    </walnut-select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_desc}}</label>
+                    <textarea name="description" placeholder="..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 h-20 resize-none focus:border-slate-900 dark:focus:border-emerald-500 outline-none leading-relaxed">{{description}}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_og_image}}</label>
+                    <input type="text" name="og_image" value="{{og_image}}" placeholder="https://.../og-cover.png" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_robots_txt}}</label>
+                    <textarea name="robots_txt" placeholder="User-agent: *&#10;Allow: /" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 h-28 resize-none focus:border-slate-900 dark:focus:border-emerald-500 outline-none leading-relaxed">{{robots_txt}}</textarea>
+                    <span class="text-[11px] text-slate-400 mt-1 block">{{tip_robots_txt}}</span>
+                </div>
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="material-symbols-outlined text-amber-500 text-[20px]">verified</span>
+                        <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_license}}</h2>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full {{license_status_badge_class}}">
+                        {{license_status_text}}
+                    </span>
+                </div>
+
+                <div class="{{license_detail_editor_class}}">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_license_key}}</label>
+                    <textarea name="license_key" placeholder="{{placeholder_license_key}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 h-24 resize-none focus:border-slate-900 dark:focus:border-emerald-500 outline-none leading-relaxed">{{license_key}}</textarea>
+                    <span class="text-[11px] text-slate-400 mt-1 block">{{tip_license}}</span>
+                </div>
+                <div class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3 {{license_managed_notice_class}}">
+                    {{license_managed_notice_text}}
+                </div>
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6 {{whitelabel_section_class}}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">branding_watermark</span>
+                        <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{sec_whitelabel}}</h2>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] font-bold bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full font-mono {{wl_enforced_badge_class}}">
+                            🔒 {{settings.badge_oem_enforced}}
+                        </span>
+                        <span class="text-[10px] font-bold bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-full font-mono">
+                            {{settings.badge_agency_pro}}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_title}}</label>
+                        <input type="text" name="wl_system_title" value="{{wl_system_title}}" {{wl_readonly_attr}} placeholder="{{settings.ph_brand_name}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_provider}}</label>
+                        <input type="text" name="wl_provider_name" value="{{wl_provider_name}}" {{wl_readonly_attr}} placeholder="{{settings.ph_provider_name}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_logo}}</label>
+                        <input type="text" name="wl_logo_url" value="{{wl_logo_url}}" {{wl_readonly_attr}} placeholder="https://..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_favicon}}</label>
+                        <input type="text" name="wl_favicon_url" value="{{wl_favicon_url}}" {{wl_readonly_attr}} placeholder="https://.../favicon.ico" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_banner}}</label>
+                        <input type="text" name="wl_login_banner_url" value="{{wl_login_banner_url}}" {{wl_readonly_attr}} placeholder="https://..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_support_url}}</label>
+                        <input type="text" name="wl_support_url" value="{{wl_support_url}}" {{wl_readonly_attr}} placeholder="https://support.yourstudio.com" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_wl_copyright}}</label>
+                    <input type="text" name="wl_copyright" value="{{wl_copyright}}" {{wl_readonly_attr}} placeholder="{{settings.ph_copyright}}" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                </div>
+            </section>
+
+            <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-black text-slate-900 dark:text-white flex items-center space-x-2">
+                            <span class="material-symbols-outlined text-[18px] text-emerald-500">menu_book</span>
+                            <span>{{settings.eco_connect_title}}</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{settings.eco_connect_desc}}</p>
+                    </div>
+                    <a href="/admin/connect/grain" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition inline-flex items-center space-x-1.5 shrink-0">
+                        <span class="material-symbols-outlined text-[15px]">link</span>
+                        <span>{{settings.eco_connect_btn}}</span>
+                    </a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                    <div class="bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-3">
+                        <div class="text-[10px] text-slate-400 mb-0.5">{{settings.eco_connect_header_label}}</div>
+                        <div class="text-slate-800 dark:text-emerald-300 select-all">X-Walnut-Ecosystem-App: grain</div>
+                    </div>
+                    <div class="bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 rounded-xl px-4 py-3">
+                        <div class="text-[10px] text-slate-400 mb-0.5">{{settings.eco_connect_endpoint_label}}</div>
+                        <div class="text-slate-800 dark:text-emerald-300 select-all">POST /api/ecosystem/sync</div>
+                    </div>
+                </div>
+            </section>
+
+            {{slot_commercial_snapshot_clone_card}}
+            {{slot_commercial_api_tokens_card}}
+
+            <div class="flex justify-between items-center pt-2 pb-4">
+                <div id="settings-msg" class="text-sm font-bold"></div>
+                <button type="submit" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs px-8 py-3 rounded-xl shadow-lg transition-colors duration-75 ease-out cursor-pointer flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px]">check</span>
+                    <span>{{btn_save}}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{web_color_picker_modal}}

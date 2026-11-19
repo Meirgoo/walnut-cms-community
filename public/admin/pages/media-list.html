@@ -1,0 +1,172 @@
+<div class="p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{media_title}}</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{media_subtitle}}</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <label class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-[16px]">upload_file</span>
+                <span>{{btn_upload}}</span>
+                <input id="media-upload-input" type="file" multiple class="hidden" />
+            </label>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between gap-4">
+        <div class="flex-1 flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+            <span class="material-symbols-outlined text-slate-400 text-[18px]">search</span>
+            <input
+                type="text"
+                id="media-search-input"
+                placeholder="{{search_placeholder}}"
+                oninput="window.filterCardItems('media-grid-container', '.media-card-item', this.value, 'media-filter-count', 'media-empty-state')"
+                class="bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none w-full font-medium"
+            />
+        </div>
+        <div id="media-filter-count" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
+            {{total_records_text}}
+        </div>
+    </div>
+
+    <div id="batch-toolbar" class="hidden bg-slate-900 dark:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
+        <div class="flex items-center space-x-4">
+            <span id="selected-count-badge" class="font-bold font-mono text-emerald-400">{{selected_count_zero}}</span>
+            <button type="button" onclick="selectAllMedia()" class="text-slate-300 hover:text-white underline">{{btn_select_all}}</button>
+            <button type="button" onclick="deselectAllMedia()" class="text-slate-300 hover:text-white underline">{{btn_deselect_all}}</button>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button type="button" onclick="openBatchRenameModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer {{btn_batch_rename_class}}">
+                <span class="material-symbols-outlined text-[14px]">edit_note</span>
+                <span>{{btn_batch_rename}}</span>
+            </button>
+            <button type="button" onclick="batchCopyUrls()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                <span>{{btn_batch_copy_urls}}</span>
+            </button>
+            <button type="button" onclick="batchCopyMarkdown()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">code</span>
+                <span>{{btn_batch_copy_md}}</span>
+            </button>
+            <button type="button" onclick="window.batchDeleteMediaSelected()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+                <span>{{btn_batch_delete}}</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="upload-status" class="hidden p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl text-xs font-bold text-blue-800 dark:text-blue-300"></div>
+
+    <div class="flex-1 overflow-y-auto min-h-0">
+        {{media_grid_content}}
+
+        <div id="media-empty-state" class="hidden p-12 text-center text-slate-400 text-xs">
+            {{no_matching_records}}
+        </div>
+    </div>
+</div>
+
+<div id="media-detail-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-5xl w-full h-[80vh] flex overflow-hidden shadow-2xl border border-slate-700">
+        <div class="flex-1 bg-slate-950 flex items-center justify-center p-6 relative overflow-hidden">
+            <img id="modal-img-preview" src="" alt="" class="max-h-full max-w-full object-contain rounded-lg shadow-lg" />
+            <div id="modal-doc-preview" class="hidden flex flex-col items-center justify-center text-slate-400 space-y-2">
+                <span class="material-symbols-outlined text-[64px]">draft</span>
+                <span class="text-sm font-bold">{{modal_doc_preview}}</span>
+            </div>
+        </div>
+
+        <div class="w-80 border-l border-slate-200 dark:border-slate-700 p-5 flex flex-col justify-between overflow-y-auto thin-scrollbar bg-slate-50 dark:bg-slate-900 text-xs">
+            <div class="space-y-4">
+                <div class="flex justify-between items-start">
+                    <h3 id="modal-file-name" class="font-bold text-slate-900 dark:text-white text-sm break-all"></h3>
+                    <button type="button" onclick="closeMediaModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer ml-2">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+
+                <div class="space-y-2.5 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_meta_title}}</label>
+                        <input type="text" id="modal-meta-title" placeholder="{{placeholder_meta_title}}" class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-emerald-500" />
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_meta_alt}}</label>
+                        <input type="text" id="modal-meta-alt" placeholder="{{placeholder_meta_alt}}" class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-emerald-500" />
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_file_name}}</label>
+                        <input type="text" id="modal-edit-filename" class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 font-mono text-[11px] outline-none focus:border-emerald-500" />
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_folder}}</label>
+                        <input type="text" id="modal-edit-folder" list="media-folders-datalist" placeholder="{{placeholder_folder}}" class="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 text-xs outline-none focus:border-emerald-500" />
+                        <datalist id="media-folders-datalist">
+                            {{folder_datalist_options}}
+                        </datalist>
+                    </div>
+                    <label class="flex items-center space-x-2 pt-1 cursor-pointer select-none">
+                        <input type="checkbox" id="modal-edit-is-public" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-0 cursor-pointer accent-emerald-600" />
+                        <span class="font-bold text-slate-700 dark:text-slate-300">{{field_is_public}}</span>
+                    </label>
+                </div>
+
+                <div class="space-y-1.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <div>{{field_file_size}}<span id="modal-file-size" class="text-slate-800 dark:text-slate-200 font-bold"></span></div>
+                    <div>MIME: <span id="modal-mime-type" class="text-slate-800 dark:text-slate-200 font-bold"></span></div>
+                    <div>{{field_upload_time}}<span id="modal-created-at" class="text-slate-800 dark:text-slate-200 font-bold"></span></div>
+                    <div class="break-all">{{field_storage_path}}<span id="modal-r2-key" class="text-slate-800 dark:text-slate-200"></span></div>
+                </div>
+
+                <div class="space-y-2.5 pt-2">
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_direct_url}}</label>
+                        <div class="flex space-x-1">
+                            <input type="text" id="modal-url-input" readonly class="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 font-mono text-[11px]" />
+                            <button type="button" onclick="copyModalInput('modal-url-input')" class="bg-slate-800 hover:bg-black text-white px-2 py-1 rounded-lg font-bold text-[11px] cursor-pointer">
+                                {{copy}}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_md_syntax}}</label>
+                        <div class="flex space-x-1">
+                            <input type="text" id="modal-md-input" readonly class="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 font-mono text-[11px]" />
+                            <button type="button" onclick="copyModalInput('modal-md-input')" class="bg-slate-800 hover:bg-black text-white px-2 py-1 rounded-lg font-bold text-[11px] cursor-pointer">
+                                {{copy}}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_html_syntax}}</label>
+                        <div class="flex space-x-1">
+                            <input type="text" id="modal-html-input" readonly class="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-slate-700 dark:text-slate-300 font-mono text-[11px]" />
+                            <button type="button" onclick="copyModalInput('modal-html-input')" class="bg-slate-800 hover:bg-black text-white px-2 py-1 rounded-lg font-bold text-[11px] cursor-pointer">
+                                {{copy}}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700 space-y-2 shrink-0">
+                <button type="button" id="modal-save-btn" class="w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-colors duration-75 ease-out cursor-pointer flex items-center justify-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px]">save</span>
+                    <span>{{btn_save_meta}}</span>
+                </button>
+                <a id="modal-direct-link" href="" target="_blank" class="block w-full text-center bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold py-1.5 rounded-lg transition-colors duration-75 ease-out">
+                    {{open_in_new_tab}}
+                </a>
+                <button type="button" id="modal-delete-btn" class="block w-full text-center bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 font-bold py-1.5 rounded-lg transition-colors duration-75 ease-out cursor-pointer">
+                    {{btn_delete_file}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{batch_rename_modal}}

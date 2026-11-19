@@ -1,0 +1,60 @@
+<tr id="micro-row-{{id}}" data-folder="{{folder}}" class="hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition">
+    <td class="w-12 px-4 py-3.5 text-center">
+        <input
+            type="checkbox"
+            class="row-select-box w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500"
+            data-id="{{id}}"
+            onchange="window.updateTableBatchState('micro-table')"
+        />
+    </td>
+    <td class="px-6 py-2.5 text-left" data-col="title" data-sort-val="{{title}}">
+        <div class="font-bold text-slate-900 dark:text-white flex items-center space-x-2 max-w-[340px] xl:max-w-[460px]">
+            <a href="/admin/micros/edit/{{id}}" class="hover:text-emerald-700 dark:hover:text-emerald-400 truncate block" title="{{title}}">
+                {{title}}
+            </a>
+        </div>
+    </td>
+    <td class="px-6 py-2.5 text-center col-folder whitespace-nowrap" data-col="folder">
+        {{folder_badge_html}}
+    </td>
+    <td class="px-6 py-2.5 text-center col-status hidden whitespace-nowrap" data-col="status">
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap {{status_badge_class}}">
+            {{status_badge_text}}
+        </span>
+    </td>
+    <td class="px-6 py-2.5 text-center col-maturity whitespace-nowrap" data-col="maturity">
+        {{maturity_html}}
+    </td>
+    <td class="px-6 py-2.5 text-center font-mono text-xs text-slate-500 dark:text-slate-400 col-locale hidden whitespace-nowrap" data-col="locale">
+        {{locale}}
+    </td>
+    <td class="px-6 py-2.5 text-center col-tags whitespace-nowrap" data-col="tags">
+        {{tags_html}}
+    </td>
+    <td class="px-6 py-2.5 text-center text-xs font-mono text-slate-400 col-updated whitespace-nowrap" data-col="updated" data-sort-val="{{updated_at}}">
+        {{updated_at_formatted}}
+    </td>
+    <td class="px-6 py-2.5 text-center space-x-2.5 col-actions whitespace-nowrap" data-col="actions">
+        <button
+            type="button"
+            onclick="window.convertMicroToArticle('{{id}}')"
+            class="p-1 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer inline-flex items-center justify-center align-middle"
+            title="{{btn_convert_to_article}}"
+        >
+            <span class="material-symbols-outlined text-[16px]">article</span>
+        </button>
+        <a href="/admin/micros/edit/{{id}}" class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:underline">
+            {{edit}}
+        </a>
+        <button
+            type="button"
+            hx-delete="/admin/micros/api/delete/{{id}}"
+            hx-target="#micro-row-{{id}}"
+            hx-swap="outerHTML"
+            hx-confirm="{{confirm_delete}}"
+            class="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer"
+        >
+            {{delete}}
+        </button>
+    </td>
+</tr>

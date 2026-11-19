@@ -1,0 +1,104 @@
+<div class="w-full h-full overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div class="p-8 space-y-6 max-w-4xl mx-auto w-full">
+    <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <a href="/admin/datasets" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            </a>
+            <div>
+                <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">{{editor_title}}</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{editor_desc}}</p>
+            </div>
+        </div>
+
+        {{version_badge_html}}
+    </div>
+
+    <form id="dataset-editor-form" onsubmit="window.handleDatasetFormSubmit && window.handleDatasetFormSubmit(event)" class="space-y-6">
+        <input type="hidden" name="dataset_id" value="{{dataset_id}}" />
+        <input type="hidden" name="is_edit" value="{{is_edit}}" />
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                <span class="material-symbols-outlined text-emerald-500 text-[20px]">contract</span>
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_contract}}</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_title}}</label>
+                    <input type="text" name="title" id="dataset-title-input" value="{{dataset_title}}" required placeholder="{{placeholder_title}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+                </div>
+
+                <walnut-select class="relative block" id="dropdown-box-dataset-schema">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">{{field_schema}}</label>
+                        <a href="/admin/schemas/new" target="_blank" class="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold flex items-center space-x-0.5">
+                            <span class="material-symbols-outlined text-[13px]">add_circle</span>
+                            <span>{{btn_new_schema}}</span>
+                        </a>
+                    </div>
+                    <input type="hidden" name="schema_slug" id="dataset-schema-input" value="{{current_schema_slug}}" />
+                    <button
+                        type="button"
+                        id="dataset-schema-btn"
+                        onclick="const m=document.getElementById('dropdown-menu-dataset-schema');if(m)m.classList.toggle('hidden');"
+                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer {{schema_selector_disabled}}"
+                    >
+                        <span id="dataset-schema-label" class="truncate">{{current_schema_label}}</span>
+                        <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                    </button>
+                    <div
+                        id="dropdown-menu-dataset-schema"
+                        class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700 max-h-56 overflow-y-auto"
+                    >
+                        {{schema_dropdown_options_html}}
+                    </div>
+                </walnut-select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_summary}}</label>
+                <input type="text" name="summary" value="{{dataset_summary}}" placeholder="{{placeholder_summary}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">dynamic_form</span>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_fields}}</h2>
+                </div>
+            </div>
+
+            <div id="dynamic-schema-fields-container" class="space-y-4">
+                {{dynamic_fields_html}}
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
+            <div class="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">commit</span>
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_vcs}}</h2>
+            </div>
+            <div>
+                <input type="text" name="commit_message" placeholder="{{placeholder_commit}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:border-slate-900 dark:focus:border-emerald-500 outline-none" />
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+            <div id="dataset-editor-feedback" class="text-xs font-bold"></div>
+            <div class="flex space-x-2">
+                <a href="/admin/datasets" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">{{cancel}}</a>
+                <button type="submit" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs px-8 py-2.5 rounded-xl shadow-lg transition-colors duration-75 ease-out cursor-pointer flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px]">save</span>
+                    <span>{{btn_save}}</span>
+                </button>
+            </div>
+        </div>
+    </form>
+    </div>
+</div>
+
+<script type="application/json" id="dataset-schemas-data">{{schemas_json}}</script>
+<script src="/admin/js/datasets-schemas.js?v={{engine_version}}" defer></script>

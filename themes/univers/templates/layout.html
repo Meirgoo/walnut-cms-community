@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="{{page.locale}}">
+<head>
+  {{walnut_head}}
+</head>
+<body class="min-h-screen flex flex-col bg-white dark:bg-[#0b1120] text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200">
+  <header data-slot="header" class="sticky top-0 z-50 w-full backdrop-blur-md bg-white/85 dark:bg-[#0b1120]/85 border-b border-slate-200/80 dark:border-slate-800/80 empty:hidden">{{slot:header:1}}</header>
+  <div data-slot="subnav" class="w-full empty:hidden">{{slot:subnav:2}}</div>
+  <div class="flex-1 w-full univers-page-backdrop">
+    <div class="univers-shell max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
+      <div class="univers-shell-grid">
+        <main data-slot="main" class="univers-main w-full min-w-0 space-y-14 sm:space-y-16">{{slot:main}}</main>
+        <aside data-slot="sidebar" class="univers-sidebar w-full min-w-0 space-y-6 empty:hidden">{{slot:sidebar:3}}</aside>
+      </div>
+    </div>
+  </div>
+  <footer data-slot="footer" class="mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 empty:hidden">{{slot:footer:1}}</footer>
+  {{walnut_foot}}
+</body>
+</html>

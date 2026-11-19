@@ -1,0 +1,99 @@
+<div id="task-modal" data-title-new="{{btn_new_task}}" data-title-edit="{{btn_edit_task}}" data-default-label="{{type_publish_node}}" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-5">
+        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <h3 id="task-modal-title" class="text-base font-bold text-slate-900 dark:text-white">{{btn_new_task}}</h3>
+            <button type="button" onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <form id="task-form" hx-post="/admin/tasks/api/save" hx-target="#task-form-msg" class="space-y-4">
+            <input type="hidden" id="task-form-id" name="id" value="" />
+            <input type="hidden" name="site_id" value="{{site_id}}" />
+
+            <div class="relative" id="task-type-dropdown-box">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_task_type}} *</label>
+                <input type="hidden" id="task-form-type-input" name="task_type" value="publish_node" />
+                <button
+                    type="button"
+                    onclick="const m=document.getElementById('task-type-dropdown-menu');if(m)m.classList.toggle('hidden');"
+                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                >
+                    <span id="task-type-selected-label">{{type_publish_node}}</span>
+                    <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                </button>
+                <div
+                    id="task-type-dropdown-menu"
+                    class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700 max-h-64 overflow-y-auto"
+                >
+                    <div aria-disabled="true" class="px-3 py-2 text-slate-400 dark:text-slate-500 cursor-not-allowed select-none">{{select_task_type_ph}}</div>
+                    <div data-task-type="publish_node" data-label="{{type_publish_node}}" onclick="window.selectTaskType && window.selectTaskType('publish_node','{{type_publish_node}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_publish_node}}</div>
+                    <div data-task-type="scheduled_unpublish" data-label="{{type_scheduled_unpublish}}" onclick="window.selectTaskType && window.selectTaskType('scheduled_unpublish','{{type_scheduled_unpublish}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_scheduled_unpublish}}</div>
+                    <div data-task-type="recompile_dirty_routes" data-label="{{type_recompile_dirty_routes}}" onclick="window.selectTaskType && window.selectTaskType('recompile_dirty_routes','{{type_recompile_dirty_routes}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_recompile_dirty_routes}}</div>
+                    <div data-task-type="update_sitemap" data-label="{{type_update_sitemap}}" onclick="window.selectTaskType && window.selectTaskType('update_sitemap','{{type_update_sitemap}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_update_sitemap}}</div>
+                    <div data-task-type="cache_warmup" data-label="{{type_cache_warmup}}" onclick="window.selectTaskType && window.selectTaskType('cache_warmup','{{type_cache_warmup}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_cache_warmup}}</div>
+                    <div data-task-type="purge_deleted" data-label="{{type_purge_deleted}}" onclick="window.selectTaskType && window.selectTaskType('purge_deleted','{{type_purge_deleted}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_purge_deleted}}</div>
+                    <div data-task-type="vacuum_db" data-label="{{type_vacuum_db}}" onclick="window.selectTaskType && window.selectTaskType('vacuum_db','{{type_vacuum_db}}');" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{type_vacuum_db}}</div>{{slot_commercial_task_types}}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_schedule_type}}</label>
+                <input type="hidden" id="task-form-schedule-type" name="schedule_type" value="recurring" />
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="task-sched-btn-once" onclick="window.setTaskScheduleType && window.setTaskScheduleType('once')" class="px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition">{{schedule_once}}</button>
+                    <button type="button" id="task-sched-btn-recurring" onclick="window.setTaskScheduleType && window.setTaskScheduleType('recurring')" class="px-3 py-2 rounded-xl text-xs font-bold border border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 cursor-pointer transition">{{schedule_recurring}}</button>
+                </div>
+            </div>
+
+            <div id="task-field-run-at" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_run_at}}</label>
+                <input type="datetime-local" id="task-form-run-at" name="next_run_at" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div id="task-field-interval-wrap" class="space-y-3">
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_interval_preset}}</label>
+                    <input type="hidden" id="task-form-interval-preset" name="interval_preset" value="custom" />
+                    <button type="button" onclick="const m=document.getElementById('task-preset-dropdown-menu');if(m)m.classList.toggle('hidden');" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer">
+                        <span id="task-preset-selected-label">{{preset_custom}}</span>
+                        <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                    </button>
+                    <div id="task-preset-dropdown-menu" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-100 dark:divide-slate-700">
+                        <div data-preset="hourly" data-label="{{preset_hourly}}" onclick="window.setTaskIntervalPreset && window.setTaskIntervalPreset('hourly','{{preset_hourly}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{preset_hourly}}</div>
+                        <div data-preset="daily" data-label="{{preset_daily}}" onclick="window.setTaskIntervalPreset && window.setTaskIntervalPreset('daily','{{preset_daily}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{preset_daily}}</div>
+                        <div data-preset="weekly" data-label="{{preset_weekly}}" onclick="window.setTaskIntervalPreset && window.setTaskIntervalPreset('weekly','{{preset_weekly}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{preset_weekly}}</div>
+                        <div data-preset="monthly" data-label="{{preset_monthly}}" onclick="window.setTaskIntervalPreset && window.setTaskIntervalPreset('monthly','{{preset_monthly}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{preset_monthly}}</div>
+                        <div data-preset="custom" data-label="{{preset_custom}}" onclick="window.setTaskIntervalPreset && window.setTaskIntervalPreset('custom','{{preset_custom}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">{{preset_custom}}</div>
+                    </div>
+                </div>
+                <div id="task-field-custom-minutes">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_interval}} *</label>
+                    <input type="number" id="task-form-interval" name="cron_interval_minutes" value="5" min="1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+                </div>
+            </div>
+
+            <div id="task-field-target-node">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_target_content}}</label>
+                <input type="text" id="task-form-target-node" name="target_node_id" placeholder="{{target_content_ph}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div id="task-field-retention-days" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_retention_days}}</label>
+                <input type="number" id="task-form-retention-days" name="retention_days" value="30" min="1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div id="task-field-retention-count" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_retention_count}}</label>
+                <input type="number" id="task-form-retention-count" name="retention_count" value="7" min="1" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500" />
+            </div>
+
+            <div id="task-form-msg" class="text-xs font-bold"></div>
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
+                <button type="submit" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm cursor-pointer">{{btn_save_task}}</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,117 @@
+<div id="webhook-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400">webhook</span>
+                <h3 id="webhook-modal-title" class="text-base font-bold text-slate-900 dark:text-white">{{webhooks.modal_title_new}}</h3>
+            </div>
+            <button
+                type="button"
+                onclick="closeWebhookModal()"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <form id="webhook-form" onsubmit="handleWebhookFormSubmit(event)" class="p-6 space-y-4 text-xs">
+            <input type="hidden" id="wh-input-id" name="id" value="" />
+
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-200 mb-1">
+                    {{webhooks.field_rule_name}} <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="wh-input-name"
+                    name="name"
+                    required
+                    placeholder="{{webhooks.field_rule_name_ph}}"
+                    class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-200 mb-1">
+                    {{webhooks.field_form_id}} <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="wh-input-form-id"
+                    name="form_id"
+                    required
+                    pattern="[A-Za-z0-9_-]+"
+                    placeholder="{{webhooks.field_form_id_ph}}"
+                    class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p class="text-[11px] text-slate-400 mt-1">
+                    /api/forms/submit/<span id="wh-preview-form-id">contact-us</span>
+                </p>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-200 mb-1">
+                    {{webhooks.field_target_url}} <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="url"
+                    id="wh-input-url"
+                    name="form_webhook_url"
+                    required
+                    placeholder="{{webhooks.field_target_url_ph}}"
+                    class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <div class="mt-1.5 flex flex-wrap gap-1.5 text-[10px]">
+                    <span class="bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-200/60">{{webhooks.platform_feishu}}</span>
+                    <span class="bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 px-1.5 py-0.5 rounded border border-sky-200/60">{{webhooks.platform_dingtalk}}</span>
+                    <span class="bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-200/60">{{webhooks.platform_wechat}}</span>
+                    <span class="bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded border border-purple-200/60">Slack/Discord</span>
+                    <span class="text-slate-400 self-center">{{webhooks.auto_packaging_tip}}</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-200 mb-1">
+                    {{webhooks.field_secret}} <span class="text-slate-400 font-normal">{{webhooks.field_secret_optional}}</span>
+                </label>
+                <input
+                    type="password"
+                    id="wh-input-secret"
+                    name="form_webhook_secret"
+                    placeholder="{{webhooks.field_secret_ph}}"
+                    class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+            </div>
+
+            <div class="pt-1">
+                <label class="flex items-center space-x-2 cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        id="wh-input-active"
+                        name="is_active"
+                        checked
+                        class="w-4 h-4 rounded text-emerald-600 focus:ring-0 cursor-pointer"
+                    />
+                    <span class="font-bold text-slate-700 dark:text-slate-200">{{webhooks.field_enable}}</span>
+                </label>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end space-x-2">
+                <button
+                    type="button"
+                    onclick="closeWebhookModal()"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                    {{common.cancel}}
+                </button>
+                <button
+                    type="submit"
+                    id="wh-submit-btn"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20 transition cursor-pointer"
+                >
+                    {{common.save}}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

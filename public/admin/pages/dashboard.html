@@ -1,0 +1,85 @@
+<div class="p-6 lg:p-8 overflow-y-auto thin-scrollbar h-full w-full">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{dashboard_title}}</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{focus_site}}：<span class="font-bold text-slate-800 dark:text-slate-200">{{current_site_name}}</span></p>
+        </div>
+
+        <div class="flex space-x-3">
+            <a href="/admin/articles/new/article" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors duration-75 ease-out flex items-center space-x-1.5">
+                <span class="material-symbols-outlined text-[16px]">edit_note</span>
+                <span>{{btn_new_article}}</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{card_articles_title}}</div>
+            <div class="text-3xl font-black text-slate-900 dark:text-white leading-none">{{total_nodes}}</div>
+            <div class="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>{{published_count}} {{stat_published_short}}</span>
+                <span>·</span>
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>{{draft_count}} {{stat_drafts_short}}</span>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{card_micros_title}}</div>
+            <div class="text-3xl font-black text-slate-900 dark:text-white leading-none">{{micro_count}}</div>
+            <div class="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-500"></span>{{micro_folder_count}} {{stat_folders_short}}</span>
+                <span>·</span>
+                <span>{{stat_micro_stream}}</span>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{card_pages_title}}</div>
+            <div class="text-3xl font-black text-slate-900 dark:text-white leading-none">{{page_count}}</div>
+            <div class="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>{{dataset_group_count}} {{stat_datasets_short}}</span>
+                <span>·</span>
+                <span>{{route_count}} {{stat_routes_short}}</span>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">{{card_media_title}}</div>
+            <div class="text-3xl font-black text-slate-900 dark:text-white leading-none">{{media_count}}</div>
+            <div class="flex items-center gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-700/60">
+                <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full {{dirty_route_dot_class}}"></span>{{dirty_route_count}} {{stat_dirty_routes}}</span>
+                <span>·</span>
+                <span>{{stat_r2_ready}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400">dynamic_feed</span>
+                    <span>{{recent_evolution}}</span>
+                </h2>
+                {{slot_commercial_dashboard_feed_controls}}
+            </div>
+            <div id="dashboard-content-feed-list" class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {{recent_content_items}}
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                <h2 class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-purple-600 dark:text-purple-400">schedule</span>
+                    <span>{{recent_system_title}}</span>
+                </h2>
+                <a href="/admin/audit?tab=tasks" class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline">{{view_all}} &rarr;</a>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {{recent_system_items}}
+            </div>
+        </div>
+    </div>
+</div>
