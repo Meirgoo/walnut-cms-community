@@ -9,10 +9,65 @@ import { parseJson } from '../utils';
 
 const SESSION_COOKIE_NAME = 'edge_session';
 
+export const NOCFA_SETUP_CONTEXT = 'walnut:nocfa:setup';
+
+export function resolveSetupMasterSecret(c: Context<AppHonoEnv>): string | null {
+    const env = c.env as any;
+    const sessionSecret = typeof env?.SESSION_SECRET === 'string' ? env.SESSION_SECRET.trim() : '';
+    if (sessionSecret) return sessionSecret;
+    const jwtSecret = typeof env?.JWT_SECRET === 'string' ? env.JWT_SECRET.trim() : '';
+    return jwtSecret || null;
+}
+
+// Domain-separated HMAC derivation ensures the initial setup password never exposes raw SESSION_SECRET bytes.
+export async function deriveNoCfaSetupPassword(secret: string): Promise<string> {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(NOCFA_SETUP_CONTEXT));
+    const hex = Array.from(new Uint8Array(sig))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    return hex.slice(0, 16);
+}
+
+async function timingSafeSha256Equal(a: string, b: string): Promise<boolean> {
+    const enc = new TextEncoder();
+    const [ha, hb] = await Promise.all([
+        crypto.subtle.digest('SHA-256', enc.encode(a)),
+        crypto.subtle.digest('SHA-256', enc.encode(b))
+    ]);
+    const subtleAny = crypto.subtle as unknown as { timingSafeEqual?: (x: BufferSource, y: BufferSource) => boolean };
+    if (typeof subtleAny.timingSafeEqual === 'function') {
+        return subtleAny.timingSafeEqual(ha, hb);
+    }
+    const va = new Uint8Array(ha);
+    const vb = new Uint8Array(hb);
+    let diff = va.length ^ vb.length;
+    for (let i = 0; i < va.length; i++) {
+        diff |= va[i] ^ vb[i];
+    }
+    return diff === 0;
+}
+
+export async function verifyNoCfaSetupPassword(c: Context<AppHonoEnv>, submitted: string): Promise<boolean> {
+    const masterSecret = resolveSetupMasterSecret(c);
+    if (!masterSecret) return false;
+    const trimmed = submitted.trim();
+    if (!trimmed) return false;
+    const expected = await deriveNoCfaSetupPassword(masterSecret);
+    return timingSafeSha256Equal(trimmed, expected);
+}
+
 export function getSessionSecret(c: Context<AppHonoEnv>): string {
     const env = c.env as any;
-    const secret = typeof env?.SESSION_SECRET === 'string' ? env.SESSION_SECRET.trim() : '';
-    if (secret) return secret;
+    const configured = resolveSetupMasterSecret(c);
+    if (configured) return configured;
 
     // Never fall back to public keys or static salts outside local development.
     const isDevEnv = !env?.ENVIRONMENT || env.ENVIRONMENT === 'development';

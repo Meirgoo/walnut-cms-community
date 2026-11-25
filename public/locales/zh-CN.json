@@ -1454,7 +1454,12 @@
     "validation_fill_admin": "请填写完整的超管信息",
     "install_success_redirect": "初始化成功，正在跳转...",
     "install_failed": "初始化失败: {reason}",
-    "already_initialized_warn": "系统已完成初始化，禁止重复执行"
+    "already_initialized_warn": "系统已完成初始化，禁止重复执行",
+    "field_setup_password": "一次性初始化密码",
+    "setup_password_placeholder": "请输入部署输出中的 16 位初始化密码",
+    "setup_password_hint": "由系统密钥 SESSION_SECRET 单向派生的首次建站凭证；完成初始化后即永久失效。",
+    "setup_password_invalid": "一次性初始化密码无效或未填写，请核对部署输出中的 16 位凭证",
+    "secret_missing_error": "未检测到 SESSION_SECRET（或 JWT_SECRET）密钥，出于安全策略已拒绝初始化。请先配置 Worker Secret（本地开发请在 .dev.vars 中设置）。"
   },
   "datasets": {
     "col_schema_slug": "集合标识",

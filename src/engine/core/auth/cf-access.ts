@@ -2,7 +2,20 @@ import type { Context } from 'hono';
 
 declare const __BUILD_CFA_ENABLED__: boolean | undefined;
 
+let testCFAccessOverride: boolean | null = null;
+
+// Allows unit tests to exercise nocfa branches without modifying the compile-time build flag.
+export function setCFAccessBuildEnabledForTest(val: boolean | null): void {
+    testCFAccessOverride = val;
+}
+
 export function isCFAccessBuildEnabled(): boolean {
+    if (typeof __BUILD_CFA_ENABLED__ !== 'undefined' && __BUILD_CFA_ENABLED__ === false) {
+        return false;
+    }
+    if (testCFAccessOverride !== null) {
+        return testCFAccessOverride;
+    }
     return typeof __BUILD_CFA_ENABLED__ === 'undefined' ? true : Boolean(__BUILD_CFA_ENABLED__);
 }
 

@@ -1454,7 +1454,12 @@
     "validation_fill_admin": "❌ Please fill out all administrator fields",
     "install_success_redirect": "✔️ Installation complete, redirecting...",
     "install_failed": "❌ Setup failed: {reason}",
-    "already_initialized_warn": "⚠️ System already initialized"
+    "already_initialized_warn": "⚠️ System already initialized",
+    "field_setup_password": "One-Time Setup Password",
+    "setup_password_placeholder": "Enter the 16-char setup password from deploy output",
+    "setup_password_hint": "One-time bootstrap credential derived from SESSION_SECRET; invalidated immediately once setup completes.",
+    "setup_password_invalid": "❌ Invalid or missing one-time setup password. Check the 16-character credential from deploy output.",
+    "secret_missing_error": "SESSION_SECRET (or JWT_SECRET) is not configured. Initial setup is blocked fail-closed; configure the Worker secret first (or set it in .dev.vars for local dev)."
   },
   "datasets": {
     "col_schema_slug": "Collection Slug",

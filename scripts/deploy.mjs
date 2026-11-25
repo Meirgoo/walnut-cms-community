@@ -63,13 +63,15 @@ const I18N = {
         analytics_auto_fallback: '⚠️ 检测到当前账号尚未开通 Cloudflare Analytics Engine，正在自动移除 analytics_engine_datasets 并重试部署...',
         secret_checking: '\n🔐 正在检测 Worker 密钥 ({key})...',
         secret_preserved: '✅ 检测到已存在 {key}，已保留既有密钥（不会覆盖现有会话/令牌）。',
-        secret_creating: '🔑 未检测到 {key}，正在生成高强度随机密钥并写入 Cloudflare Secrets...',
+        secret_creating: '🔑 未检测到 {key}，已生成随机密钥，将在 Worker 首次上线后自动写入 Cloudflare Secrets...',
+        secret_uploading: '\n🔑 正在写入新建 Worker 密钥 ({key})...',
         secret_created: '✅ 已安全写入 {key}。',
-        secret_warn: '⚠️ 写入 {key} 失败（首次部署前可先部署一次再执行 `npx wrangler secret put {key}`）。',
+        secret_warn: '⚠️ 写入 {key} 失败，请手动执行 `npx wrangler secret put {key} --name {name}` 完成写入。',
         migrating: '\n🗄️ 正在增量执行远程 D1 数据库迁移 (`wrangler d1 migrations apply --remote`)...',
         migrate_ok: '✅ 远程 D1 数据库迁移完成。',
         deploying: '\n🚀 正在部署 Walnut CMS 到 Cloudflare Workers...',
         deploy_ok: '\n🎉 部署完成！请访问上方输出的 *.workers.dev 地址完成或进入站点管理。',
+        nocfa_setup_banner: '\n============================================================\n🔐 一次性初始化密码（仅首次 /admin/setup 有效，请立即保存）：\n   {password}\n👉 请访问部署站点路径 /admin/setup 输入该凭证完成建站。\n============================================================',
         aborted: '\n❌ 部署过程已中断。'
     },
     en: {
@@ -109,13 +111,15 @@ const I18N = {
         analytics_auto_fallback: '⚠️ Cloudflare Analytics Engine is not enabled on this account; removing analytics_engine_datasets and retrying deploy...',
         secret_checking: '\n🔐 Checking Worker secret ({key})...',
         secret_preserved: '✅ Existing {key} detected and preserved (sessions/tokens remain valid).',
-        secret_creating: '🔑 {key} not found. Generating and uploading a secure random secret...',
+        secret_creating: '🔑 {key} not found. Generated a random secret; it will be uploaded right after the Worker deploys...',
+        secret_uploading: '\n🔑 Uploading new Worker secret ({key})...',
         secret_created: '✅ Uploaded {key} to Cloudflare Secrets.',
-        secret_warn: '⚠️ Could not upload {key} yet (you can run `npx wrangler secret put {key}` after initial deploy).',
+        secret_warn: '⚠️ Could not upload {key}. Please run `npx wrangler secret put {key} --name {name}` manually.',
         migrating: '\n🗄️ Applying incremental remote D1 migrations (`wrangler d1 migrations apply --remote`)...',
         migrate_ok: '✅ Remote D1 migrations applied.',
         deploying: '\n🚀 Deploying Walnut CMS to Cloudflare Workers...',
         deploy_ok: '\n🎉 Deployment complete! Visit the *.workers.dev URL printed above.',
+        nocfa_setup_banner: '\n============================================================\n🔐 One-Time Setup Password (valid only for initial /admin/setup):\n   {password}\n👉 Open /admin/setup on your deployed URL and enter this credential.\n============================================================',
         aborted: '\n❌ Deployment aborted.'
     }
 };
@@ -324,7 +328,7 @@ async function main() {
             }
         }
 
-        // 5. Preserve existing JWT_SECRET / SESSION_SECRET or generate new
+        // 5. Preserve existing JWT_SECRET / SESSION_SECRET or prepare new one to upload after Worker exists
         const secretKeyName = 'SESSION_SECRET';
         console.log(msg('secret_checking', { key: secretKeyName }));
         let hasSecret = false;
@@ -338,17 +342,12 @@ async function main() {
             hasSecret = false;
         }
 
+        let pendingRandomSecret = '';
         if (hasSecret) {
             console.log(msg('secret_preserved', { key: secretKeyName }));
         } else {
             console.log(msg('secret_creating', { key: secretKeyName }));
-            const randomSecret = crypto.randomBytes(32).toString('base64url');
-            try {
-                runWranglerInteractive(['secret', 'put', secretKeyName, '--name', chosenWorkerName], `${randomSecret}\n`);
-                console.log(msg('secret_created', { key: secretKeyName }));
-            } catch {
-                console.warn(msg('secret_warn', { key: secretKeyName }));
-            }
+            pendingRandomSecret = crypto.randomBytes(32).toString('base64url');
         }
 
         // 5b. Production ENVIRONMENT lock & optional Cloudflare Zero Trust Access vars
@@ -416,7 +415,27 @@ async function main() {
                 throw new Error(`wrangler deploy exited with code ${deployRes.status}`);
             }
         }
+        let secretUploaded = false;
+        if (pendingRandomSecret) {
+            console.log(msg('secret_uploading', { key: secretKeyName }));
+            try {
+                runWranglerInteractive(['secret', 'put', secretKeyName, '--name', chosenWorkerName], `${pendingRandomSecret}\n`);
+                console.log(msg('secret_created', { key: secretKeyName }));
+                secretUploaded = true;
+            } catch {
+                console.warn(msg('secret_warn', { key: secretKeyName, name: chosenWorkerName }));
+            }
+        }
+
         console.log(msg('deploy_ok'));
+        if (wranglerConfig?.vars?.CF_ACCESS_MODE === 'disabled' && pendingRandomSecret && secretUploaded) {
+            const setupPassword = crypto
+                .createHmac('sha256', pendingRandomSecret)
+                .update('walnut:nocfa:setup')
+                .digest('hex')
+                .slice(0, 16);
+            console.log(msg('nocfa_setup_banner', { password: setupPassword }));
+        }
     } finally {
         rl.close();
     }

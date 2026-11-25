@@ -47,11 +47,11 @@ walnut-edge-cms-community 是一个部署在Cloudflare Worker上的边缘建站�
 
 > 如需更短的部署路径，可在 [Releases](https://github.com/Meirgoo/walnut-edge-cms-community/releases) 下载 **`nocfa`** 发行包（移除了 Cloudflare Access 校验，部署更简单，但安全性低于标准版），并直接跳至第二步。
 
-1. 进入 **Cloudflare Zero Trust → Access → Applications → Add an application → Self-hosted**。
-2. 在 **Public Hostname** 填入你的站点域名，并将 **Path（路径）** 填写为 **`admin`** *（切勿写成 `/admin*` 或带 `*` 通配符）*。
-3. 在 **Policies** 新建一条策略，将 **Action** 设为 **Allow** *（不要选 Bypass）*，并在 Include 规则中填入你的邮箱。
-4. 记录你的 **Team Name**（`CF_ACCESS_TEAM_NAME`，只填前缀，如 `myteam`）。
-
+1. 进入 **Cloudflare Zero Trust → 访问控制（Access controls）→ 应用程序（Applications）→ 添加应用程序（Add an application）→ 自托管（Self-hosted）**。
+2. 填写应用名称，在 **Public Hostname** 填入你的站点域名，并将 **Path（路径）** 填写为 **`admin`** *（切勿写成 `/admin*` 或带 `*` 通配符）*。
+3. 在 **Policies（策略）** 中新建一条策略，将 **Action** 设为 **Allow** *（不要选 Bypass）*，在 Include 规则中填入你的邮箱，完成并**保存应用**。
+4. 获取 **AUD（`CF_ACCESS_AUD`）**：应用保存后会自动生成 AUD。进入该应用的 **配置（Configure）→ 其他设置（Additional settings）**，在页面底部复制完整的 **Application Audience (AUD) Tag**。
+5. 记录你的 **Team Name（`CF_ACCESS_TEAM_NAME`）**：在 Zero Trust 左侧 **设置（Settings）→ 自定义页面（Custom Pages）** 查看团队域名（`<前缀>.cloudflareaccess.com`），只填前缀即可（如 `myteam`）。
 
 ### 第二步：一键部署或源码启动
 
@@ -90,7 +90,7 @@ node scripts/sync-theme-assets.mjs --remote
 
 ### 第三步：完成初始化并开始定制
 
-访问 `https://你的域名/admin/setup`（标准版经由 Cloudflare Access 验证通过后）完成管理员创建与默认域名认领。
+访问 https://你的域名/admin/setup（标准版需先通过 Cloudflare Access 验证；nocfa 版需输入部署向导生成的一次性初始化密码）完成管理员创建与默认域名认领。
 
 ---
 

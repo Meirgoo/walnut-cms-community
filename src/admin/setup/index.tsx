@@ -14,6 +14,8 @@ import {
     renderLocaleOptions,
     extractCFAccessIdentity,
     isCFAccessBuildEnabled,
+    resolveSetupMasterSecret,
+    verifyNoCfaSetupPassword,
     invalidateSiteMemoryCache
 } from '../../engine';
 import { installSystem, ensureSchema } from './installer';
@@ -65,11 +67,17 @@ setupRouter.get('/', async (c) => {
     if (cfaEnabled && !cfEmail) {
         return c.text('Forbidden: Cloudflare Access authentication required for initial setup', 403);
     }
+    if (!cfaEnabled && !resolveSetupMasterSecret(c)) {
+        return c.text(i18n.secret_missing_error || i18n.setup?.secret_missing_error || 'Forbidden: SESSION_SECRET or JWT_SECRET must be configured before initial setup', 403);
+    }
 
     const host = c.get('host') || DEFAULT_DEV_HOST;
 
-    const cfNoticeHtml = cfEmail
+    const cfNoticeHtml = cfaEnabled && cfEmail
         ? renderTemplate(await fetchAsset('/auth/snippets/setup-cf-notice-pass.html', c.env), { cf_email: cfEmail }, i18n)
+        : '';
+    const setupPasswordBoxHtml = !cfaEnabled
+        ? renderTemplate(await fetchAsset('/auth/snippets/setup-password-field.html', c.env), {}, i18n)
         : '';
 
     const setupTpl = await fetchAsset('/auth/pages/setup.html', c.env);
@@ -83,6 +91,7 @@ setupRouter.get('/', async (c) => {
         locale_zh_label: SUPPORTED_LOCALES['zh-CN'] || '',
         locale_en_label: SUPPORTED_LOCALES['en-US'] || 'English',
         cf_notice_html: cfNoticeHtml,
+        setup_password_box_html: setupPasswordBoxHtml,
         email: cfEmail,
         username: cfEmail ? cfEmail.split('@')[0] : 'admin',
         password_required_mark: cfEmail ? '' : '*',
@@ -110,9 +119,19 @@ setupRouter.post('/api/init', async (c) => {
     if (cfaEnabled && !cfEmail) {
         return renderStatusMessage(c, 'Forbidden: Cloudflare Access authentication required for initial setup', 'error', 403);
     }
+    if (!cfaEnabled && !resolveSetupMasterSecret(c)) {
+        return renderStatusMessage(c, i18n.secret_missing_error || i18n.setup?.secret_missing_error || 'Forbidden: SESSION_SECRET not configured', 'error', 403);
+    }
 
     try {
         const body = await c.req.parseBody();
+        if (!cfaEnabled) {
+            const setupPassword = typeof body.setup_password === 'string' ? body.setup_password : '';
+            const validSetupPassword = await verifyNoCfaSetupPassword(c, setupPassword);
+            if (!validSetupPassword) {
+                return renderStatusMessage(c, i18n.setup_password_invalid || i18n.setup?.setup_password_invalid || 'Invalid one-time setup password', 'error', 403);
+            }
+        }
         const email = (body.email as string || '').trim();
         const username = (body.username as string || '').trim();
         const password = (body.password as string || '').trim();

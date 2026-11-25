@@ -47,10 +47,12 @@
 
 > For a shorter deployment path, download the **`nocfa`** release package from [Releases](https://github.com/Meirgoo/walnut-edge-cms-community/releases) (removes Cloudflare Access verification for simpler setup, with reduced security compared to the standard build) and jump straight to Step 2.
 
-1. Go to **Cloudflare Zero Trust → Access → Applications → Add an application → Self-hosted**.
-2. Enter your site domain under **Public Hostname**, and set **Path** to **`admin`** *(do NOT write `/admin*` or include a `*` wildcard)*.
-3. Under **Policies**, create a new policy with **Action** set to **Allow** *(do not select Bypass)* and add your email under Include rules.
-4. Note your **Team Name** (`CF_ACCESS_TEAM_NAME` — prefix only, e.g., `myteam`).
+1. Go to **Cloudflare Zero Trust → Access controls → Applications → Add an application → Self-hosted**.
+2. Enter an application name, set **Public Hostname** to your site domain, and set **Path** to **`admin`** *(do NOT write `/admin*` or include a `*` wildcard)*.
+3. Under **Policies**, create a new policy with **Action** set to **Allow** *(do not select Bypass)*, add your email under Include rules, and **save** the application.
+4. Copy your **AUD Tag (`CF_ACCESS_AUD`)**: The AUD is generated automatically after saving. Open the application → **Configure → Additional settings**, and copy the full **Application Audience (AUD) Tag** at the bottom.
+5. Note your **Team Name (`CF_ACCESS_TEAM_NAME`)**: Check your team domain under **Settings → Custom Pages** (`<prefix>.cloudflareaccess.com`) and enter the prefix only (e.g., `myteam`).
+
 
 ### Step 2: One-Click Deploy or Build from Source
 
@@ -88,7 +90,7 @@ node scripts/sync-theme-assets.mjs --remote
 ```
 
 ### Step 3: Initialize & Start Customizing
-Visit `https://your-domain/admin/setup` (after passing Cloudflare Access verification on the standard build) to create your admin account and claim your default domain.
+Visit https://your-domain/admin/setup (after passing Cloudflare Access verification on the standard build, or using the one-time setup password printed by the wizard on nocfa) to create your admin account and claim your default domain.
 
 ---
 
