@@ -6,10 +6,12 @@ import {
     getPageEditorInitData,
     findNodeById,
     findLatestActiveVersion,
+    findEntityVersions,
     getTranslationGroupsData,
     findSchemasBySite,
-    findDatasetsBySite,
+    findDatasetCollectionsBySite,
     getAdminLocale,
+    buildLocalizedRoutePath,
     parseJson,
     isFeatureEnabled,
     t
@@ -33,7 +35,19 @@ export const pagesRouter = new Hono<AppHonoEnv>();
 pagesRouter.get('/', async (c) => {
     const activeSiteId = c.get('siteId') || 'site_default';
     const tDbStart = performance.now();
-    const { pages, templates, sites } = await findPagesListBundle(c.env.DB, activeSiteId);
+    const {
+        pages,
+        templates,
+        trashCount,
+        sites,
+        themeComponents,
+        datasetCollections,
+        datasetSchemas,
+        siteTaxonomy,
+        recentMedia,
+        externalExtensions,
+        slotQuotas
+    } = await findPagesListBundle(c.env.DB, activeSiteId);
     c.header('Server-Timing', `db;dur=${(performance.now() - tDbStart).toFixed(2)}`);
     const ctx = await getAdminRouteContext(c, sites);
 
@@ -54,30 +68,52 @@ pagesRouter.get('/', async (c) => {
         return segments.length ? `/${segments.join('/')}` : '/';
     };
 
+    const activeSite = sites.find((s: any) => s.id === activeSiteId) || sites[0];
+    const defaultLocale = activeSite?.default_locale || 'zh-CN';
+
     const pageRows: PageRow[] = pages.map(p => {
         const metaObj = parseNodeMetadata(p.metadata);
         const tplId = metaObj.template_page_id || metaObj.template_id || metaObj.template_slug || '';
         const tplNode = templates.find(t => t.id === tplId || t.slug === tplId)
             || pages.find(tp => tp.id === tplId || tp.slug === tplId);
         const tplLabel = tplNode ? tplNode.title : '-';
-        const normRoute = computePageRoute(p);
+        const pageType = metaObj.page_type || 'single';
+        const pageLocale = p.locale || defaultLocale;
+        const baseRoute = computePageRoute(p);
+        const normRoute = pageType === 'template'
+            ? baseRoute
+            : buildLocalizedRoutePath(baseRoute, pageLocale, defaultLocale);
 
         return {
             id: p.id,
             slug: p.slug,
             route_path: normRoute,
             title: p.title,
-            page_type: metaObj.page_type || 'single',
+            page_type: pageType,
             template_title: tplLabel,
-            locale: p.locale || 'zh-CN',
+            locale: pageLocale,
             status: p.status,
             folder: extractNodeFolder(metaObj, p.slug),
-            translation_group_id: metaObj.translation_group_id || undefined,
+            translation_group_id: p.translation_group_id || metaObj.translation_group_id || undefined,
             updated_at: p.updated_at
         };
     });
 
-    return c.html(<PagesListPage pages={pageRows} {...ctx} />);
+    return c.html(
+        <PagesListPage
+            pages={pageRows}
+            templates={templates}
+            themeComponents={themeComponents}
+            datasetCollections={datasetCollections}
+            datasetSchemas={datasetSchemas}
+            siteTaxonomy={siteTaxonomy}
+            recentMedia={recentMedia}
+            externalExtensions={externalExtensions}
+            slotQuotas={slotQuotas}
+            trashCount={trashCount}
+            {...ctx}
+        />
+    );
 });
 
 pagesRouter.get('/new', async (c) => {
@@ -89,7 +125,7 @@ pagesRouter.get('/new', async (c) => {
     const [initData, translationGroups, sourceNode, sourceVer] = await Promise.all([
         getPageEditorInitData(ctx.db, ctx.activeSiteId),
         getTranslationGroupsData(ctx.db, ctx.activeSiteId),
-        sourceId ? findNodeById(ctx.db, sourceId) : Promise.resolve(null),
+        sourceId ? findNodeById(ctx.db, sourceId, undefined, ctx.activeSiteId) : Promise.resolve(null),
         sourceId ? findLatestActiveVersion(ctx.db, sourceId) : Promise.resolve(null)
     ]);
 
@@ -102,7 +138,7 @@ pagesRouter.get('/new', async (c) => {
     const initialContentRaw = sourceVer?.content_raw || (Array.isArray(srcMeta.blocks) ? JSON.stringify(srcMeta.blocks) : '[]');
     const peerTranslations = tgId
         ? initData.existingPages
-            .filter((p: any) => parseNodeMetadata(p.metadata).translation_group_id === tgId)
+            .filter((p: any) => (p.translation_group_id || parseNodeMetadata(p.metadata).translation_group_id) === tgId)
             .map((p: any) => ({ id: p.id, title: p.title, slug: p.slug, locale: p.locale || 'zh-CN' }))
         : [];
 
@@ -129,19 +165,20 @@ pagesRouter.get('/edit/:id', async (c) => {
     const id = c.req.param('id');
     const ctx = await getAdminRouteContext(c);
 
-    const pageNode = await findNodeById(ctx.db, id);
+    const pageNode = await findNodeById(ctx.db, id, undefined, ctx.activeSiteId);
     if (!pageNode) return c.redirect('/admin/pages');
-    const [latestVer, initData, translationGroups] = await Promise.all([
+    const [latestVer, versions, initData, translationGroups] = await Promise.all([
         findLatestActiveVersion(ctx.db, id),
+        findEntityVersions(ctx.db, 'page', id),
         getPageEditorInitData(ctx.db, ctx.activeSiteId, id),
         getTranslationGroupsData(ctx.db, ctx.activeSiteId)
     ]);
 
     const curMeta = parseNodeMetadata(pageNode.metadata);
-    const tgId = curMeta.translation_group_id || '';
+    const tgId = (pageNode as any).translation_group_id || curMeta.translation_group_id || '';
     const peerTranslations = tgId
         ? initData.existingPages
-            .filter((p: any) => p.id !== id && parseNodeMetadata(p.metadata).translation_group_id === tgId)
+            .filter((p: any) => p.id !== id && (p.translation_group_id || parseNodeMetadata(p.metadata).translation_group_id) === tgId)
             .map((p: any) => ({ id: p.id, title: p.title, slug: p.slug, locale: p.locale || 'zh-CN' }))
         : [];
 
@@ -149,6 +186,7 @@ pagesRouter.get('/edit/:id', async (c) => {
         <PageEditorPage
             node={pageNode}
             latestVersion={latestVer}
+            versions={versions}
             isEdit={true}
             templateSinglePages={initData.templatePages}
             translationGroups={translationGroups}
@@ -181,10 +219,10 @@ pagesRouter.post('/api/batch-delete', createBatchSoftDeleteHandler());
 pagesRouter.get('/api/bulk-landing-options', async (c) => {
     if (!isFeatureEnabled('bulkLanding', c.env)) return c.notFound();
     const ctx = await getAdminRouteContext(c);
-    const [{ pages }, schemas, datasets] = await Promise.all([
+    const [{ pages }, schemas, collections] = await Promise.all([
         getPagesListData(ctx.db, ctx.activeSiteId),
         findSchemasBySite(ctx.db, ctx.activeSiteId),
-        findDatasetsBySite(ctx.db, ctx.activeSiteId)
+        findDatasetCollectionsBySite(ctx.db, ctx.activeSiteId)
     ]);
 
     const masters: Array<{ id: string; title: string; slug: string }> = [];
@@ -200,13 +238,11 @@ pagesRouter.get('/api/bulk-landing-options', async (c) => {
     }
 
     const dsSlugSet = new Map<string, string>();
-    for (const s of schemas || []) {
-        if (s.slug) dsSlugSet.set(s.slug, s.title || s.slug);
+    for (const col of collections || []) {
+        if (col.slug) dsSlugSet.set(col.slug, col.name || col.slug);
     }
-    for (const d of datasets || []) {
-        const m = parseJson<Record<string, any>>(d.metadata, {});
-        const sc = m.schema_slug || m.schema || d.slug;
-        if (sc && !dsSlugSet.has(sc)) dsSlugSet.set(sc, sc);
+    for (const s of schemas || []) {
+        if (s.slug && !dsSlugSet.has(s.slug)) dsSlugSet.set(s.slug, s.title || s.slug);
     }
     const datasetCollections = Array.from(dsSlugSet.entries()).map(([slug, title]) => ({ slug, title }));
 

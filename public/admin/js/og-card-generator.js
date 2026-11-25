@@ -2,7 +2,7 @@
     'use strict';
 
     const t = function(k, params) {
-        const fn = window.__WALNUT_I18N__ && window.__WALNUT_I18N__.t;
+        const fn = window.__EDGE_I18N__ && window.__EDGE_I18N__.t;
         return typeof fn === 'function' ? fn(k, params) : k;
     };
 
@@ -15,62 +15,62 @@
             modal.id = 'og-card-generator-modal';
             modal.className = 'hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
             modal.innerHTML = `
-                <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
-                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                <div class="bg-white dark:bg-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 dark:border-stone-700 space-y-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center border-b border-stone-100 dark:border-stone-700 pb-3">
                         <div class="flex items-center space-x-2">
-                            <span class="material-symbols-outlined text-emerald-600 text-[22px]">palette</span>
-                            <h3 class="font-black text-sm text-slate-900 dark:text-white uppercase tracking-wider">${t('editor.og_modal_title')}</h3>
+                            <span class="material-symbols-outlined text-amber-600 text-[22px]">palette</span>
+                            <h3 class="font-black text-sm text-stone-900 dark:text-white uppercase tracking-wider">${t('editor.og_modal_title')}</h3>
                         </div>
-                        <button type="button" onclick="window.closeOgCardModal()" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                        <button type="button" onclick="window.closeOgCardModal()" class="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer">
                             <span class="material-symbols-outlined text-[20px]">close</span>
                         </button>
                     </div>
 
-                    <div class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shadow-inner flex items-center justify-center">
+                    <div class="rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-700 bg-stone-900 shadow-inner flex items-center justify-center">
                         <canvas id="og-preview-canvas" width="1200" height="630" class="w-full h-auto max-h-64 object-contain"></canvas>
                     </div>
 
                     <div class="space-y-3 text-xs">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">${t('editor.og_field_title')}</label>
-                                <input type="text" id="og-modal-title" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500" />
+                                <label class="block font-bold text-stone-700 dark:text-stone-300 mb-1">${t('editor.og_field_title')}</label>
+                                <input type="text" id="og-modal-title" class="w-full bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 dark:text-white outline-none focus:border-amber-500" />
                             </div>
                             <div>
-                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">${t('editor.og_field_site')}</label>
-                                <input type="text" id="og-modal-site" value="WALNUT CMS" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-emerald-500" />
+                                <label class="block font-bold text-stone-700 dark:text-stone-300 mb-1">${t('editor.og_field_site')}</label>
+                                <input type="text" id="og-modal-site" value="WALNUT CMS" class="w-full bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-xs font-mono text-stone-900 dark:text-white outline-none focus:border-amber-500" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">${t('editor.og_field_desc')}</label>
-                            <textarea id="og-modal-desc" rows="2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 resize-none leading-relaxed"></textarea>
+                            <label class="block font-bold text-stone-700 dark:text-stone-300 mb-1">${t('editor.og_field_desc')}</label>
+                            <textarea id="og-modal-desc" rows="2" class="w-full bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl p-2.5 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 resize-none leading-relaxed"></textarea>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">${t('editor.og_field_theme')}</label>
-                                <walnut-select id="og-modal-theme" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500">
+                                <label class="block font-bold text-stone-700 dark:text-stone-300 mb-1">${t('editor.og_field_theme')}</label>
+                                <edge-select id="og-modal-theme" class="w-full bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500">
                                     <option value="dark_slate">${t('editor.og_theme_dark_slate')}</option>
                                     <option value="emerald_glow">${t('editor.og_theme_emerald_glow')}</option>
                                     <option value="indigo_modern">${t('editor.og_theme_indigo_modern')}</option>
                                     <option value="sunset_gradient">${t('editor.og_theme_sunset_gradient')}</option>
                                     <option value="custom_bg">${t('editor.og_theme_custom_bg')}</option>
-                                </walnut-select>
+                                </edge-select>
                             </div>
                             <div id="og-custom-bg-box" class="hidden">
-                                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">${t('editor.og_field_custom_bg')}</label>
+                                <label class="block font-bold text-stone-700 dark:text-stone-300 mb-1">${t('editor.og_field_custom_bg')}</label>
                                 <div class="flex space-x-1">
-                                    <input type="text" id="og-modal-bg-url" placeholder="https://.../bg.jpg" class="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-emerald-500" />
-                                    <button type="button" onclick="window.openMediaPickerForOgBg()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-white px-2.5 rounded-xl font-bold text-xs shrink-0 cursor-pointer">${t('editor.btn_pick_media')}</button>
+                                    <input type="text" id="og-modal-bg-url" placeholder="https://.../bg.jpg" class="flex-1 bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-xs font-mono outline-none focus:border-amber-500" />
+                                    <button type="button" onclick="window.openMediaPickerForOgBg()" class="bg-stone-200 dark:bg-stone-700 hover:bg-stone-300 text-stone-700 dark:text-white px-2.5 rounded-xl font-bold text-xs shrink-0 cursor-pointer">${t('editor.btn_pick_media')}</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                        <button type="button" onclick="window.closeOgCardModal()" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-white cursor-pointer">${t('common.cancel')}</button>
-                        <button type="button" id="og-generate-upload-btn" onclick="window.generateAndUploadOgCard()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-black shadow-md transition flex items-center space-x-1 cursor-pointer">
+                    <div class="flex items-center justify-end space-x-3 pt-3 border-t border-stone-100 dark:border-stone-700">
+                        <button type="button" onclick="window.closeOgCardModal()" class="px-4 py-2 text-xs font-bold text-stone-500 hover:text-stone-700 dark:hover:text-white cursor-pointer">${t('common.cancel')}</button>
+                        <button type="button" id="og-generate-upload-btn" onclick="window.generateAndUploadOgCard()" class="bg-[#B45309] hover:bg-[#92400E] text-white px-5 py-2 rounded-xl text-xs font-black shadow-md transition flex items-center space-x-1 cursor-pointer">
                             <span class="material-symbols-outlined text-[16px]">cloud_upload</span>
                             <span>${t('editor.og_btn_generate_upload')}</span>
                         </button>
@@ -86,18 +86,18 @@
             picker.id = 'media-picker-standalone-modal';
             picker.className = 'hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4';
             picker.innerHTML = `
-                <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 max-h-[85vh] flex flex-col">
-                    <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3 shrink-0">
+                <div class="bg-white dark:bg-stone-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-stone-200 dark:border-stone-700 space-y-4 max-h-[85vh] flex flex-col">
+                    <div class="flex justify-between items-center border-b border-stone-100 dark:border-stone-700 pb-3 shrink-0">
                         <div class="flex items-center space-x-2">
-                            <span class="material-symbols-outlined text-emerald-600 text-[20px]">perm_media</span>
-                            <h3 class="font-black text-sm text-slate-900 dark:text-white">${t('editor.media_picker_title')}</h3>
+                            <span class="material-symbols-outlined text-amber-600 text-[20px]">perm_media</span>
+                            <h3 class="font-black text-sm text-stone-900 dark:text-white">${t('editor.media_picker_title')}</h3>
                         </div>
-                        <button type="button" onclick="document.getElementById('media-picker-standalone-modal')?.classList.add('hidden')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                        <button type="button" onclick="document.getElementById('media-picker-standalone-modal')?.classList.add('hidden')" class="p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white cursor-pointer">
                             <span class="material-symbols-outlined text-[20px]">close</span>
                         </button>
                     </div>
                     <div id="media-picker-grid" class="flex-1 overflow-y-auto grid grid-cols-3 sm:grid-cols-4 gap-3 p-1">
-                        <div class="col-span-full py-8 text-center text-slate-400 text-xs">${t('editor.media_picker_loading')}</div>
+                        <div class="col-span-full py-8 text-center text-stone-400 text-xs">${t('editor.media_picker_loading')}</div>
                     </div>
                 </div>
             `;
@@ -366,7 +366,7 @@
         if (!modal || !grid) return;
 
         modal.classList.remove('hidden');
-        grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 text-xs">' + t('editor.media_picker_loading') + '</div>';
+        grid.innerHTML = '<div class="col-span-full py-8 text-center text-stone-400 text-xs">' + t('editor.media_picker_loading') + '</div>';
 
         try {
             const res = await fetch('/admin/media/api/list');
@@ -376,14 +376,14 @@
             });
 
             if (assets.length === 0) {
-                grid.innerHTML = '<div class="col-span-full py-8 text-center text-slate-400 text-xs">' + t('editor.media_picker_empty') + '</div>';
+                grid.innerHTML = '<div class="col-span-full py-8 text-center text-stone-400 text-xs">' + t('editor.media_picker_empty') + '</div>';
                 return;
             }
 
             grid.innerHTML = '';
             assets.forEach(function(asset) {
                 const item = document.createElement('div');
-                item.className = 'group relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-video bg-slate-100 dark:bg-slate-900 cursor-pointer hover:border-emerald-500 transition shadow-xs';
+                item.className = 'group relative rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700 aspect-video bg-stone-100 dark:bg-stone-900 cursor-pointer hover:border-amber-500 transition shadow-xs';
                 item.innerHTML = `
                     <img src="${asset.public_url}" alt="${asset.file_name}" class="w-full h-full object-cover group-hover:scale-105 transition" />
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center p-2 text-center">

@@ -1,8 +1,9 @@
 import { raw } from 'hono/html';
 import { AdminLayout } from '../layout';
 import type { Site, AuthenticatedUser, Article, ArticleVersion } from '../../engine';
-import { renderTemplate, fetchAsset, getAdminI18nSlice, formatSiteDateTime, getUserTimezone, DEFAULT_DEV_HOST, SUPPORTED_LOCALES, renderLocaleOptions, t, parseJson, isFeatureEnabled } from '../../engine';
+import { renderTemplate, fetchAsset, getAdminI18nSlice, getUserTimezone, DEFAULT_DEV_HOST, SUPPORTED_LOCALES, renderLocaleOptions, t, parseJson, isFeatureEnabled, getCommercialSnippet } from '../../engine';
 import { safeJsonStringify } from '../../engine/render/markdown-parser';
+import { renderPastVersionsHtml, renderNewSchemaModalHtml } from '../routes/common';
 
 export interface WikiRelationNode {
     id: string;
@@ -39,7 +40,7 @@ export const ContentEditorPage = async (props: {
     const activeSite = props.sites.find(s => s.id === props.currentSiteId) || props.sites[0];
     const timezone = getUserTimezone(props.currentUser, activeSite);
     const nodeType = props.node?.type === 'micro' ? 'micro' : 'articles';
-    const i18n = getAdminI18nSlice(locale, ['editor', 'common', nodeType]);
+    const i18n = getAdminI18nSlice(locale, ['editor', 'common', 'nav', nodeType]);
 
     const [
         contentEditorTemplate,
@@ -99,77 +100,63 @@ export const ContentEditorPage = async (props: {
         vcsVersionsMap[v.id] = v.content_raw || '';
     });
 
-    const typeLabelMap: Record<string, { label: string; icon: string; badge: string }> = {
-        article: { label: i18n.editor.type_article, icon: 'article', badge: 'Article' },
-        micro: { label: i18n.editor.type_micro || 'Micro', icon: 'lightbulb', badge: 'Micro' }
-    };
-
-    const currentTypeConfig = typeLabelMap[initialType] || typeLabelMap.article;
-
     const localeLabelMap: Record<string, string> = {
         ...SUPPORTED_LOCALES,
+        'ja-JP': i18n.editor.locale_ja_option,
+        'de-DE': 'Deutsch',
+        'fr-FR': 'Français',
         '__custom__': i18n.editor.custom_locale_option
     };
 
     const schemaNodes = props.schemaNodes || [];
     const schemaLabelMap: Record<string, string> = {
-        'default': i18n.editor.schema_standard,
-        'game': i18n.editor.schema_game,
-        'book': i18n.editor.schema_book
+        'default': i18n.editor.schema_standard
     };
     schemaNodes.forEach(s => {
         schemaLabelMap[s.slug] = `${s.title} (${s.slug})`;
     });
 
-    const dropCls = 'px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer';
-    const dropItem = (val: string, label: string, fn: string, sub = '', subClass = 'text-slate-400') =>
+    const dropCls = 'px-2.5 py-1.5 hover:bg-[var(--admin-surface-hover)] cursor-pointer';
+    const dropItem = (val: string, label: string, fn: string, sub = '', subClass = 'text-[var(--admin-text-muted)]') =>
         `<div data-value="${val}" data-label="${label}" onclick="${fn}('${val}', '${label}')" class="${dropCls} flex items-center justify-between"><span class="truncate">${label}</span>${sub ? `<span class="text-[10px] font-mono ${subClass}">(${sub})</span>` : ''}</div>`;
 
     const escapeJs = (s: string) => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-    const templateOptionsHtml = `<div data-value="" data-label="${i18n.editor.default_site_template}" onclick="selectTemplateOption('', '', '${escapeJs(i18n.editor.default_site_template)}')" class="${dropCls} font-bold text-emerald-700 dark:text-emerald-400">${i18n.editor.default_site_template}</div>`
-        + templatePages.map(tpl => `<div data-value="${tpl.id}" data-label="${tpl.title}" onclick="selectTemplateOption('${tpl.id}', '${tpl.slug}', '${escapeJs(tpl.title)}')" class="${dropCls} flex items-center justify-between"><span class="truncate">${tpl.title}</span><span class="text-[10px] font-mono text-slate-400">(${tpl.slug})</span></div>`).join('');
+    const templateOptionsHtml = `<div data-value="" data-label="${i18n.editor.default_site_template}" onclick="selectTemplateOption('', '', '${escapeJs(i18n.editor.default_site_template)}')" class="${dropCls} font-bold text-amber-700 dark:text-amber-400">${i18n.editor.default_site_template}</div>`
+        + templatePages.map(tpl => `<div data-value="${tpl.id}" data-label="${tpl.title}" onclick="selectTemplateOption('${tpl.id}', '${tpl.slug}', '${escapeJs(tpl.title)}')" class="${dropCls} flex items-center justify-between"><span class="truncate">${tpl.title}</span><span class="text-[10px] font-mono text-stone-400">(${tpl.slug})</span></div>`).join('');
 
     const tagChipsHtml = existingTags.map(tag =>
-        `<span class="inline-flex items-center space-x-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-lg text-xs font-bold"><span>#${tag}</span><button type="button" onclick="removeTagChip('${tag}')" class="hover:text-red-600 ml-1">×</button></span>`
+        `<span class="inline-flex items-center space-x-1 bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] px-2 py-0.5 rounded-md text-xs font-bold"><span>#${tag}</span><button type="button" onclick="removeTagChip('${tag}')" class="hover:text-red-600 ml-1">×</button></span>`
     ).join('');
 
-    const schemaDropdownOptionsHtml = ['default', 'game', 'book']
-        .map(k => `<div data-value="${k}" data-label="${schemaLabelMap[k]}" onclick="selectSchemaOption('${k}', '${schemaLabelMap[k]}')" class="${dropCls}">${schemaLabelMap[k]}</div>`)
-        .join('') + schemaNodes.map(s =>
-            `<div id="schema-item-${s.id}" data-value="${s.slug}" data-label="${s.title}" class="px-3 py-2 hover:bg-emerald-50/50 dark:hover:bg-slate-700 flex items-center justify-between group"><div onclick="selectSchemaOption('${s.slug}', '${s.title} (${s.slug})')" class="flex-1 cursor-pointer flex items-center justify-between mr-2"><span class="truncate font-medium">${s.title}</span><span class="text-[10px] text-purple-600 dark:text-purple-400 font-mono font-bold">${s.slug}</span></div><button type="button" onclick="event.stopPropagation(); deleteSchemaModel('${s.id}', '${s.title}')" class="text-slate-400 hover:text-red-500 p-1" title="${i18n.editor.btn_delete_schema}"><span class="material-symbols-outlined text-[15px]">delete</span></button></div>`
+    const schemaDropdownOptionsHtml = `<div data-value="default" data-label="${schemaLabelMap['default']}" onclick="selectSchemaOption('default', '${escapeJs(schemaLabelMap['default'])}')" class="${dropCls}">${schemaLabelMap['default']}</div>`
+        + schemaNodes.map(s =>
+            `<div id="schema-item-${s.id}" data-value="${s.slug}" data-label="${s.title}" onclick="selectSchemaOption('${s.slug}', '${escapeJs(s.title)} (${s.slug})')" class="${dropCls} flex items-center justify-between gap-2"><span class="truncate font-medium">${s.title}</span><span class="text-[10px] text-[var(--admin-accent-text)] font-mono shrink-0">${s.slug}</span></div>`
         ).join('');
 
     const builtinSchemaHtml = renderTemplate(schemaBuiltinTemplate, {
-        ...metaObj,
-        class_default: metaSchemaType === 'default' ? '' : 'hidden',
-        class_game: metaSchemaType === 'game' ? '' : 'hidden',
-        class_book: metaSchemaType === 'book' ? '' : 'hidden',
-        desc_default: i18n.editor.schema_standard_desc,
-        placeholder_developer: i18n.editor.schema_developer,
-        placeholder_platform: i18n.editor.schema_platform,
-        placeholder_release_date: i18n.editor.schema_release_date,
-        placeholder_author: i18n.editor.schema_author,
-        placeholder_publisher: i18n.editor.schema_publisher,
-        placeholder_isbn: i18n.editor.schema_isbn
+        class_default: metaSchemaType === 'default' || !schemaLabelMap[metaSchemaType] ? '' : 'hidden',
+        desc_default: i18n.editor.schema_standard_desc
     });
 
-    const inputCls = 'w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-1.5 text-xs text-slate-800 dark:text-slate-100';
+    const inputCls = 'w-full h-7 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-md px-2 text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]';
     const customSchemasHtml = schemaNodes.map(s => {
         const sMeta = parseJson<Record<string, any>>(s.metadata, {});
         const fields = Array.isArray(sMeta.fields) ? sMeta.fields : [];
         const isSelected = metaSchemaType === s.slug;
         const safeSlug = s.slug.replace(/[^a-zA-Z0-9_-]/g, '_');
         const fieldsHtml = fields.length === 0
-            ? `<div class="text-[11px] text-slate-400 italic">${i18n.editor.no_schema_fields}</div>`
-            : fields.map((f: any) => `<div><label class="block text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-0.5">${f.label || f.name} ${f.name ? `<span class="font-mono text-slate-400 font-normal">(${f.name})</span>` : ''}</label><input type="${f.type === 'url' ? 'url' : (f.type === 'number' ? 'number' : 'text')}" name="meta_${f.name}" value="${metaObj[f.name] || ''}" placeholder="${f.label || f.name}" class="${inputCls}" /></div>`).join('');
+            ? `<div class="text-[11px] text-stone-400 italic">${i18n.editor.no_schema_fields}</div>`
+            : fields.map((f: any) => `<div><label class="block text-[10px] font-bold text-stone-600 dark:text-stone-300 mb-0.5">${f.label || f.name} ${f.name ? `<span class="font-mono text-stone-400 font-normal">(${f.name})</span>` : ''}</label><input type="${f.type === 'url' ? 'url' : (f.type === 'number' ? 'number' : 'text')}" name="meta_${f.name}" value="${metaObj[f.name] || ''}" placeholder="${f.label || f.name}" class="${inputCls}" /></div>`).join('');
 
+        const isCustomSchema = Boolean(s.metadata?.is_custom || s.metadata?.source === 'custom');
         return renderTemplate(schemaCustomGroupTemplate, {
             safe_slug: safeSlug,
             id: s.id,
             title: s.title,
             slug: s.slug,
             selected_class: isSelected ? '' : 'hidden',
+            delete_btn_class: isCustomSchema ? 'inline-flex' : 'hidden',
             btn_delete_schema: i18n.editor.btn_delete_schema,
             fields_html: fieldsHtml
         });
@@ -177,34 +164,24 @@ export const ContentEditorPage = async (props: {
 
     const schemaFieldsHtml = builtinSchemaHtml + customSchemasHtml;
 
-    const transGroupsOptionsHtml = translationGroups.map(g => `<div id="trans-group-item-${g.id}" onclick="selectTransGroup('${g.id}', '${g.name}')" class="px-2.5 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer flex justify-between items-center"><span class="truncate font-semibold">${g.name}</span><button type="button" onclick="event.stopPropagation(); deleteTransGroup('${g.id}')" class="text-slate-400 hover:text-red-500 ml-2" title="${i18n.editor.delete_trans_group}"><span class="material-symbols-outlined text-[14px]">delete</span></button></div>`).join('');
+    const transGroupsOptionsHtml = translationGroups.map(g => `<div id="trans-group-item-${g.id}" onclick="selectTransGroup('${g.id}', '${g.name}')" class="px-2.5 py-1.5 hover:bg-stone-50 dark:hover:bg-stone-700 cursor-pointer flex justify-between items-center"><span class="truncate font-semibold">${g.name}</span><button type="button" onclick="event.stopPropagation(); deleteTransGroup('${g.id}')" class="text-stone-400 hover:text-red-500 ml-2" title="${i18n.editor.delete_trans_group}"><span class="material-symbols-outlined text-[14px]">delete</span></button></div>`).join('');
 
-    const peerTranslationsHtml = peerTranslations.length > 0 ? `<div class="space-y-1 pt-1"><div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">${i18n.editor.related_languages}</div><div class="space-y-1">${peerTranslations.map(p => `<a href="/admin/articles/edit/${p.id}" class="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 transition"><span class="truncate">${p.title}</span><span class="font-mono text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 px-1 rounded ml-1 shrink-0">${p.locale}</span></a>`).join('')}</div></div>` : '';
+    const peerTranslationsHtml = peerTranslations.length > 0 ? `<div class="space-y-1 pt-1"><div class="text-[10px] text-[var(--admin-text-muted)] font-bold uppercase tracking-wider">${i18n.editor.related_languages}</div><div class="space-y-1">${peerTranslations.map(p => `<a href="/admin/articles/edit/${p.id}" class="flex items-center justify-between p-1.5 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-[11px] text-[var(--admin-text)] transition"><span class="truncate">${p.title}</span><span class="font-mono text-[10px] bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] px-1 rounded ml-1 shrink-0">${p.locale}</span></a>`).join('')}</div></div>` : '';
 
     const backlinksListHtml = backlinks.length === 0
-        ? `<span class="text-slate-400 text-[11px]">${i18n.editor.no_backlinks}</span>`
-        : backlinks.map(b => `<a href="/admin/articles/edit/${b.id}" class="block text-slate-700 dark:text-slate-300 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg truncate" title="/${b.slug}">← ${b.title}</a>`).join('');
+        ? `<span class="text-stone-400 text-[11px]">${i18n.editor.no_backlinks}</span>`
+        : backlinks.map(b => `<a href="/admin/articles/edit/${b.id}" class="block text-stone-700 dark:text-stone-300 hover:text-amber-600 hover:bg-stone-100 dark:hover:bg-stone-800 p-1.5 rounded-lg truncate" title="/${b.slug}">← ${b.title}</a>`).join('');
 
-    const siteNodesHtml = siteNodes.length === 0
-        ? `<div class="text-slate-400 text-[11px] p-2 text-center">${i18n.editor.no_other_nodes}</div>`
-        : siteNodes.map(sn => renderTemplate(siteNodeItemTemplate, {
+    const validSiteNodes = siteNodes.filter(sn => (sn.slug || '').trim() || (sn.title || '').trim());
+    const siteNodesHtml = validSiteNodes.length === 0
+        ? `<div class="text-stone-400 text-[11px] p-2 text-center">${i18n.editor.no_other_nodes}</div>`
+        : validSiteNodes.map(sn => renderTemplate(siteNodeItemTemplate, {
             slug: sn.slug || sn.title,
-            title: sn.title,
+            title: (sn.title || '').trim() || sn.slug,
             quick_insert: i18n.editor.quick_insert_wiki
         })).join('');
 
-    const pastVersionsHtml = pastVersions.length === 0
-        ? `<div class="text-xs text-slate-400 py-3 text-center bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">${i18n.editor.versions_empty}</div>`
-        : pastVersions.map(v => renderTemplate(versionItemTemplate, {
-            id: v.id,
-            version_number: v.version_number,
-            version_tag: t(locale, 'editor.version_tag', { version: v.version_number }),
-            created_at: formatSiteDateTime(v.created_at, locale, timezone),
-            commit_message: v.commit_message || i18n.editor.default_commit,
-            btn_inspect: i18n.editor.btn_inspect_snapshot,
-            btn_rollback: i18n.editor.btn_rollback_snapshot,
-            delete_label: i18n.common.delete
-        })).join('');
+    const pastVersionsHtml = renderPastVersionsHtml(pastVersions, versionItemTemplate, locale, timezone, i18n.editor, i18n.common.delete);
 
     const isMicro = initialType === 'micro';
     const backHref = isMicro ? '/admin/micros' : '/admin/articles';
@@ -214,6 +191,19 @@ export const ContentEditorPage = async (props: {
     const sidebarArticleTemplate = await fetchAsset('/admin/snippets/editor-sidebar-article.html');
 
     const cleanArticleSummary = String(node.summary || '').trim();
+    const rawPubAt = String((node as any).published_at || '').trim();
+    const publishedAtTs = rawPubAt ? Date.parse(rawPubAt) : NaN;
+    const publishedAtInput = Number.isNaN(publishedAtTs) ? '' : new Date(publishedAtTs).toISOString().slice(0, 16);
+    const metaAliasesText = Array.isArray(metaObj.aliases) ? metaObj.aliases.join('\n') : '';
+
+    const canUseCommercialApi = props.canUseFeature ? props.canUseFeature('cms:api_token_bridge') : false;
+    const visTemplateData = { vis_api_only_selected: nodeVisibility === 'api_only' ? 'selected' : '' };
+    const slotArticleApiOnly = canUseCommercialApi
+        ? (() => { const tpl = getCommercialSnippet('editor-article-api-only.html'); return tpl ? renderTemplate(tpl, visTemplateData, i18n) : ''; })()
+        : '';
+    const slotMicroApiOnly = canUseCommercialApi
+        ? (() => { const tpl = getCommercialSnippet('editor-micro-api-only.html'); return tpl ? renderTemplate(tpl, visTemplateData, i18n) : ''; })()
+        : '';
 
     const inspectorSidebarHtml = isMicro
         ? renderTemplate(sidebarMicroTemplate, {
@@ -223,29 +213,42 @@ export const ContentEditorPage = async (props: {
             status_published_selected: (node.status || 'published') === 'published' ? 'selected' : '',
             status_draft_selected: node.status === 'draft' ? 'selected' : '',
             node_visibility: nodeVisibility,
-            vis_public_selected: isPublicVis ? 'selected' : '',
-            vis_private_selected: !isPublicVis ? 'selected' : '',
+            vis_public_selected: nodeVisibility === 'public' ? 'selected' : '',
+            slot_micro_api_only_option: slotMicroApiOnly,
+            vis_private_selected: nodeVisibility === 'private' ? 'selected' : '',
             current_locale: currentLocale,
             locale_options_html: renderLocaleOptions(currentLocale),
+            published_at_input: publishedAtInput,
             node_folder: nodeFolder,
             existing_tags_string: existingTags.join(','),
             current_progress: currentProgress,
             current_maturity: currentMaturity,
             field_progress: i18n.articles?.field_progress || i18n.field_progress || '',
             progress_badge: i18n.articles?.progress_badge || i18n.progress_badge || '',
-            progress_placeholder: i18n.articles?.progress_placeholder || i18n.progress_placeholder || ''
+            progress_placeholder: i18n.articles?.progress_placeholder || i18n.progress_placeholder || '',
+            versions_count: i18n.t('editor.versions_count', { count: pastVersions.length }),
+            past_versions_html: pastVersionsHtml,
+            soft_delete_btn_class: (props.isEdit && node.id) ? '' : 'hidden',
+            btn_trash_item: i18n.common?.btn_move_to_trash || i18n.editor.btn_trash_article
         }, i18n)
         : renderTemplate(sidebarArticleTemplate, {
-            type_badge: currentTypeConfig.badge,
-            type_icon: currentTypeConfig.icon,
-            type_label: currentTypeConfig.label,
-            clip_box_class: 'hidden',
             source_url: sourceUrl,
             current_template_label: currentTemplateLabel,
             template_options_html: templateOptionsHtml,
             current_locale_label: localeLabelMap[currentLocale] || currentLocale,
             custom_locale_class: isCustomLocale ? '' : 'hidden',
             node_slug: node.slug || '',
+            published_at_input: publishedAtInput,
+            meta_aliases_text: metaAliasesText,
+            status_published_selected: (node.status || 'published') === 'published' ? 'selected' : '',
+            status_draft_selected: node.status === 'draft' ? 'selected' : '',
+            node_visibility: nodeVisibility,
+            vis_public_selected: nodeVisibility === 'public' ? 'selected' : '',
+            slot_article_api_only_option: slotArticleApiOnly,
+            vis_password_selected: nodeVisibility === 'password' ? 'selected' : '',
+            vis_private_selected: nodeVisibility === 'private' ? 'selected' : '',
+            password_box_class: nodeVisibility === 'password' ? '' : 'hidden',
+            access_password: String(metaObj.access_password || ''),
             domain,
             node_slug_preview: node.slug || 'slug',
             tag_chips_html: tagChipsHtml,
@@ -253,6 +256,7 @@ export const ContentEditorPage = async (props: {
             keywords,
             og_image: ogImage,
             og_image_preview_class: ogImage ? '' : 'hidden',
+            og_use_first_image_checked: (metaObj.og_use_first_image === true || metaObj.og_use_first_image === '1') ? 'checked' : '',
             current_schema_label: schemaLabelMap[metaSchemaType] || metaSchemaType,
             schema_dropdown_options_html: schemaDropdownOptionsHtml,
             schema_fields_html: schemaFieldsHtml,
@@ -274,9 +278,21 @@ export const ContentEditorPage = async (props: {
             current_maturity: currentMaturity
         }, i18n);
 
+    const modalNewSchemaHtml = isMicro
+        ? ''
+        : await renderNewSchemaModalHtml(locale, props.canUseFeature, i18n.common?.cancel || '');
+
+    const previewLabel = i18n.articles?.preview || i18n.common?.preview || '';
+    const previewTopBtnHtml = isMicro
+        ? ''
+        : `<button type="button" id="article-preview-top-btn" onclick="const s = document.getElementById('slug-input')?.value || ''; const t = document.getElementById('article-title-input')?.value || ''; window.openSandboxedPreview('/' + s, t);" class="h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] font-semibold text-[13px] px-2.5 md:px-3 rounded-lg border border-[var(--admin-border)] transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer" title="${previewLabel}"><span class="material-symbols-outlined text-[16px]">visibility</span><span class="hidden sm:inline">${previewLabel}</span></button>`;
+
     const pageHtml = renderTemplate(contentEditorTemplate, {
         back_href: backHref,
+        nav_module_label: initialType === 'micro' ? (i18n.nav?.micros || i18n.nav?.micro || '') : (i18n.nav?.articles || ''),
+        preview_top_btn_html: previewTopBtnHtml,
         inspector_sidebar_html: inspectorSidebarHtml,
+        modal_new_schema: modalNewSchemaHtml,
         node_id: node.id || '',
         site_id: props.currentSiteId,
         is_edit: props.isEdit ? 'true' : 'false',

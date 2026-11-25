@@ -1,207 +1,19 @@
 import { Hono, type Context } from 'hono';
 import type { AppHonoEnv, MediaAsset } from '../types';
-import {
-    checkQueryRateLimit,
-    getCachedQueryResult,
-    setCachedQueryResult,
-    normalizePagination,
-    queryNodesWithFilters,
-    queryDatasetsWithJson1Filter,
-    queryPublicMediaAssets,
-    computeTokenSha256,
-    findApiTokenByHash,
-    touchApiTokenLastUsed
-} from '../core/dal';
-import { ALLOWED_ECOSYSTEM_APPS, ECOSYSTEM_APP_HEADERS } from '../services/ecosystem-bridge.plugin';
+import { findSiteById, resolveSiteWithMemoryCache } from '../core/dal';
 import { resolveCurrentUser } from '../core/auth';
 import { createHookContext } from '../kernel';
 import { t, getAdminLocale } from '../core/i18n';
 import { DEFAULT_DEV_HOST } from '../core/url';
-import { extractClientIp, isSiteAdminUser, verifySameOriginRequest } from '../core/utils';
-import { queryAggregatedFeed } from '../render/api-protocol';
+import { isSiteAdminUser, verifySameOriginRequest, parseJson } from '../core/utils';
 import { quickActionsRouter } from './quick-actions';
+import { publicQueriesRouter, resolveApiReadAccess } from './public-queries';
+import { ecosystemRouter } from './ecosystem';
 
 export const apiApp = new Hono<AppHonoEnv>();
 
-function getApiQueryEnv(c: Context<AppHonoEnv>) {
-    const db = c.env.DB;
-    if (!db) return { err: c.json({ error: 'Database unavailable' }, 500) };
-
-    const clientIp = extractClientIp(c);
-    if (!checkQueryRateLimit(clientIp, 60)) {
-        return { err: c.json({ error: 'Too Many Requests', message: 'Rate limit exceeded, please try again later.' }, 429) };
-    }
-
-    const siteId = c.get('siteId') || c.req.query('site_id') || 'site_default';
-    const isAuthorizedUser = isSiteAdminUser(c.get('user'));
-
-    return { db, siteId, isAuthorizedUser };
-}
-
-async function respondCachedQuery<T>(c: Context<AppHonoEnv>, cacheKey: string, fetcher: () => Promise<T>, ttl = 30) {
-    const cached = getCachedQueryResult(cacheKey);
-    c.header('Cache-Control', 'public, max-age=60');
-    if (cached) {
-        c.header('X-Edge-Cache', 'HIT');
-        return c.json(cached);
-    }
-    const result = await fetcher();
-    setCachedQueryResult(cacheKey, result, ttl);
-    c.header('X-Edge-Cache', 'MISS');
-    return c.json(result);
-}
-
-apiApp.get('/health', (c) => c.json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-}));
-
-async function handleQueryContentList(c: Context<AppHonoEnv>, forcedType?: string) {
-    const envRes = getApiQueryEnv(c);
-    if ('err' in envRes) return envRes.err;
-    const { db, siteId, isAuthorizedUser } = envRes;
-
-    const id = c.req.query('id');
-    const slug = c.req.query('slug');
-    const maturity = c.req.query('progress') || c.req.query('maturity');
-    const folder = c.req.query('folder');
-    const locale = c.req.query('locale');
-    const type = forcedType || c.req.query('type');
-    const rawStatus = c.req.query('status') as any;
-    const status = isAuthorizedUser ? (rawStatus || 'published') : 'published';
-    const tag = c.req.query('tag');
-    const target = c.req.query('target');
-    const fields = c.req.query('fields');
-    const normPage = normalizePagination({
-        page: c.req.query('page'),
-        limit: c.req.query('limit')
-    });
-
-    const cacheKey = `content:${siteId}:${isAuthorizedUser}:${id || ''}:${slug || ''}:${maturity || ''}:${folder || ''}:${locale || ''}:${type}:${status}:${tag}:${target}:${fields}:${normPage.page}:${normPage.limit}`;
-    return respondCachedQuery(c, cacheKey, () => queryNodesWithFilters(db, {
-        siteId,
-        id,
-        slug,
-        progress: maturity,
-        maturity,
-        folder,
-        locale,
-        type,
-        status,
-        tag,
-        target,
-        fields,
-        page: normPage.page,
-        limit: normPage.limit
-    }, isAuthorizedUser));
-}
-
-apiApp.get('/articles', (c) => handleQueryContentList(c, 'article'));
-
-apiApp.get('/micro', (c) => handleQueryContentList(c, 'micro'));
-apiApp.get('/micros', (c) => handleQueryContentList(c, 'micro'));
-
-async function handleQueryDatasetList(c: Context<AppHonoEnv>) {
-    const envRes = getApiQueryEnv(c);
-    if ('err' in envRes) return envRes.err;
-    const { db, siteId, isAuthorizedUser } = envRes;
-
-    const schemaSlug = c.req.query('schema') || c.req.query('schema_slug');
-    const limit = Math.max(1, Math.min(100, Number(c.req.query('limit')) || 50));
-    const page = Math.max(1, Number(c.req.query('page')) || 1);
-    const offset = c.req.query('offset') !== undefined
-        ? Math.max(0, Number(c.req.query('offset')) || 0)
-        : (page - 1) * limit;
-
-    const filters: Record<string, string> = {};
-    const queryParams = new URL(c.req.url).searchParams;
-    let hasInvalidKey = false;
-    queryParams.forEach((value, key) => {
-        if (!['schema', 'schema_slug', 'limit', 'offset', 'page', 'site_id'].includes(key)) {
-            if (!/^[a-zA-Z0-9_]{1,64}$/.test(key)) {
-                hasInvalidKey = true;
-                return;
-            }
-            filters[key] = value;
-        }
-    });
-
-    if (hasInvalidKey) {
-        return c.json({
-            error: 'Bad Request: Invalid filter field name',
-            code: 'SECURITY_INVALID_FILTER_KEY'
-        }, 400);
-    }
-
-    const filterKeyPart = Object.entries(filters)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${v}`)
-        .join('&');
-    const cacheKey = `datasets:${siteId}:${isAuthorizedUser}:${schemaSlug || ''}:${limit}:${offset}:${filterKeyPart}`;
-
-    return respondCachedQuery(c, cacheKey, () => queryDatasetsWithJson1Filter(
-        db,
-        siteId,
-        schemaSlug,
-        Object.keys(filters).length > 0 ? filters : undefined,
-        limit,
-        offset,
-        !isAuthorizedUser
-    ));
-}
-
-apiApp.get('/dataset', handleQueryDatasetList);
-apiApp.get('/datasets', handleQueryDatasetList);
-
-async function handleQueryMediaList(c: Context<AppHonoEnv>) {
-    const envRes = getApiQueryEnv(c);
-    if ('err' in envRes) return envRes.err;
-    const { db, siteId } = envRes;
-
-    const id = c.req.query('id');
-    const mime = c.req.query('mime') || c.req.query('type');
-    const folder = c.req.query('folder');
-    const normPage = normalizePagination({
-        page: c.req.query('page'),
-        limit: c.req.query('limit')
-    });
-    const cacheKey = `media:${siteId}:${id || ''}:${mime || ''}:${folder || ''}:${normPage.page}:${normPage.limit}`;
-    return respondCachedQuery(c, cacheKey, async () => {
-        const items = await queryPublicMediaAssets(db, siteId, {
-            id,
-            mime,
-            folder,
-            limit: normPage.limit,
-            offset: normPage.offset
-        });
-        return { items, nodes: items, total: items.length };
-    });
-}
-
-apiApp.get('/media', handleQueryMediaList);
-apiApp.get('/medias', handleQueryMediaList);
-
-async function handleQueryFeed(c: Context<AppHonoEnv>) {
-    const envRes = getApiQueryEnv(c);
-    if ('err' in envRes) return envRes.err;
-    const { db, siteId } = envRes;
-
-    const params = new URL(c.req.url).searchParams;
-    const cacheParts = Array.from(params.entries())
-        .filter(([k]) => k !== 'site_id')
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([k, v]) => `${k}=${v}`)
-        .join('&');
-    const cacheKey = `feed:${siteId}:${cacheParts}`;
-
-    return respondCachedQuery(c, cacheKey, async () => {
-        const items = await queryAggregatedFeed(db, siteId, params, c.get('locale'));
-        return { items, nodes: items, total: items.length };
-    });
-}
-
-apiApp.get('/feed', handleQueryFeed);
-apiApp.get('/feeds', handleQueryFeed);
+apiApp.route('/', publicQueriesRouter);
+apiApp.route('/', ecosystemRouter);
 
 const FORBIDDEN_UPLOAD_EXTENSIONS = new Set([
     'html', 'htm', 'xhtml', 'shtml', 'js', 'mjs', 'cjs', 'ts', 'tsx',
@@ -310,25 +122,64 @@ apiApp.post('/upload', async (c) => {
 
 async function handleWebhookSubmit(c: Context<AppHonoEnv>) {
     try {
+        const maxFormBytes = 512 * 1024;
         const contentLen = Number(c.req.header('content-length') || 0);
-        if (contentLen > 512 * 1024) {
+        if (contentLen > maxFormBytes) {
+            return c.json({ success: false, code: 'PAYLOAD_TOO_LARGE', error: 'Payload exceeds 512KB limit' }, 413);
+        }
+        // Measure actual buffered bytes so Transfer-Encoding: chunked cannot bypass Content-Length.
+        const rawBuf = await c.req.arrayBuffer();
+        if (rawBuf.byteLength > maxFormBytes) {
             return c.json({ success: false, code: 'PAYLOAD_TOO_LARGE', error: 'Payload exceeds 512KB limit' }, 413);
         }
         const contentType = (c.req.header('content-type') || '').toLowerCase();
-        let rawPayload: Record<string, any>;
+        let rawPayload: Record<string, any> = {};
         if (contentType.includes('application/json')) {
-            rawPayload = await c.req.json();
+            const rawText = new TextDecoder().decode(rawBuf);
+            rawPayload = rawText.trim() ? JSON.parse(rawText) : {};
+        } else if (contentType.includes('multipart/form-data')) {
+            const fd = await new Request(c.req.url, {
+                method: c.req.method,
+                headers: c.req.raw.headers,
+                body: rawBuf
+            }).formData();
+            fd.forEach((v, k) => {
+                rawPayload[k] = typeof v === 'string' ? v : (v as File)?.name || '';
+            });
         } else {
-            rawPayload = await c.req.parseBody();
+            const rawText = new TextDecoder().decode(rawBuf);
+            rawPayload = Object.fromEntries(new URLSearchParams(rawText).entries());
         }
 
         const siteId = (rawPayload.siteId || rawPayload.site_id || c.get('siteId') || 'site_default') as string;
+        const db = c.env.DB;
+        if (db) {
+            const host = c.get('host') || c.req.header('host') || DEFAULT_DEV_HOST;
+            const resolved = await resolveSiteWithMemoryCache(db, host);
+            const site = (resolved && resolved.id === siteId) ? resolved : await findSiteById(db, siteId);
+            if (site) {
+                const settings = parseJson<Record<string, any>>(site.settings, {});
+                const rawMode = settings.site_mode as string | undefined;
+                const isInternal = rawMode === 'internal' || rawMode === 'maintenance' || settings.routing?.maintenance_mode === 1;
+                if (isInternal) {
+                    const user = c.get('user') || await resolveCurrentUser(c).catch(() => null);
+                    const hasAdmin = isSiteAdminUser(user);
+                    const accessRes = hasAdmin ? { allowApiOnly: true } : await resolveApiReadAccess(c, db, siteId, false, 'forms:submit');
+                    const authHeader = c.req.header('authorization') || '';
+                    const hasBearer = authHeader.startsWith('Bearer ') || Boolean(c.req.header('x-api-key'));
+                    if ('err' in accessRes) return accessRes.err;
+                    if (!hasAdmin && !hasBearer) {
+                        return c.json({ success: false, code: 'INTERNAL_MODE_FORBIDDEN', error: 'Forbidden: Internal mode blocks unauthenticated form submissions' }, 403);
+                    }
+                }
+            }
+        }
         const paramFormId = c.req.param('form_id');
         const formId = (paramFormId || rawPayload.form_id || rawPayload.formId || rawPayload.form_name || rawPayload.formName || 'default') as string;
         const formName = (rawPayload.form_name || rawPayload.formName || formId) as string;
 
         // Strip caller-supplied webhookUrl so the Worker cannot be abused as an SSRF or flood relay.
-        const fields: Record<string, unknown> =
+        const rawFieldsObj: Record<string, unknown> =
             rawPayload.fields && typeof rawPayload.fields === 'object'
                 ? (rawPayload.fields as Record<string, unknown>)
                 : Object.fromEntries(
@@ -336,6 +187,18 @@ async function handleWebhookSubmit(c: Context<AppHonoEnv>) {
                           ([k]) => !['siteId', 'site_id', 'formName', 'form_name', 'formId', 'form_id', 'webhookUrl', 'webhook_url'].includes(k)
                       )
                   );
+
+        // Enforce field count and value length limits across both community and commercial editions.
+        const fields: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(rawFieldsObj).slice(0, 50)) {
+            const safeKey = String(k).trim().slice(0, 64);
+            if (!safeKey) continue;
+            fields[safeKey] = typeof v === 'string'
+                ? v.slice(0, 4000)
+                : (typeof v === 'number' || typeof v === 'boolean' || v == null)
+                    ? v
+                    : JSON.stringify(v).slice(0, 4000);
+        }
 
         const pluginEngine = c.get('pluginEngine');
         const txContext = createHookContext({
@@ -370,193 +233,3 @@ apiApp.post('/webhooks/submit/:form_id', handleWebhookSubmit);
 apiApp.post('/webhooks/submit', handleWebhookSubmit);
 
 apiApp.route('/quick-actions', quickActionsRouter);
-
-const MAX_ECOSYSTEM_BODY_BYTES = 256 * 1024;
-
-apiApp.post('/ecosystem/pair', async (c) => {
-    const originCheck = verifySameOriginRequest(c, DEFAULT_DEV_HOST);
-    if (!originCheck.valid) return c.json({ error: originCheck.error || 'Forbidden' }, 403);
-    const db = c.env.DB;
-    if (!db) return c.json({ error: 'Database unavailable' }, 500);
-    const user = c.get('user') || (await resolveCurrentUser(c));
-    if (!isSiteAdminUser(user)) {
-        return c.json({ error: 'Unauthorized: Admin access required' }, 403);
-    }
-    const body = await c.req.json().catch(() => ({})) as { app?: string; siteId?: string };
-    const appName = (body.app || 'grain').trim();
-    if (!ALLOWED_ECOSYSTEM_APPS.has(appName)) {
-        return c.json({ error: 'Unsupported ecosystem app', code: 'UNSUPPORTED_ECOSYSTEM_APP' }, 403);
-    }
-    const siteId = body.siteId || c.get('siteId') || 'site_default';
-    const pluginEngine = c.get('pluginEngine');
-    const txContext = createHookContext({
-        action: 'ECOSYSTEM_ISSUE_CODE',
-        data: { siteId, app: appName },
-        c,
-        siteId,
-        user
-    });
-    try {
-        const result = await pluginEngine.runPipeline(txContext);
-        return c.json(result);
-    } catch (e: any) {
-        return c.json({ error: e?.message || 'Pairing failed' }, 400);
-    }
-});
-
-function readEcosystemAppHeader(c: Context<AppHonoEnv>): string {
-    for (const h of ECOSYSTEM_APP_HEADERS) {
-        const v = (c.req.header(h) || '').trim();
-        if (v) return v;
-    }
-    return '';
-}
-
-apiApp.post('/ecosystem/exchange', async (c) => {
-    const db = c.env.DB;
-    if (!db) return c.json({ error: 'Database unavailable' }, 500);
-    const appHeader = readEcosystemAppHeader(c);
-    if (appHeader && !ALLOWED_ECOSYSTEM_APPS.has(appHeader)) {
-        return c.json({ error: 'Forbidden ecosystem app header', code: 'FORBIDDEN_ECOSYSTEM_APP' }, 403);
-    }
-    const body = await c.req.json().catch(() => ({})) as { code?: string };
-    const code = (body.code || '').trim();
-    if (!code) {
-        return c.json({ error: 'Missing one-time code', code: 'CODE_REQUIRED' }, 400);
-    }
-    const pluginEngine = c.get('pluginEngine');
-    try {
-        const txContext = createHookContext({
-            action: 'ECOSYSTEM_EXCHANGE_TOKEN',
-            data: { code, app: appHeader || undefined },
-            c,
-            siteId: c.get('siteId') || 'site_default'
-        });
-        const result = await pluginEngine.runPipeline(txContext);
-        return c.json(result);
-    } catch (err: any) {
-        return c.json({ error: err?.message || 'Invalid or expired code', code: 'INVALID_OR_EXPIRED_CODE' }, 403);
-    }
-});
-
-apiApp.post('/ecosystem/sync', async (c) => {
-    const db = c.env.DB;
-    if (!db) return c.json({ error: 'Database unavailable' }, 500);
-
-    const appHeader = readEcosystemAppHeader(c);
-    if (!appHeader || !ALLOWED_ECOSYSTEM_APPS.has(appHeader)) {
-        return c.json({ error: 'Forbidden: Missing or invalid ecosystem app header', code: 'FORBIDDEN_ECOSYSTEM_APP' }, 403);
-    }
-
-    const contentLength = Number(c.req.header('Content-Length') || 0);
-    if (contentLength > MAX_ECOSYSTEM_BODY_BYTES) {
-        return c.json({ error: 'Payload Too Large: Max 256KB allowed', code: 'PAYLOAD_TOO_LARGE' }, 413);
-    }
-    const rawText = await c.req.text();
-    if (new TextEncoder().encode(rawText).byteLength > MAX_ECOSYSTEM_BODY_BYTES) {
-        return c.json({ error: 'Payload Too Large: Max 256KB allowed', code: 'PAYLOAD_TOO_LARGE' }, 413);
-    }
-
-    const authHeader = c.req.header('Authorization') || '';
-    const rawToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-    if (!rawToken) {
-        return c.json({ error: 'Missing Bearer token', code: 'TOKEN_REQUIRED' }, 401);
-    }
-    const tokenHash = await computeTokenSha256(rawToken);
-    const siteId = c.get('siteId') || 'site_default';
-    const tokenRow = await findApiTokenByHash(db, tokenHash, siteId);
-    if (!tokenRow) {
-        return c.json({ error: 'Invalid ecosystem token', code: 'UNAUTHORIZED_TOKEN' }, 401);
-    }
-    if (tokenRow.token_type !== 'ecosystem' && tokenRow.token_type !== 'ecosystem_epub') {
-        return c.json({ error: 'Token type mismatch: ecosystem token required', code: 'TOKEN_TYPE_MISMATCH' }, 403);
-    }
-    if (tokenRow.expires_at && Date.now() > new Date(tokenRow.expires_at).getTime()) {
-        return c.json({ error: 'Token expired', code: 'TOKEN_EXPIRED' }, 401);
-    }
-
-    const targetSiteId = tokenRow.site_id || siteId;
-    if (!checkQueryRateLimit(`eco_sync:${targetSiteId}`, 10)) {
-        return c.json({ error: 'Too Many Requests: Ecosystem sync rate limit exceeded (10/min)', code: 'RATE_LIMITED' }, 429);
-    }
-
-    let parsedPayload: any = null;
-    try {
-        parsedPayload = JSON.parse(rawText);
-    } catch {
-        return c.json({ error: 'Invalid JSON payload', code: 'INVALID_JSON' }, 400);
-    }
-    if (!parsedPayload || typeof parsedPayload !== 'object' || Array.isArray(parsedPayload)) {
-        return c.json({ error: 'Payload must be a JSON object', code: 'INVALID_JSON_OBJECT' }, 400);
-    }
-
-    const pluginEngine = c.get('pluginEngine');
-    const txContext = createHookContext({
-        action: 'ECOSYSTEM_LOOSE_SYNC',
-        data: { siteId: targetSiteId, app: appHeader, payload: parsedPayload },
-        c,
-        siteId: targetSiteId,
-        user: {
-            id: tokenRow.created_by || 'ecosystem:bridge',
-            username: `eco-${appHeader}`,
-            email: `${appHeader}@ecosystem.local`,
-            global_role: 'superadmin',
-            site_role: 'admin',
-            auth_provider: 'session'
-        }
-    });
-    try {
-        const result = await pluginEngine.runPipeline(txContext);
-        try {
-            c.executionCtx?.waitUntil?.(touchApiTokenLastUsed(db, tokenRow.id));
-        } catch {
-            touchApiTokenLastUsed(db, tokenRow.id).catch(() => {});
-        }
-        return c.json(result);
-    } catch (e: any) {
-        return c.json({ error: e?.message || 'Ecosystem sync failed' }, 400);
-    }
-});
-
-async function handleCommercialV1Gateway(c: Context<AppHonoEnv>, resource: 'nodes' | 'datasets', schema?: string) {
-    const authHeader = c.req.header('Authorization') || '';
-    const rawToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
-    const pluginEngine = c.get('pluginEngine');
-    if (!pluginEngine) {
-        return c.json({ error: 'Commercial license required for Open REST API (/api/v1/*)', code: 'COMMERCIAL_REQUIRED' }, 403);
-    }
-    const siteId = c.get('siteId') || 'site_default';
-    const method = c.req.method.toUpperCase();
-    const body = (method === 'POST' || method === 'PUT' || method === 'PATCH')
-        ? await c.req.json().catch(() => ({}))
-        : undefined;
-
-    try {
-        const txContext = createHookContext({
-            action: 'API_V1_GATEWAY',
-            data: {
-                rawToken,
-                method,
-                resource,
-                schema,
-                query: c.req.query(),
-                body,
-                siteId
-            },
-            c,
-            siteId
-        });
-        const result = await pluginEngine.runPipeline(txContext);
-        return c.json(result);
-    } catch (err: any) {
-        const msg = String(err?.message || 'Forbidden');
-        if (msg.includes('TOKEN_EMPTY') || msg.includes('TOKEN_NOT_FOUND') || msg.includes('TOKEN_EXPIRED')) {
-            return c.json({ error: msg, code: 'UNAUTHORIZED_TOKEN' }, 401);
-        }
-        return c.json({ error: msg, code: msg.includes('SCOPE') ? 'FORBIDDEN_SCOPE' : 'COMMERCIAL_REQUIRED' }, 403);
-    }
-}
-
-apiApp.all('/v1/nodes', (c) => handleCommercialV1Gateway(c, 'nodes'));
-apiApp.all('/v1/datasets', (c) => handleCommercialV1Gateway(c, 'datasets'));
-apiApp.all('/v1/datasets/:schema', (c) => handleCommercialV1Gateway(c, 'datasets', c.req.param('schema')));

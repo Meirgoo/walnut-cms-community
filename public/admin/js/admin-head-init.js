@@ -1,9 +1,10 @@
 (function() {
     // Lock sidebar collapsed state before first paint to prevent initial layout jump.
     try {
-        localStorage.setItem('walnut_admin_hint', '1');
+        localStorage.setItem('edge_admin_hint', '1');
+        const isEditorRoute = /^\/admin\/(articles|pages|micro)\/(new|edit)(\/|$)/.test(window.location.pathname);
         const cachedCollapsed = localStorage.getItem('walnut_sidebar_collapsed');
-        const shouldCollapse = cachedCollapsed !== null ? cachedCollapsed === 'true' : (window.innerWidth < 768);
+        const shouldCollapse = isEditorRoute ? true : (cachedCollapsed !== null ? cachedCollapsed === 'true' : (window.innerWidth < 768));
         if (shouldCollapse) {
             document.documentElement.classList.add('is-sidebar-collapsed');
         } else {
@@ -34,10 +35,10 @@
             }
         }
         if (colsCss) {
-            let styleEl = document.getElementById('walnut-cols-preload');
+            let styleEl = document.getElementById('edge-cols-preload');
             if (!styleEl) {
                 styleEl = document.createElement('style');
-                styleEl.id = 'walnut-cols-preload';
+                styleEl.id = 'edge-cols-preload';
                 document.head.appendChild(styleEl);
             }
             styleEl.textContent = colsCss;

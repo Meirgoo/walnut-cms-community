@@ -3,12 +3,12 @@
 <div class="p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-6">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div class="flex items-center space-x-3">
-            <a href="{{back_href}}" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition">
+            <a href="{{back_href}}" class="p-2 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-stone-200 dark:hover:bg-stone-800 transition">
                 <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </a>
             <div>
-                <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{trash_title}}</h1>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{trash_subtitle}}</p>
+                <h1 class="text-2xl font-black text-stone-900 dark:text-white tracking-tight">{{trash_title}}</h1>
+                <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">{{trash_subtitle}}</p>
             </div>
         </div>
 
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <div class="flex space-x-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold shrink-0">
+    <div class="flex flex-wrap gap-2 border-b border-stone-200 dark:border-stone-800 text-xs font-bold shrink-0">
         <a
             href="/admin/trash?tab=article"
             class="px-4 py-2.5 border-b-2 transition flex items-center space-x-1.5 {{tab_article_class}}"
@@ -35,39 +35,53 @@
             <span>{{tab_articles}} ({{article_count}})</span>
         </a>
         <a
+            href="/admin/trash?tab=page"
+            class="px-4 py-2.5 border-b-2 transition flex items-center space-x-1.5 {{tab_page_class}}"
+        >
+            <span class="material-symbols-outlined text-[16px]">web</span>
+            <span>{{tab_pages}} ({{page_count}})</span>
+        </a>
+        <a
             href="/admin/trash?tab=micro"
             class="px-4 py-2.5 border-b-2 transition flex items-center space-x-1.5 {{tab_micro_class}}"
         >
             <span class="material-symbols-outlined text-[16px]">edit_note</span>
             <span>{{tab_micro}} ({{micro_count}})</span>
         </a>
+        <a
+            href="/admin/trash?tab=dataset"
+            class="px-4 py-2.5 border-b-2 transition flex items-center space-x-1.5 {{tab_dataset_class}}"
+        >
+            <span class="material-symbols-outlined text-[16px]">database</span>
+            <span>{{tab_datasets}} ({{dataset_count}})</span>
+        </a>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex items-center justify-between gap-4">
-        <div class="flex-1 flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
-            <span class="material-symbols-outlined text-slate-400 text-[18px]">search</span>
+    <div class="bg-[var(--admin-surface)] p-3 rounded-2xl border border-[var(--admin-border)] shadow-sm flex items-center justify-between gap-4">
+        <div class="flex-1 flex items-center space-x-2 bg-stone-50 dark:bg-stone-950 px-3.5 py-2 rounded-xl border border-stone-200/60 dark:border-stone-800">
+            <span class="material-symbols-outlined text-stone-400 text-[18px]">search</span>
             <input
                 type="text"
                 id="trash-search-input"
                 placeholder="{{search_placeholder}}"
                 oninput="window.filterCardItems('trash-groups-container', '.trash-group-card', this.value, 'trash-filter-count', 'trash-empty-state')"
-                class="bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none w-full font-medium"
+                class="bg-transparent text-xs text-stone-800 dark:text-stone-100 placeholder-stone-400 outline-none w-full font-medium"
             />
         </div>
-        <div id="trash-filter-count" class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0 px-1">
+        <div id="trash-filter-count" class="text-xs font-mono font-bold text-stone-500 dark:text-stone-400 shrink-0 px-1">
             {{total_records_text}}
         </div>
     </div>
 
-    <div id="trash-batch-toolbar" class="hidden bg-slate-900 dark:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
+    <div id="trash-batch-toolbar" class="hidden bg-stone-900 dark:bg-stone-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
         <div class="flex items-center space-x-4">
-            <span id="trash-selected-badge" class="font-bold font-mono text-emerald-400">{{selected_count_zero}}</span>
-            <button type="button" onclick="selectAllTrashGroups()" class="text-slate-300 hover:text-white underline">{{btn_select_all}}</button>
-            <button type="button" onclick="deselectAllTrashGroups()" class="text-slate-300 hover:text-white underline">{{btn_deselect_all}}</button>
+            <span id="trash-selected-badge" class="font-bold font-mono text-amber-400">{{selected_count_zero}}</span>
+            <button type="button" onclick="selectAllTrashGroups()" class="text-stone-300 hover:text-white underline">{{btn_select_all}}</button>
+            <button type="button" onclick="deselectAllTrashGroups()" class="text-stone-300 hover:text-white underline">{{btn_deselect_all}}</button>
         </div>
 
         <div class="flex items-center space-x-3">
-            <button type="button" onclick="batchRestoreSelectedArticles()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
+            <button type="button" onclick="batchRestoreSelectedArticles()" class="bg-[#B45309] hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
                 <span class="material-symbols-outlined text-[14px]">restore_from_trash</span>
                 <span>{{btn_batch_restore}}</span>
             </button>
@@ -81,10 +95,12 @@
     <div id="trash-groups-container" class="space-y-4 flex-1 overflow-y-auto">
         {{trash_groups_content}}
 
-        <div id="trash-empty-state" class="hidden p-12 text-center text-slate-400 text-xs">
+        <div id="trash-empty-state" class="hidden p-12 text-center text-stone-400 text-xs">
             {{no_matching_records}}
         </div>
     </div>
 </div>
 
 {{snapshot_preview_modal}}
+<script src="/admin/js/admin-tables.js" defer></script>
+<script src="/admin/js/trash-admin.js" defer></script>

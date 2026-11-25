@@ -2,39 +2,62 @@
   "id": "theme_univers",
   "slug": "univers",
   "name": "Walnut Univers (官方全功能旗舰主题)",
-  "author": "Walnut CMS Team",
-  "version": "0.9.0",
+  "author": "Walnut Edge CMS Team",
+  "version": "0.9.1",
   "description": "集多设备响应式、中英双语、自定义 Markdown 容器、动态槽位配额、母版页夹心拼装、@api 数据直连（微内容/数据集/多媒体）及双向链接图谱于一体的官方门面与起步主题。",
   "preview_image": "/theme/univers/preview.png",
-  "custom_css": "/* Univers Theme Custom CSS */\n.univers-custom-glow { box-shadow: 0 0 28px -6px color-mix(in srgb, var(--walnut-primary, #2563eb) 32%, transparent); }\n.univers-locale-pill { transition: color 0.15s ease, background-color 0.15s ease; }\n.univers-carousel-track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }\n@media (max-width: 768px) { .univers-carousel-track { grid-template-columns: repeat(1, minmax(0, 1fr)); } }",
-  "custom_js": "/* Univers Theme Injected Custom JS */\n(function() {\n  if (typeof window !== 'undefined') {\n    var ctx = window.__WALNUT__ || {};\n    document.documentElement.setAttribute('data-walnut-theme', 'univers');\n    if (ctx.page && ctx.page.locale) {\n      document.documentElement.setAttribute('data-page-locale', ctx.page.locale);\n    }\n  }\n})();",
+  "custom_css": "/* Univers Theme Custom CSS */\n.univers-custom-glow { box-shadow: 0 0 28px -6px color-mix(in srgb, var(--edge-primary, #342E7A) 32%, transparent); }\n.univers-locale-pill { transition: color 0.15s ease, background-color 0.15s ease; }\n.univers-carousel-track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }\n@media (max-width: 768px) { .univers-carousel-track { grid-template-columns: repeat(1, minmax(0, 1fr)); } }",
+  "custom_js": "/* Univers Theme Injected Custom JS */\n(function() {\n  if (typeof window !== 'undefined') {\n    var ctx = window.__EDGE__ || {};\n    document.documentElement.setAttribute('data-edge-theme', 'univers');\n    if (ctx.page && ctx.page.locale) {\n      document.documentElement.setAttribute('data-page-locale', ctx.page.locale);\n    }\n  }\n})();",
   "locales": {
     "zh-CN": {
       "edge_status": "Cloudflare 边缘节点直出就绪",
       "reading_unit": "分钟深度阅读",
-      "outline_title": "本文目录大纲",
-      "backlinks_title": "双向链接引用 (Backlinks)",
-      "switch_lang_label": "语言版本"
+      "outline_title": "本文目录",
+      "backlinks_title": "反向双链",
+      "switch_lang_label": "语言版本",
+      "read_more": "了解更多",
+      "view_details": "查看详情",
+      "loading_outline": "正在解析文档大纲...",
+      "prev_label": "上一篇",
+      "next_label": "下一篇",
+      "form_name": "称呼",
+      "form_name_placeholder": "您的姓名或昵称",
+      "form_email": "邮箱 *",
+      "form_message": "留言内容",
+      "form_message_placeholder": "写下您的想法、合作咨询或建议...",
+      "form_submit": "发送消息"
     },
     "en-US": {
       "edge_status": "Cloudflare Edge SSR Active",
       "reading_unit": "min read",
       "outline_title": "On This Page",
-      "backlinks_title": "Backlinks & References",
-      "switch_lang_label": "Languages"
+      "backlinks_title": "Backlinks",
+      "switch_lang_label": "Languages",
+      "read_more": "Learn more",
+      "view_details": "View details",
+      "loading_outline": "Loading outline...",
+      "prev_label": "Previous",
+      "next_label": "Next",
+      "form_name": "Name",
+      "form_name_placeholder": "Your name",
+      "form_email": "Email *",
+      "form_message": "Message",
+      "form_message_placeholder": "Share your thoughts, project inquiry, or note...",
+      "form_submit": "Send Message"
     }
   },
   "tokens": {
-    "primaryColor": "#10b981",
+    "primaryColor": "#342E7A",
     "borderRadius": "1rem",
-    "fontFamily": "Inter, system-ui, sans-serif"
+    "fontFamily": "Inter, system-ui, sans-serif",
+    "primaryColorDark": "#8B7CF6"
   },
   "md_components": {
     "callout": "<div class=\"univers-md-callout\"><span class=\"text-lg leading-none select-none\">💡</span><div class=\"flex-1 text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></div>",
     "tip": "<div class=\"univers-md-tip\"><span class=\"text-lg leading-none select-none\">✨</span><div class=\"flex-1 text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></div>",
     "warning": "<div class=\"univers-md-warning\"><span class=\"text-lg leading-none select-none\">⚠️</span><div class=\"flex-1 text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></div>",
     "quote": "<blockquote class=\"univers-md-quote\"><div class=\"text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></blockquote>",
-    "step": "<div class=\"univers-md-step\"><span class=\"text-base font-black text-emerald-600 dark:text-emerald-400 select-none\">▸</span><div class=\"flex-1 text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></div>"
+    "step": "<div class=\"univers-md-step\"><span class=\"text-base font-bold univers-accent-text select-none\">▸</span><div class=\"flex-1 text-sm text-slate-800 dark:text-slate-200 leading-relaxed\">{{content}}</div></div>"
   },
   "components": [
     {
@@ -46,6 +69,7 @@
       "slots": [
         "header"
       ],
+      "description": "全局顶部导航栏，限 header 槽位，含品牌与菜单",
       "summary": "响应式顶部导航栏，支持 default / minimal 风格、多语言切换、明暗切换与移动端抽屉。",
       "ui_schema": [
         {
@@ -117,16 +141,20 @@
               "url": "/"
             },
             {
-              "text": "指南",
-              "url": "/hello-walnut"
+              "text": "项目",
+              "url": "/projects"
+            },
+            {
+              "text": "导航",
+              "url": "/links"
+            },
+            {
+              "text": "画廊",
+              "url": "/gallery"
             },
             {
               "text": "归档",
               "url": "/archive"
-            },
-            {
-              "text": "项目",
-              "url": "/projects"
             },
             {
               "text": "关于",
@@ -147,16 +175,20 @@
             "url": "/"
           },
           {
-            "text": "指南",
-            "url": "/hello-walnut"
+            "text": "项目",
+            "url": "/projects"
+          },
+          {
+            "text": "导航",
+            "url": "/links"
+          },
+          {
+            "text": "画廊",
+            "url": "/gallery"
           },
           {
             "text": "归档",
             "url": "/archive"
-          },
-          {
-            "text": "项目",
-            "url": "/projects"
           },
           {
             "text": "关于",
@@ -164,7 +196,7 @@
           }
         ]
       },
-      "template_html": "<univers-navbar data-variant=\"{{#if variant}}{{variant}}{{else}}default{{/if}}\" class=\"block w-full\">\n  <div class=\"max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4\">\n    <a href=\"/\" class=\"flex items-center gap-2.5 font-extrabold text-base tracking-tight text-slate-900 dark:text-white hover:opacity-90 transition\">\n      {{#if logo_url}}<img src=\"{{logo_url}}\" alt=\"{{site.name}}\" class=\"univers-nav-logo w-7 h-7 rounded-md object-contain\" />{{/if}}\n      <span>{{#if title}}{{title}}{{else}}{{#if brand_text}}{{brand_text}}{{else}}{{site.name}}{{/if}}{{/if}}</span>\n    </a>\n    <nav class=\"univers-desktop-nav hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300\">\n      {{#each nav_links}}\n      <a href=\"{{url}}\"{{#if target}} target=\"{{target}}\"{{/if}} class=\"univers-link-accent\">{{text}}</a>\n      {{/each}}\n    </nav>\n    <div class=\"flex items-center gap-2\">\n      {{#if translations}}\n      <div class=\"hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/90 text-xs font-mono\">\n        {{#each translations}}\n        <a href=\"{{url}}\" class=\"univers-locale-pill univers-link-accent px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300\">{{locale}}</a>\n        {{/each}}\n      </div>\n      {{/if}}\n      <button type=\"button\" class=\"univers-dark-toggle p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer\" aria-label=\"Toggle Theme\">\n        <span class=\"dark:hidden\">🌙</span>\n        <span class=\"hidden dark:inline\">☀️</span>\n      </button>\n      {{#if cta_text}}\n      <a href=\"{{cta_link}}\" class=\"univers-nav-cta hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold univers-btn-primary\">\n        <span>{{cta_text}}</span>\n        <span>&rarr;</span>\n      </a>\n      {{/if}}\n      <button type=\"button\" class=\"univers-drawer-toggle md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer\" aria-label=\"Open Menu\">☰</button>\n    </div>\n  </div>\n  <div class=\"univers-drawer-backdrop fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs hidden md:hidden\">\n    <div class=\"univers-drawer-content fixed right-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 p-6 shadow-2xl flex flex-col justify-between\">\n      <div class=\"space-y-6\">\n        <div class=\"flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4\">\n          <span class=\"font-bold text-base text-slate-900 dark:text-white\">{{site.name}}</span>\n          <button type=\"button\" class=\"univers-drawer-close p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer\">✕</button>\n        </div>\n        <nav class=\"flex flex-col gap-2 text-sm font-medium text-slate-700 dark:text-slate-200\">\n          {{#each nav_links}}\n          <a href=\"{{url}}\"{{#if target}} target=\"{{target}}\"{{/if}} class=\"py-2 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition\">{{text}}</a>\n          {{/each}}\n        </nav>\n      </div>\n      {{#if cta_text}}\n      <a href=\"{{cta_link}}\" class=\"univers-nav-cta w-full py-2.5 text-center rounded-lg text-xs font-bold univers-btn-primary\">{{cta_text}}</a>\n      {{/if}}\n    </div>\n  </div>\n</univers-navbar>"
+      "template_html": "<univers-navbar data-variant=\"{{#if variant}}{{variant}}{{else}}default{{/if}}\" class=\"block w-full\">\n  <div class=\"max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4\">\n    <a href=\"/\" class=\"flex items-center gap-2.5 font-extrabold text-base tracking-tight text-slate-900 dark:text-white hover:opacity-90 transition\">\n      {{#if logo_url}}<img src=\"{{logo_url}}\" alt=\"{{site.name}}\" class=\"univers-nav-logo w-7 h-7 rounded-md object-contain\" />{{/if}}\n      <span>{{#if title}}{{title}}{{else}}{{#if brand_text}}{{brand_text}}{{else}}{{site.name}}{{/if}}{{/if}}</span>\n    </a>\n    <nav class=\"univers-desktop-nav hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300\">\n      {{#each nav_links}}\n      <a href=\"{{url}}\"{{#if target}} target=\"{{target}}\"{{/if}} class=\"univers-link-accent\">{{text}}</a>\n      {{/each}}\n    </nav>\n    <div class=\"flex items-center gap-2\">\n      {{#if translations}}\n      <div class=\"hidden sm:flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800/90 text-xs font-mono\">\n        {{#each translations}}\n        <a href=\"{{url}}\" class=\"univers-locale-pill px-2 py-0.5 rounded-md transition {{#if isCurrent}}univers-pill-active font-bold{{else}}univers-link-accent text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700/70{{/if}}\"{{#if isCurrent}} aria-current=\"page\"{{/if}}>{{locale}}</a>\n        {{/each}}\n      </div>\n      {{/if}}\n      <button type=\"button\" class=\"univers-dark-toggle p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer\" aria-label=\"Toggle Theme\">\n        <svg class=\"w-4 h-4 dark:hidden\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z\"/></svg>\n        <svg class=\"w-4 h-4 hidden dark:inline\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2\"/><path d=\"M12 20v2\"/><path d=\"m4.93 4.93 1.41 1.41\"/><path d=\"m17.66 17.66 1.41 1.41\"/><path d=\"M2 12h2\"/><path d=\"M20 12h2\"/><path d=\"m6.34 17.66-1.41 1.41\"/><path d=\"m19.07 4.93-1.41 1.41\"/></svg>\n      </button>\n      {{#if cta_text}}\n      <a href=\"{{cta_link}}\" class=\"univers-nav-cta univers-btn-primary hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition\">\n        <span>{{cta_text}}</span>\n        <span>&rarr;</span>\n      </a>\n      {{/if}}\n      <button type=\"button\" class=\"univers-drawer-toggle md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer\" aria-label=\"Open Menu\">☰</button>\n    </div>\n  </div>\n  <div class=\"univers-drawer-backdrop fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs hidden md:hidden\">\n    <div class=\"univers-drawer-content fixed right-0 top-0 bottom-0 w-72 univers-card-surface p-6 shadow-2xl flex flex-col justify-between border-l univers-border-base\">\n      <div class=\"space-y-6\">\n        <div class=\"flex items-center justify-between border-b univers-border-base pb-4\">\n          <span class=\"font-bold text-base\">{{site.name}}</span>\n          <button type=\"button\" class=\"univers-drawer-close p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer\">✕</button>\n        </div>\n        <nav class=\"flex flex-col gap-2 text-sm font-medium text-slate-700 dark:text-slate-200\">\n          {{#each nav_links}}\n          <a href=\"{{url}}\"{{#if target}} target=\"{{target}}\"{{/if}} class=\"py-2 px-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition\">{{text}}</a>\n          {{/each}}\n        </nav>\n      </div>\n      {{#if cta_text}}\n      <a href=\"{{cta_link}}\" class=\"univers-nav-cta univers-btn-primary w-full py-2.5 text-center rounded-lg text-xs font-bold transition\">{{cta_text}}</a>\n      {{/if}}\n    </div>\n  </div>\n</univers-navbar>"
     },
     {
       "slug": "univers-notice-bar",
@@ -173,10 +205,9 @@
       "category": "layout",
       "icon": "campaign",
       "slots": [
-        "subnav",
-        "sidebar",
         "main"
       ],
+      "description": "全宽或侧栏公告提示条，适合置顶通知与版本提醒",
       "summary": "零参数槽位自适应通告组件：subnav 呈细通告条，sidebar 呈提示卡，main 呈圆角内联公告。",
       "ui_schema": [
         {
@@ -189,7 +220,7 @@
           "key": "notice_text",
           "label": "通告正文",
           "type": "text",
-          "default": "开箱即用的 Walnut CMS 活说明书 · 示例条目均归类于 folder: guide"
+          "default": "开箱即用的 Walnut Edge CMS 活说明书 · 示例条目均归类于 folder: guide"
         },
         {
           "key": "action_label",
@@ -205,12 +236,12 @@
         }
       ],
       "default_props": {
-        "notice_tag": "GUIDE",
-        "notice_text": "开箱即用的 Walnut CMS 活说明书 · 示例条目均归类于 folder: guide",
-        "action_label": "5 分钟上手指南",
-        "action_url": "/hello-walnut"
+        "notice_tag": "NEW",
+        "notice_text": "欢迎来到数字花园与个人作品集 · 最新文章与精选项目持续更新中",
+        "action_label": "浏览项目",
+        "action_url": "/projects"
       },
-      "template_html": "<univers-notice-bar class=\"block w-full\" data-site-name=\"{{site.name}}\" data-site-domain=\"{{site.domain}}\" data-page-title=\"{{page.title}}\" data-page-locale=\"{{page.locale}}\" data-edge-status=\"{{i18n.edge_status}}\">\n  <div class=\"univers-notice-surface bg-slate-50/80 dark:bg-slate-900/60\">\n    <div class=\"univers-notice-inner text-xs text-slate-600 dark:text-slate-300\">\n      {{#if notice_tag}}<span class=\"px-2 py-0.5 rounded-md font-mono font-bold univers-badge-accent shrink-0\">{{notice_tag}}</span>{{/if}}\n      <span class=\"univers-notice-text font-medium truncate\">{{notice_text}}</span>\n      {{#if action_label}}<a href=\"{{action_url}}\" class=\"font-bold text-slate-900 dark:text-white univers-link-accent shrink-0\">{{action_label}} &rarr;</a>{{/if}}\n    </div>\n  </div>\n</univers-notice-bar>"
+      "template_html": "<univers-notice-bar class=\"block w-full\" data-site-name=\"{{site.name}}\" data-site-domain=\"{{site.domain}}\" data-page-title=\"{{page.title}}\" data-page-locale=\"{{page.locale}}\" data-edge-status=\"{{i18n.edge_status}}\">\n  <div class=\"univers-notice-surface univers-muted-surface\">\n    <div class=\"univers-notice-inner text-xs text-slate-600 dark:text-slate-300\">\n      {{#if notice_tag}}<span class=\"px-2 py-0.5 rounded-md font-mono font-bold univers-badge-accent shrink-0\">{{notice_tag}}</span>{{/if}}\n      <span class=\"univers-notice-text font-medium truncate\">{{notice_text}}</span>\n      {{#if action_label}}<a href=\"{{action_url}}\" class=\"font-bold text-slate-900 dark:text-white univers-link-accent shrink-0\">{{action_label}} &rarr;</a>{{/if}}\n    </div>\n  </div>\n</univers-notice-bar>"
     },
     {
       "slug": "univers-hero",
@@ -221,6 +252,7 @@
       "slots": [
         "main"
       ],
+      "description": "页面首屏主视觉，无图居中展示，配图自动双栏排布",
       "summary": "默认 layout: auto，无图时自动收起媒体列居中呈现，配图自动展开双栏。",
       "ui_schema": [
         {
@@ -262,7 +294,7 @@
           "key": "headline",
           "label": "主标题",
           "type": "text",
-          "default": "欢迎使用 Walnut CMS"
+          "default": "欢迎使用 Walnut Edge CMS"
         },
         {
           "key": "subtitle",
@@ -304,7 +336,7 @@
       "default_props": {
         "layout": "auto",
         "badge_text": "",
-        "headline": "欢迎使用 Walnut CMS",
+        "headline": "欢迎使用 Walnut Edge CMS",
         "subtitle": "轻量级边缘原生内容与页面装配引擎，支持长文、微内容、数据集与模块化主题编排。",
         "primary_cta_text": "5 分钟上手指南",
         "primary_cta_link": "/hello-walnut",
@@ -312,7 +344,7 @@
         "secondary_cta_link": "/admin",
         "cover_image": ""
       },
-      "template_html": "<univers-hero data-layout=\"{{#if layout}}{{layout}}{{else}}auto{{/if}}\" class=\"univers-hero univers-hero-section block py-6 sm:py-10\">\n  {{#if cover_image}}\n  <div class=\"univers-hero-container univers-hero-has-visual\">\n    <div class=\"univers-hero-text space-y-5 min-w-0\">\n      {{#if badge_text}}<div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold univers-badge-accent\"><span>{{badge_text}}</span></div>{{/if}}\n      <h1 class=\"text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]\">{{headline}}</h1>\n      {{#if subtitle}}<p class=\"text-base sm:text-lg max-w-2xl text-slate-600 dark:text-slate-300 leading-relaxed\">{{subtitle}}</p>{{/if}}\n      <div class=\"univers-hero-cta flex flex-wrap items-center gap-3 pt-2 empty:hidden\">{{#if primary_cta_text}}<a href=\"{{primary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-bold univers-btn-primary\">{{primary_cta_text}} &rarr;</a>{{/if}}{{#if secondary_cta_text}}<a href=\"{{secondary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 transition\">{{secondary_cta_text}}</a>{{/if}}</div>\n    </div>\n    <div class=\"univers-hero-visual w-full min-w-0\">\n      <img src=\"{{cover_image}}\" alt=\"{{headline}}\" class=\"w-full h-auto max-h-80 object-contain rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 p-4\" />\n    </div>\n  </div>\n  {{else}}\n  <div class=\"univers-hero-container univers-hero-no-visual\">\n    <div class=\"univers-hero-text space-y-5 min-w-0\">\n      {{#if badge_text}}<div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold univers-badge-accent\"><span>{{badge_text}}</span></div>{{/if}}\n      <h1 class=\"text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]\">{{headline}}</h1>\n      {{#if subtitle}}<p class=\"text-base sm:text-lg max-w-2xl mx-auto text-slate-600 dark:text-slate-300 leading-relaxed\">{{subtitle}}</p>{{/if}}\n      <div class=\"univers-hero-cta flex flex-wrap items-center justify-center gap-3 pt-2 empty:hidden\">{{#if primary_cta_text}}<a href=\"{{primary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-bold univers-btn-primary\">{{primary_cta_text}} &rarr;</a>{{/if}}{{#if secondary_cta_text}}<a href=\"{{secondary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 transition\">{{secondary_cta_text}}</a>{{/if}}</div>\n    </div>\n  </div>\n  {{/if}}\n</univers-hero>"
+      "template_html": "<univers-hero data-layout=\"{{#if layout}}{{layout}}{{else}}auto{{/if}}\" class=\"univers-hero univers-hero-section block py-6 sm:py-10\">\n  {{#if cover_image}}\n  <div class=\"univers-hero-container univers-hero-has-visual\">\n    <div class=\"univers-hero-text space-y-5 min-w-0\">\n      {{#if badge_text}}<div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold univers-badge-accent\"><span>{{badge_text}}</span></div>{{/if}}\n      <h1 class=\"text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]\">{{headline}}</h1>\n      {{#if subtitle}}<p class=\"text-base sm:text-lg max-w-2xl text-slate-600 dark:text-slate-300 leading-relaxed\">{{subtitle}}</p>{{/if}}\n      <div class=\"univers-hero-cta flex flex-wrap items-center gap-3 pt-2 empty:hidden\">{{#if primary_cta_text}}<a href=\"{{primary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-bold univers-btn-primary\">{{primary_cta_text}} &rarr;</a>{{/if}}{{#if secondary_cta_text}}<a href=\"{{secondary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 transition\">{{secondary_cta_text}}</a>{{/if}}</div>\n    </div>\n    <div class=\"univers-hero-visual w-full min-w-0\">\n      <img src=\"{{cover_image}}\" alt=\"{{headline}}\" class=\"w-full h-auto max-h-80 object-contain rounded-xl border univers-border-base bg-slate-50/70 dark:bg-slate-900/70 p-4\" />\n    </div>\n  </div>\n  {{else}}\n  <div class=\"univers-hero-container univers-hero-no-visual\">\n    <div class=\"univers-hero-text space-y-5 min-w-0\">\n      {{#if badge_text}}<div class=\"inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold univers-badge-accent\"><span>{{badge_text}}</span></div>{{/if}}\n      <h1 class=\"text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]\">{{headline}}</h1>\n      {{#if subtitle}}<p class=\"text-base sm:text-lg max-w-2xl text-slate-600 dark:text-slate-300 leading-relaxed\">{{subtitle}}</p>{{/if}}\n      <div class=\"univers-hero-cta flex flex-wrap items-center gap-3 pt-2 empty:hidden\">{{#if primary_cta_text}}<a href=\"{{primary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-bold univers-btn-primary\">{{primary_cta_text}} &rarr;</a>{{/if}}{{#if secondary_cta_text}}<a href=\"{{secondary_cta_link}}\" class=\"px-5 py-2.5 rounded-lg text-sm font-semibold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200/70 dark:border-slate-700/70 transition\">{{secondary_cta_text}}</a>{{/if}}</div>\n    </div>\n  </div>\n  {{/if}}\n</univers-hero>"
     },
     {
       "slug": "univers-grid",
@@ -323,6 +355,7 @@
       "slots": [
         "main"
       ],
+      "description": "多列特性与卖点网格，适合 2 至 4 列均分卡片展示",
       "summary": "支持 2/3/4 列与 card / clean 风格切换，可选顶图、图标与行动链接。",
       "ui_schema": [
         {
@@ -387,8 +420,8 @@
               "type": "text"
             },
             {
-              "key": "image_url",
-              "label": "顶图地址 (可选)",
+              "key": "image",
+              "label": "顶部配图 (可选)",
               "type": "image"
             },
             {
@@ -397,7 +430,7 @@
               "type": "text"
             },
             {
-              "key": "summary",
+              "key": "description",
               "label": "描述",
               "type": "textarea"
             },
@@ -407,8 +440,8 @@
               "type": "text"
             },
             {
-              "key": "cta_url",
-              "label": "链接 (可选)",
+              "key": "link",
+              "label": "详情链接 (可选)",
               "type": "text"
             }
           ],
@@ -416,19 +449,19 @@
             {
               "icon": "⚡",
               "title": "边缘极速直出",
-              "summary": "基于 Workers 与多级缓存，公开页面首字节响应控制在毫秒级。",
+              "description": "基于 Workers 与多级缓存，公开页面首字节响应控制在毫秒级。",
               "badge": "Edge SSR"
             },
             {
               "icon": "🧩",
               "title": "槽位与契约解耦",
-              "summary": "主题只定义骨架与视觉契约，业务数据在页面层自由绑定装配。",
+              "description": "主题只定义骨架与视觉契约，业务数据在页面层自由绑定装配。",
               "badge": "Slot System"
             },
             {
               "icon": "🗂️",
               "title": "多形态内容模型",
-              "summary": "原生融合长文、无标题微内容与 JSON1 结构化数据集。",
+              "description": "原生融合长文、无标题微内容与 JSON1 结构化数据集。",
               "badge": "Hybrid CMS"
             }
           ]
@@ -443,24 +476,47 @@
           {
             "icon": "⚡",
             "title": "边缘极速直出",
-            "summary": "基于 Workers 与多级缓存，公开页面首字节响应控制在毫秒级。",
+            "description": "基于 Workers 与多级缓存，公开页面首字节响应控制在毫秒级。",
             "badge": "Edge SSR"
           },
           {
             "icon": "🧩",
             "title": "槽位与契约解耦",
-            "summary": "主题只定义骨架与视觉契约，业务数据在页面层自由绑定装配。",
+            "description": "主题只定义骨架与视觉契约，业务数据在页面层自由绑定装配。",
             "badge": "Slot System"
           },
           {
             "icon": "🗂️",
             "title": "多形态内容模型",
-            "summary": "原生融合长文、无标题微内容与 JSON1 结构化数据集。",
+            "description": "原生融合长文、无标题微内容与 JSON1 结构化数据集。",
             "badge": "Hybrid CMS"
           }
         ]
       },
-      "template_html": "<univers-grid data-columns=\"{{#if columns}}{{columns}}{{else}}3{{/if}}\" data-variant=\"{{#if variant}}{{variant}}{{else}}card{{/if}}\" class=\"block space-y-8\">\n  <div class=\"text-center max-w-2xl mx-auto space-y-2.5 empty:hidden\">\n    {{#if section_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{section_title}}</h2>{{else}}{{#if grid_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{grid_title}}</h2>{{/if}}{{/if}}\n    {{#if section_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{section_subtitle}}</p>{{else}}{{#if grid_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{grid_subtitle}}</p>{{/if}}{{/if}}\n  </div>\n  <div class=\"univers-grid-items\">\n    {{#each items}}\n    <div class=\"univers-grid-card group p-6 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover flex flex-col justify-between space-y-4\">\n      <div class=\"space-y-3\">\n        {{#if image_url}}<div class=\"h-36 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-3\"><img src=\"{{image_url}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{/if}}\n        <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n          {{#if icon}}<span class=\"text-2xl leading-none\">{{icon}}</span>{{/if}}\n          {{#if badge}}<span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white univers-group-accent transition-colors\">{{title}}</h3>{{/if}}\n        {{#if summary}}<p class=\"text-sm text-slate-600 dark:text-slate-400 leading-relaxed\">{{summary}}</p>{{/if}}\n      </div>\n      {{#if cta_url}}\n      <div class=\"pt-3 border-t border-slate-100 dark:border-slate-800/80\">\n        <a href=\"{{cta_url}}\" class=\"text-xs font-bold univers-accent-text hover:underline\">{{#if cta_text}}{{cta_text}}{{else}}了解更多{{/if}} &rarr;</a>\n      </div>\n      {{/if}}\n    </div>\n    {{/each}}\n  </div>\n</univers-grid>"
+      "data_slots": [
+        {
+          "key": "title",
+          "label": "标题",
+          "required": true
+        },
+        {
+          "key": "description",
+          "label": "摘要描述"
+        },
+        {
+          "key": "badge",
+          "label": "标签徽章"
+        },
+        {
+          "key": "link",
+          "label": "详情链接"
+        },
+        {
+          "key": "image",
+          "label": "顶部配图"
+        }
+      ],
+      "template_html": "<univers-grid data-columns=\"{{#if columns}}{{columns}}{{else}}3{{/if}}\" data-variant=\"{{#if variant}}{{variant}}{{else}}card{{/if}}\" class=\"block space-y-8\">\n  <div class=\"text-center max-w-2xl mx-auto space-y-2.5 empty:hidden\">\n    {{#if section_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{section_title}}</h2>{{else}}{{#if grid_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{grid_title}}</h2>{{/if}}{{/if}}\n    {{#if section_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{section_subtitle}}</p>{{else}}{{#if grid_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{grid_subtitle}}</p>{{/if}}{{/if}}\n  </div>\n  <div class=\"univers-grid-items\">\n    {{#each items}}\n    <div class=\"univers-grid-card group p-6 rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover flex flex-col justify-between space-y-4\">\n      <div class=\"space-y-3\">\n        {{#if image}}<div class=\"h-36 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-3\"><img src=\"{{image}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{else}}{{#if image_url}}<div class=\"h-36 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-3\"><img src=\"{{image_url}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{/if}}{{/if}}\n        <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n          {{#if icon}}<span class=\"text-2xl leading-none\">{{icon}}</span>{{/if}}\n          {{#if badge}}<span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white univers-group-accent transition-colors\">{{title}}</h3>{{/if}}\n        {{#if description}}<p class=\"text-sm text-slate-600 dark:text-slate-400 leading-relaxed\">{{description}}</p>{{else}}{{#if summary}}<p class=\"text-sm text-slate-600 dark:text-slate-400 leading-relaxed\">{{summary}}</p>{{/if}}{{/if}}\n      </div>\n      {{#if link}}\n      <div class=\"pt-3 border-t border-slate-100 dark:border-slate-800/80\">\n        <a href=\"{{link}}\" class=\"text-xs font-bold univers-accent-text hover:underline\">{{#if cta_text}}{{cta_text}}{{else}}{{#if i18n.read_more}}{{i18n.read_more}}{{else}}Learn more{{/if}}{{/if}} &rarr;</a>\n      </div>\n      {{else}}{{#if cta_url}}\n      <div class=\"pt-3 border-t border-slate-100 dark:border-slate-800/80\">\n        <a href=\"{{cta_url}}\" class=\"text-xs font-bold univers-accent-text hover:underline\">{{#if cta_text}}{{cta_text}}{{else}}{{#if i18n.read_more}}{{i18n.read_more}}{{else}}Learn more{{/if}}{{/if}} &rarr;</a>\n      </div>\n      {{/if}}{{/if}}\n    </div>\n    {{/each}}\n  </div>\n</univers-grid>"
     },
     {
       "slug": "univers-cards",
@@ -471,6 +527,7 @@
       "slots": [
         "main"
       ],
+      "description": "中大型推荐对比卡片，适合方案对比、精选推荐或案例",
       "summary": "通用多卡片对比与轮播组件，适用于方案对比、推荐精选或案例展示。",
       "ui_schema": [
         {
@@ -507,17 +564,17 @@
               "type": "text"
             },
             {
-              "key": "summary",
+              "key": "description",
               "label": "描述",
               "type": "textarea"
             },
             {
-              "key": "meta_note",
+              "key": "meta",
               "label": "底部说明 (可选)",
               "type": "text"
             },
             {
-              "key": "cta_url",
+              "key": "link",
               "label": "跳转链接 (可选)",
               "type": "text"
             },
@@ -531,25 +588,25 @@
             {
               "badge": "Starter",
               "title": "个人博客与知识库",
-              "summary": "结合长文阅读器、TOC 大纲、Wiki 双链与无标题微内容流，专注内容沉淀。",
-              "meta_note": "Article + Micro + Timeline",
-              "cta_url": "/archive",
+              "description": "结合长文阅读器、TOC 大纲、Wiki 双链与无标题微内容流，专注内容沉淀。",
+              "meta": "Article + Micro + Timeline",
+              "link": "/archive",
               "featured": false
             },
             {
               "badge": "Featured",
               "title": "轻量产品与服务官网",
-              "summary": "组合 Hero、特性矩阵、图文穿插、FAQ 与通用联系表单，快速构建转化落地页。",
-              "meta_note": "Hero + Grid + FAQ + Form",
-              "cta_url": "/hello-walnut",
+              "description": "组合 Hero、特性矩阵、图文穿插、FAQ 与通用联系表单，快速构建转化落地页。",
+              "meta": "Hero + Grid + FAQ + Form",
+              "link": "/hello-walnut",
               "featured": true
             },
             {
               "badge": "Directory",
               "title": "结构化作品与资源展柜",
-              "summary": "通过自定义 Schema 与 @api:dataset: 协议维护作品集、工具目录或书影音清单。",
-              "meta_note": "Dataset Schema + Filter",
-              "cta_url": "/projects",
+              "description": "通过自定义 Schema 与 @api:dataset:collection=<slug>&limit=6 协议维护作品集、工具目录或书影音清单。",
+              "meta": "Dataset Schema + Filter",
+              "link": "/projects",
               "featured": false
             }
           ]
@@ -562,30 +619,53 @@
           {
             "badge": "Starter",
             "title": "个人博客与知识库",
-            "summary": "结合长文阅读器、TOC 大纲、Wiki 双链与无标题微内容流，专注内容沉淀。",
-            "meta_note": "Article + Micro + Timeline",
-            "cta_url": "/archive",
+            "description": "结合长文阅读器、TOC 大纲、Wiki 双链与无标题微内容流，专注内容沉淀。",
+            "meta": "Article + Micro + Timeline",
+            "link": "/archive",
             "featured": false
           },
           {
             "badge": "Featured",
             "title": "轻量产品与服务官网",
-            "summary": "组合 Hero、特性矩阵、图文穿插、FAQ 与通用联系表单，快速构建转化落地页。",
-            "meta_note": "Hero + Grid + FAQ + Form",
-            "cta_url": "/hello-walnut",
+            "description": "组合 Hero、特性矩阵、图文穿插、FAQ 与通用联系表单，快速构建转化落地页。",
+            "meta": "Hero + Grid + FAQ + Form",
+            "link": "/hello-walnut",
             "featured": true
           },
           {
             "badge": "Directory",
             "title": "结构化作品与资源展柜",
-            "summary": "通过自定义 Schema 与 @api:dataset: 协议维护作品集、工具目录或书影音清单。",
-            "meta_note": "Dataset Schema + Filter",
-            "cta_url": "/projects",
+            "description": "通过自定义 Schema 与 @api:dataset:collection=<slug>&limit=6 协议维护作品集、工具目录或书影音清单。",
+            "meta": "Dataset Schema + Filter",
+            "link": "/projects",
             "featured": false
           }
         ]
       },
-      "template_html": "<univers-cards-slider class=\"univers-cards block space-y-6\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-4 empty:hidden\">\n    <div class=\"space-y-1.5 empty:hidden\">\n      {{#if section_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{section_title}}</h2>{{else}}{{#if heading}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{heading}}</h2>{{/if}}{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{else}}{{#if section_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{section_subtitle}}</p>{{/if}}{{/if}}\n    </div>\n    <div class=\"univers-carousel-controls flex items-center gap-2 shrink-0\">\n      <button type=\"button\" class=\"univers-carousel-prev px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer\" aria-label=\"Previous Slide\">&larr;</button>\n      <button type=\"button\" class=\"univers-carousel-next px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer\" aria-label=\"Next Slide\">&rarr;</button>\n    </div>\n  </div>\n  <div class=\"overflow-hidden pt-4 pb-2\">\n    <div class=\"univers-carousel-track items-stretch\">\n      {{#each items}}\n      <div class=\"univers-carousel-slide p-6 rounded-xl transition-all flex flex-col justify-between space-y-5 relative {{#if featured}}univers-card-featured{{else}}bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover{{/if}}\">\n        {{#if featured}}\n        <div class=\"absolute -top-3 left-5 px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider univers-pill-active\">{{#if badge}}{{badge}}{{else}}Featured{{/if}}</div>\n        {{/if}}\n        <div class=\"space-y-3\">\n          <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n            {{#if tier_code}}<span class=\"px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{tier_code}}</span>{{else}}{{#if badge}}<span class=\"px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}{{/if}}\n            {{#if price_tag}}<span class=\"text-sm font-mono font-bold univers-accent-text\">{{price_tag}}</span>{{/if}}\n          </div>\n          {{#if title}}<h3 class=\"text-lg font-bold text-slate-900 dark:text-white\">{{title}}</h3>{{/if}}\n          {{#if summary}}<p class=\"text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{/if}}\n        </div>\n        <div class=\"pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 empty:hidden\">\n          {{#if meta_note}}<span>{{meta_note}}</span>{{else}}{{#if quota_info}}<span>{{quota_info}}</span>{{/if}}{{/if}}\n          {{#if cta_url}}<a href=\"{{cta_url}}\" class=\"font-bold univers-accent-text hover:underline shrink-0\">&rarr;</a>{{/if}}\n        </div>\n      </div>\n      {{/each}}\n    </div>\n  </div>\n</univers-cards-slider>"
+      "data_slots": [
+        {
+          "key": "title",
+          "label": "卡片标题",
+          "required": true
+        },
+        {
+          "key": "description",
+          "label": "卡片描述"
+        },
+        {
+          "key": "badge",
+          "label": "角标徽章"
+        },
+        {
+          "key": "meta",
+          "label": "底部说明"
+        },
+        {
+          "key": "link",
+          "label": "跳转链接"
+        }
+      ],
+      "template_html": "<univers-cards-slider class=\"univers-cards block space-y-6\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-4 empty:hidden\">\n    <div class=\"space-y-1.5 empty:hidden\">\n      {{#if section_title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{section_title}}</h2>{{else}}{{#if heading}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{heading}}</h2>{{/if}}{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{else}}{{#if section_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{section_subtitle}}</p>{{/if}}{{/if}}\n    </div>\n    <div class=\"univers-carousel-controls flex items-center gap-2 shrink-0\">\n      <button type=\"button\" class=\"univers-carousel-prev px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer\" aria-label=\"Previous Slide\">&larr;</button>\n      <button type=\"button\" class=\"univers-carousel-next px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer\" aria-label=\"Next Slide\">&rarr;</button>\n    </div>\n  </div>\n  <div class=\"overflow-hidden pt-4 pb-2\">\n    <div class=\"univers-carousel-track items-stretch\">\n      {{#each items}}\n      <div class=\"univers-carousel-slide p-6 rounded-xl transition-all flex flex-col justify-between space-y-5 relative {{#if featured}}univers-card-featured{{else}}univers-card-surface border univers-border-base univers-border-accent-hover{{/if}}\">\n        {{#if featured}}\n        <div class=\"absolute -top-3 left-5 px-3 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider univers-pill-active\">{{#if badge}}{{badge}}{{else}}Featured{{/if}}</div>\n        {{/if}}\n        <div class=\"space-y-3\">\n          <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n            {{#if tier_code}}<span class=\"px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{tier_code}}</span>{{else}}{{#if badge}}<span class=\"px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}{{/if}}\n            {{#if price_tag}}<span class=\"text-sm font-mono font-bold univers-accent-text\">{{price_tag}}</span>{{/if}}\n          </div>\n          {{#if title}}<h3 class=\"text-lg font-bold text-slate-900 dark:text-white\">{{title}}</h3>{{/if}}\n          {{#if description}}<p class=\"text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">{{description}}</p>{{else}}{{#if summary}}<p class=\"text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{/if}}{{/if}}\n        </div>\n        <div class=\"pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2 text-xs font-mono text-slate-500 dark:text-slate-400 empty:hidden\">\n          {{#if meta}}<span>{{meta}}</span>{{else}}{{#if meta_note}}<span>{{meta_note}}</span>{{else}}{{#if quota_info}}<span>{{quota_info}}</span>{{/if}}{{/if}}{{/if}}\n          {{#if link}}<a href=\"{{link}}\" class=\"font-bold univers-accent-text hover:underline shrink-0\">&rarr;</a>{{else}}{{#if cta_url}}<a href=\"{{cta_url}}\" class=\"font-bold univers-accent-text hover:underline shrink-0\">&rarr;</a>{{/if}}{{/if}}\n        </div>\n      </div>\n      {{/each}}\n    </div>\n  </div>\n</univers-cards-slider>"
     },
     {
       "slug": "univers-content-feed",
@@ -597,6 +677,7 @@
         "main",
         "sidebar"
       ],
+      "description": "微内容与动态流列表，适合 main 或 sidebar 轻量化展示",
       "summary": "支持 main / sidebar 双槽位自适应与 clean / card 风格，原生适配无标题微内容与 progress 徽章。",
       "ui_schema": [
         {
@@ -631,7 +712,40 @@
         {
           "key": "items",
           "label": "数据源协议 (@api:micro:limit=12)",
-          "type": "text",
+          "type": "json",
+          "widget": "list",
+          "item_schema": [
+            {
+              "key": "title",
+              "label": "标题 (可选)",
+              "type": "text"
+            },
+            {
+              "key": "summary",
+              "label": "微内容正文",
+              "type": "textarea"
+            },
+            {
+              "key": "folder",
+              "label": "分组标签",
+              "type": "text"
+            },
+            {
+              "key": "progress",
+              "label": "进度徽章",
+              "type": "text"
+            },
+            {
+              "key": "date",
+              "label": "发布日期",
+              "type": "text"
+            },
+            {
+              "key": "url",
+              "label": "详情链接 (可选)",
+              "type": "text"
+            }
+          ],
           "default": "@api:micro:limit=12"
         }
       ],
@@ -641,17 +755,15 @@
         "variant": "clean",
         "items": [
           {
-            "id": "demo_mic_1",
-            "type": "micro",
             "title": "",
-            "content_raw": "微内容支持完全无标题输入，适合记录轻量想法与更新动态。",
+            "summary": "微内容支持完全无标题输入，适合记录轻量想法与更新动态。",
             "progress": "指南",
             "folder": "guide",
-            "published_date": "2026-11-18"
+            "date": "2026-11-18"
           }
         ]
       },
-      "template_html": "<univers-stream-block class=\"univers-content-feed block space-y-5\" data-variant=\"{{#if variant}}{{variant}}{{else}}clean{{/if}}\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-3.5 empty:hidden\">\n    <div class=\"space-y-1 empty:hidden\">\n      {{#if feed_title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{feed_title}}</h2>{{/if}}\n      {{#if feed_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{feed_subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"univers-feed-filter-bar inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold empty:hidden\"></div>\n  </div>\n  <div class=\"univers-stream-container grid grid-cols-1 md:grid-cols-3 gap-5\">\n    {{#each items}}\n    <article class=\"univers-feed-card p-5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover flex flex-col justify-between space-y-3\" data-category=\"{{#if category}}{{category}}{{else}}{{#if folder}}{{folder}}{{else}}{{progress}}{{/if}}{{/if}}\" data-progress=\"{{progress}}\" data-folder=\"{{folder}}\" data-type=\"{{type}}\">\n      <div class=\"space-y-2.5\">\n        <div class=\"flex items-center justify-between gap-2 flex-wrap empty:hidden\">\n          <div class=\"flex items-center gap-1.5 flex-wrap empty:hidden\">\n            {{#if folder}}<span class=\"univers-folder-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300\">{{folder}}</span>{{/if}}\n            {{#if progress}}<span class=\"univers-progress-badge px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{progress}}</span>{{/if}}\n          </div>\n          {{#if date}}<time class=\"text-[11px] font-mono text-slate-400\">{{date}}</time>{{else}}{{#if published_date}}<time class=\"text-[11px] font-mono text-slate-400\">{{published_date}}</time>{{/if}}{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white leading-snug\">{{#if url}}<a href=\"{{url}}\" class=\"univers-link-accent\">{{title}}</a>{{else}}{{title}}{{/if}}</h3>{{/if}}\n        {{#if summary}}<p class=\"text-sm text-slate-700 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{else}}{{#if content_raw}}<p class=\"text-sm text-slate-700 dark:text-slate-300 leading-relaxed\">{{content_raw}}</p>{{/if}}{{/if}}\n      </div>\n      {{#if url}}<div class=\"pt-1 flex justify-end\"><a href=\"{{url}}\" class=\"text-xs font-bold univers-accent-text hover:underline\">&rarr;</a></div>{{/if}}\n    </article>\n    {{/each}}\n  </div>\n</univers-stream-block>"
+      "template_html": "<univers-stream-block class=\"univers-content-feed block space-y-5\" data-variant=\"{{#if variant}}{{variant}}{{else}}clean{{/if}}\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b univers-border-base pb-3.5 empty:hidden\">\n    <div class=\"space-y-1 empty:hidden\">\n      {{#if feed_title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{feed_title}}</h2>{{/if}}\n      {{#if feed_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{feed_subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"univers-feed-filter-bar inline-flex flex-wrap items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold empty:hidden\"></div>\n  </div>\n  <div class=\"univers-stream-container grid grid-cols-1 md:grid-cols-3 gap-5\">\n    {{#each items}}\n    <article class=\"univers-feed-card p-5 rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover flex flex-col justify-between space-y-3\" data-category=\"{{#if category}}{{category}}{{else}}{{#if folder}}{{folder}}{{else}}{{progress}}{{/if}}{{/if}}\" data-progress=\"{{progress}}\" data-folder=\"{{folder}}\" data-type=\"{{type}}\">\n      <div class=\"space-y-2.5\">\n        <div class=\"flex items-center justify-between gap-2 flex-wrap empty:hidden\">\n          <div class=\"flex items-center gap-1.5 flex-wrap empty:hidden\">\n            {{#if folder}}<span class=\"univers-folder-chip px-2 py-0.5 rounded-md text-[11px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300\">{{folder}}</span>{{/if}}\n            {{#if progress}}<span class=\"univers-progress-badge px-2 py-0.5 rounded-md text-[11px] font-mono font-bold univers-badge-accent\">{{progress}}</span>{{/if}}\n          </div>\n          {{#if date}}<time class=\"text-[11px] font-mono text-slate-400\">{{date}}</time>{{else}}{{#if published_date}}<time class=\"text-[11px] font-mono text-slate-400\">{{published_date}}</time>{{/if}}{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white leading-snug\">{{#if url}}<a href=\"{{url}}\" class=\"univers-link-accent\">{{title}}</a>{{else}}{{title}}{{/if}}</h3>{{/if}}\n        {{#if summary}}<p class=\"text-sm text-slate-700 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{else}}{{#if content_raw}}<p class=\"text-sm text-slate-700 dark:text-slate-300 leading-relaxed\">{{content_raw}}</p>{{/if}}{{/if}}\n      </div>\n      {{#if url}}<div class=\"pt-1 flex justify-end\"><a href=\"{{url}}\" class=\"text-xs font-bold univers-accent-text hover:underline\">&rarr;</a></div>{{/if}}\n    </article>\n    {{/each}}\n  </div>\n</univers-stream-block>"
     },
     {
       "slug": "univers-dataset-viewer",
@@ -662,6 +774,7 @@
       "slots": [
         "main"
       ],
+      "description": "数据集绑定展厅，适合项目与书签的多布局结构化列表",
       "summary": "绑定 @api:dataset: 展示结构化条目，支持 grid / list / compact 三种展柜布局。",
       "ui_schema": [
         {
@@ -674,7 +787,7 @@
           "key": "subtitle",
           "label": "副标题描述 (留空则隐藏)",
           "type": "text",
-          "default": "通过 @api:dataset:schema=projects 从结构化数据集实时拉取"
+          "default": "通过 @api:dataset:collection=projects&limit=6 从结构化数据集实时拉取"
         },
         {
           "key": "layout",
@@ -705,28 +818,97 @@
         },
         {
           "key": "items",
-          "label": "数据源 (@api:dataset:schema=...)",
-          "type": "text",
-          "default": "@api:dataset:schema=projects"
+          "label": "数据源 (@api:dataset:collection=<slug>&limit=6)",
+          "type": "json",
+          "widget": "list",
+          "item_schema": [
+            {
+              "key": "title",
+              "label": "标题",
+              "type": "text"
+            },
+            {
+              "key": "description",
+              "label": "摘要描述",
+              "type": "textarea"
+            },
+            {
+              "key": "badge",
+              "label": "分类 / 徽章",
+              "type": "text"
+            },
+            {
+              "key": "meta",
+              "label": "角标 / 状态备注",
+              "type": "text"
+            },
+            {
+              "key": "tags",
+              "label": "技术栈 / 标签行",
+              "type": "text"
+            },
+            {
+              "key": "link",
+              "label": "跳转链接",
+              "type": "url"
+            },
+            {
+              "key": "image",
+              "label": "封面配图",
+              "type": "image"
+            }
+          ],
+          "default": "@api:dataset:collection=projects&limit=6"
         }
       ],
       "default_props": {
-        "title": "开源项目与工具清单",
-        "subtitle": "通过 @api:dataset:schema=projects 从结构化数据集实时拉取",
+        "title": "精选项目与作品集",
+        "subtitle": "开源实验、设计工具与持续维护的数字产品",
         "layout": "grid",
         "cta_label": "查看详情",
         "items": [
           {
             "title": "Edge Static Starter",
-            "summary": "面向 Cloudflare Workers 的极简静态页面与组件脚手架示例。",
-            "category": "Starter",
-            "tech_stack": "Workers · D1 · Tailwind",
-            "site_url": "/hello-walnut",
-            "metrics": "MIT"
+            "description": "轻量级边缘页面与组件模板套件，兼顾首屏加载速度与清晰视觉层次。",
+            "badge": "Starter",
+            "tags": "TypeScript · Tailwind",
+            "link": "/hello-walnut",
+            "meta": "MIT"
           }
         ]
       },
-      "template_html": "<univers-dataset-viewer data-layout=\"{{#if layout}}{{layout}}{{else}}grid{{/if}}\" class=\"block space-y-6\">\n  <div class=\"space-y-1.5 border-b border-slate-200/80 dark:border-slate-800 pb-3.5 empty:hidden\">\n    {{#if title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n    {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{/if}}\n  </div>\n  <div class=\"univers-dataset-grid\">\n    {{#each items}}\n    <div class=\"univers-dataset-card group p-5 rounded-xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/90 univers-border-accent-hover flex flex-col justify-between gap-4 text-slate-900 dark:text-slate-100\">\n      <div class=\"space-y-2.5 min-w-0\">\n        {{#if cover_image}}<div class=\"h-32 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-2\"><img src=\"{{cover_image}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{/if}}\n        <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n          <div class=\"flex items-center gap-1.5 min-w-0\">\n            {{#if icon}}<span class=\"text-base leading-none\">{{icon}}</span>{{/if}}\n            {{#if category}}<span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent truncate\">{{category}}</span>{{/if}}\n          </div>\n          {{#if metrics}}<span class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0\">{{metrics}}</span>{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white univers-group-accent transition-colors leading-snug\">{{title}}</h3>{{/if}}\n        {{#if summary}}<p class=\"univers-dataset-summary text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3\">{{summary}}</p>{{/if}}\n      </div>\n      <div class=\"univers-dataset-footer pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3 empty:hidden\">\n        {{#if tech_stack}}<div class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate\">{{tech_stack}}</div>{{/if}}\n        {{#if site_url}}\n        <a href=\"{{site_url}}\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline shrink-0\">\n          <span>{{#if cta_label}}{{cta_label}}{{else}}查看详情{{/if}}</span>\n          <span>&rarr;</span>\n        </a>\n        {{/if}}\n      </div>\n    </div>\n    {{/each}}\n  </div>\n</univers-dataset-viewer>"
+      "data_slots": [
+        {
+          "key": "title",
+          "label": "标题",
+          "required": true
+        },
+        {
+          "key": "description",
+          "label": "摘要描述"
+        },
+        {
+          "key": "badge",
+          "label": "分类 / 徽章"
+        },
+        {
+          "key": "meta",
+          "label": "角标 / 状态备注"
+        },
+        {
+          "key": "tags",
+          "label": "技术栈 / 标签行"
+        },
+        {
+          "key": "link",
+          "label": "跳转链接"
+        },
+        {
+          "key": "image",
+          "label": "封面配图"
+        }
+      ],
+      "template_html": "<univers-dataset-viewer data-layout=\"{{#if layout}}{{layout}}{{else}}grid{{/if}}\" class=\"block space-y-6\">\n  <div class=\"space-y-1.5 border-b univers-border-base pb-3.5 empty:hidden\">\n    {{#if title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n    {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{/if}}\n  </div>\n  <div class=\"univers-dataset-grid\">\n    {{#each items}}\n    <div class=\"univers-dataset-card group p-5 rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover flex flex-col justify-between gap-4 text-slate-900 dark:text-slate-100\">\n      <div class=\"space-y-2.5 min-w-0\">\n        {{#if image}}<div class=\"h-32 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-2\"><img src=\"{{image}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{else}}{{#if cover_image}}<div class=\"h-32 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center justify-center p-2\"><img src=\"{{cover_image}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain\" /></div>{{/if}}{{/if}}\n        <div class=\"flex items-center justify-between gap-2 empty:hidden\">\n          <div class=\"flex items-center gap-1.5 min-w-0\">\n            {{#if icon}}<span class=\"text-base leading-none\">{{icon}}</span>{{/if}}\n            {{#if badge}}<span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent truncate\">{{badge}}</span>{{else}}{{#if category}}<span class=\"px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent truncate\">{{category}}</span>{{/if}}{{/if}}\n          </div>\n          {{#if meta}}<span class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0\">{{meta}}</span>{{else}}{{#if metrics}}<span class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0\">{{metrics}}</span>{{/if}}{{/if}}\n        </div>\n        {{#if title}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white univers-group-accent transition-colors leading-snug\">{{title}}</h3>{{/if}}\n        {{#if description}}<p class=\"univers-dataset-summary text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3\">{{description}}</p>{{else}}{{#if summary}}<p class=\"univers-dataset-summary text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3\">{{summary}}</p>{{/if}}{{/if}}\n      </div>\n      <div class=\"univers-dataset-footer pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3 empty:hidden\">\n        {{#if tags}}<div class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate\">{{tags}}</div>{{else}}{{#if tech_stack}}<div class=\"text-[11px] font-mono text-slate-500 dark:text-slate-400 truncate\">{{tech_stack}}</div>{{/if}}{{/if}}\n        {{#if link}}\n        <a href=\"{{link}}\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline shrink-0\">\n          <span>{{#if cta_label}}{{cta_label}}{{else}}{{#if i18n.view_details}}{{i18n.view_details}}{{else}}View details{{/if}}{{/if}}</span>\n          <span>&rarr;</span>\n        </a>\n        {{else}}{{#if site_url}}\n        <a href=\"{{site_url}}\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline shrink-0\">\n          <span>{{#if cta_label}}{{cta_label}}{{else}}{{#if i18n.view_details}}{{i18n.view_details}}{{else}}View details{{/if}}{{/if}}</span>\n          <span>&rarr;</span>\n        </a>\n        {{else}}{{#if url}}\n        <a href=\"{{url}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline shrink-0\">\n          <span>{{#if cta_label}}{{cta_label}}{{else}}{{#if i18n.view_details}}{{i18n.view_details}}{{else}}View details{{/if}}{{/if}}</span>\n          <span>&rarr;</span>\n        </a>\n        {{/if}}{{/if}}{{/if}}\n      </div>\n    </div>\n    {{/each}}\n  </div>\n</univers-dataset-viewer>"
     },
     {
       "slug": "univers-media-gallery",
@@ -738,6 +920,7 @@
         "main",
         "sidebar"
       ],
+      "description": "视觉媒体与图片画廊，支持网格展示，侧栏自动收为单列",
       "summary": "容器宽度自适应画廊，支持 grid / strip / showcase 布局，在侧栏自动收敛为单列。",
       "ui_schema": [
         {
@@ -776,7 +959,30 @@
         {
           "key": "items",
           "label": "数据源 (@api:media:limit=6)",
-          "type": "text",
+          "type": "json",
+          "widget": "list",
+          "item_schema": [
+            {
+              "key": "title",
+              "label": "媒体名称",
+              "type": "text"
+            },
+            {
+              "key": "url",
+              "label": "图片地址",
+              "type": "image"
+            },
+            {
+              "key": "mime_type",
+              "label": "格式类型",
+              "type": "text"
+            },
+            {
+              "key": "folder",
+              "label": "目录分类",
+              "type": "text"
+            }
+          ],
           "default": "@api:media:limit=3"
         }
       ],
@@ -805,7 +1011,7 @@
           }
         ]
       },
-      "template_html": "<univers-media-gallery data-layout=\"{{#if layout}}{{layout}}{{else}}grid{{/if}}\" class=\"block w-full space-y-6\">\n  <div class=\"space-y-1.5 empty:hidden\">\n    {{#if gallery_title}}<h3 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{gallery_title}}</h3>{{/if}}\n    {{#if gallery_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{gallery_subtitle}}</p>{{/if}}\n  </div>\n  <div class=\"univers-gallery-grid\">\n    {{#each items}}\n    <figure class=\"group p-3.5 rounded-xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover flex flex-col space-y-3\">\n      <div class=\"univers-gallery-frame h-44 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/80 flex items-center justify-center p-4 relative overflow-hidden\">\n        <img src=\"{{url}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105\" />\n        {{#if mime_type}}<span class=\"absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold univers-badge-accent backdrop-blur-xs\">{{mime_type}}</span>{{/if}}\n      </div>\n      <figcaption class=\"flex items-center justify-between gap-2 px-1\">\n        <div class=\"text-xs font-bold text-slate-800 dark:text-slate-100 truncate univers-group-accent transition\" title=\"{{title}}\">{{title}}</div>\n        {{#if folder}}<span class=\"px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0\">{{folder}}</span>{{/if}}\n      </figcaption>\n    </figure>\n    {{/each}}\n  </div>\n</univers-media-gallery>"
+      "template_html": "<univers-media-gallery data-layout=\"{{#if layout}}{{layout}}{{else}}grid{{/if}}\" class=\"block w-full space-y-6\">\n  <div class=\"space-y-1.5 empty:hidden\">\n    {{#if gallery_title}}<h3 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{gallery_title}}</h3>{{/if}}\n    {{#if gallery_subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{gallery_subtitle}}</p>{{/if}}\n  </div>\n  <div class=\"univers-gallery-grid\">\n    {{#each items}}\n    <figure class=\"group p-3.5 rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover flex flex-col space-y-3\">\n      <div class=\"univers-gallery-frame h-44 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/80 flex items-center justify-center p-4 relative overflow-hidden\">\n        <img src=\"{{url}}\" alt=\"{{title}}\" class=\"max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105\" />\n        {{#if mime_type}}<span class=\"absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold univers-badge-accent backdrop-blur-xs\">{{mime_type}}</span>{{/if}}\n      </div>\n      <figcaption class=\"flex items-center justify-between gap-2 px-1\">\n        <div class=\"text-xs font-bold text-slate-800 dark:text-slate-100 truncate univers-group-accent transition\" title=\"{{title}}\">{{title}}</div>\n        {{#if folder}}<span class=\"px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0\">{{folder}}</span>{{/if}}\n      </figcaption>\n    </figure>\n    {{/each}}\n  </div>\n</univers-media-gallery>"
     },
     {
       "slug": "univers-article-view",
@@ -816,6 +1022,7 @@
       "slots": [
         "main"
       ],
+      "description": "文章详情页主阅读器，承接长文正文与阅读进度元信息",
       "summary": "文章详情页主阅读容器，自动承接 {{content_html}}、阅读进度条、元信息控制与多语言互译切换。",
       "ui_schema": [
         {
@@ -862,7 +1069,7 @@
         ],
         "content_html": "<p class=\"text-slate-700 dark:text-slate-300\">这是文章正文阅读器的实时预览内容。实际发布后将由系统自动注入渲染后的 Markdown 正文 HTML。</p>"
       },
-      "template_html": "<univers-article-view class=\"block\">\n  <div id=\"walnut-reading-progress\" data-walnut-reading-progress class=\"univers-progress-bar fixed top-0 left-0 h-1 z-50 transition-all duration-75\" style=\"width: 0%;\"></div>\n  <article class=\"max-w-3xl mx-auto space-y-8 text-slate-900 dark:text-slate-100\">\n    <header class=\"space-y-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-7\">\n      {{#if show_meta_bar}}\n      <div class=\"flex flex-wrap items-center justify-between gap-2\">\n        {{#if back_link_text}}<a href=\"{{back_link_url}}\" class=\"inline-flex items-center gap-1.5 text-xs font-bold univers-accent-text hover:underline\">&larr; {{back_link_text}}</a>{{/if}}\n        <div class=\"flex flex-wrap items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400\">\n          {{#if category}}<span class=\"px-2.5 py-0.5 rounded-full univers-badge-accent font-bold\">{{category}}</span>{{else}}{{#if page.category}}<span class=\"px-2.5 py-0.5 rounded-full univers-badge-accent font-bold\">{{page.category}}</span>{{/if}}{{/if}}\n          <span>{{#if page.published_date}}{{page.published_date}}{{else}}{{published_date}}{{/if}}</span>\n          <span>· {{#if page.reading_time}}{{page.reading_time}}{{else}}{{reading_time}}{{/if}} {{#if i18n.reading_unit}}{{i18n.reading_unit}}{{else}}min read{{/if}}</span>\n          <span>· {{#if page.author}}{{page.author}}{{else}}{{author}}{{/if}}</span>\n        </div>\n      </div>\n      {{/if}}\n      {{#if translations}}\n      <div class=\"walnut-translation-links flex flex-wrap gap-1.5 text-xs font-mono pt-1\">\n        {{#each translations}}\n        <a href=\"{{url}}\" class=\"px-2.5 py-0.5 rounded-lg transition {{#if isCurrent}}univers-pill-active font-bold{{else}}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700{{/if}}\">{{locale}}</a>\n        {{/each}}\n      </div>\n      {{/if}}\n      <h1 class=\"text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight\">\n        {{#if page.title}}{{page.title}}{{else}}{{title}}{{/if}}\n      </h1>\n      {{#if summary}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{else}}{{#if description}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{description}}</p>{{else}}{{#if page.summary}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{page.summary}}</p>{{else}}{{#if page.description}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{page.description}}</p>{{/if}}{{/if}}{{/if}}{{/if}}\n    </header>\n    <div class=\"walnut-article-content prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed space-y-6\">\n      {{{content_html}}}\n    </div>\n  </article>\n</univers-article-view>"
+      "template_html": "<univers-article-view class=\"block\">\n  <div id=\"edge-reading-progress\" data-edge-reading-progress class=\"univers-progress-bar fixed top-0 left-0 h-1 z-50 transition-all duration-75\" style=\"width: 0%;\"></div>\n  <article class=\"max-w-3xl mx-auto space-y-8 text-slate-900 dark:text-slate-100\">\n    <header class=\"space-y-4 border-b univers-border-base pb-7\">\n      {{#if show_meta_bar}}\n      <div class=\"flex flex-wrap items-center justify-between gap-2\">\n        {{#if back_link_text}}<a href=\"{{back_link_url}}\" class=\"inline-flex items-center gap-1.5 text-xs font-bold univers-accent-text hover:underline\">&larr; {{back_link_text}}</a>{{/if}}\n        <div class=\"flex flex-wrap items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400\">\n          {{#if category}}<span class=\"px-2.5 py-0.5 rounded-full univers-badge-accent font-bold\">{{category}}</span>{{else}}{{#if page.category}}<span class=\"px-2.5 py-0.5 rounded-full univers-badge-accent font-bold\">{{page.category}}</span>{{/if}}{{/if}}\n          <span>{{#if page.published_date}}{{page.published_date}}{{else}}{{published_date}}{{/if}}</span>\n          <span>· {{#if page.reading_time}}{{page.reading_time}}{{else}}{{reading_time}}{{/if}} {{#if i18n.reading_unit}}{{i18n.reading_unit}}{{else}}min read{{/if}}</span>\n          <span>· {{#if page.author}}{{page.author}}{{else}}{{author}}{{/if}}</span>\n        </div>\n      </div>\n      {{/if}}\n      {{#if translations}}\n      <div class=\"walnut-translation-links flex flex-wrap gap-1.5 text-xs font-mono pt-1\">\n        {{#each translations}}\n        <a href=\"{{url}}\" class=\"px-2.5 py-0.5 rounded-lg transition {{#if isCurrent}}univers-pill-active font-bold{{else}}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700{{/if}}\">{{locale}}</a>\n        {{/each}}\n      </div>\n      {{/if}}\n      <h1 class=\"text-2xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight\">\n        {{#if page.title}}{{page.title}}{{else}}{{title}}{{/if}}\n      </h1>\n      {{#if summary}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{else}}{{#if description}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{description}}</p>{{else}}{{#if page.summary}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{page.summary}}</p>{{else}}{{#if page.description}}<p class=\"text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{page.description}}</p>{{/if}}{{/if}}{{/if}}{{/if}}\n    </header>\n    <div class=\"walnut-article-content prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed space-y-6\">\n      {{{content_html}}}\n    </div>\n  </article>\n</univers-article-view>"
     },
     {
       "slug": "univers-toc-sidebar",
@@ -874,6 +1081,7 @@
         "sidebar",
         "main"
       ],
+      "description": "目录与双链导航卡，放 sidebar 吸顶，放 main 可折叠",
       "summary": "零参数槽位自适应：在 sidebar 吸顶显示目录与双链，在 main 自动切换为可折叠文首目录盒。",
       "ui_schema": [
         {
@@ -890,16 +1098,17 @@
         }
       ],
       "default_props": {
-        "toc_title": "本文目录大纲",
-        "backlinks_title": "双向链接引用",
+        "toc_title": "本文目录",
+        "backlinks_title": "反向双链",
         "backlinks": [
           {
-            "title": "页面装配、微内容与 @api: 数据直连",
-            "slug": "architecture-and-slots"
+            "title": "构建我的数字花园工作流",
+            "slug": "building-digital-garden",
+            "url": "/building-digital-garden"
           }
         ]
       },
-      "template_html": "<univers-toc-sidebar class=\"block space-y-6\">\n  <details open class=\"univers-toc-section border-l border-slate-200 dark:border-slate-800 pl-4 space-y-2.5\">\n    <summary class=\"univers-toc-summary flex items-center justify-between gap-2 cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white\">\n      <span>{{#if toc_title}}{{toc_title}}{{else}}{{#if i18n.outline_title}}{{i18n.outline_title}}{{else}}On This Page{{/if}}{{/if}}</span>\n      <span class=\"univers-toc-chevron text-slate-400 font-mono text-xs\">+</span>\n    </summary>\n    <nav class=\"univers-toc-list space-y-1 text-xs text-slate-600 dark:text-slate-400\">\n      <div class=\"text-xs text-slate-400 py-1\">正在解析文档大纲...</div>\n    </nav>\n  </details>\n  {{#if backlinks}}\n  <div class=\"univers-toc-section border-l border-slate-200 dark:border-slate-800 pl-4 space-y-2.5\">\n    <h3 class=\"text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white\">{{#if backlinks_title}}{{backlinks_title}}{{else}}{{#if i18n.backlinks_title}}{{i18n.backlinks_title}}{{else}}Backlinks{{/if}}{{/if}}</h3>\n    <div class=\"space-y-1.5\">\n      {{#each backlinks}}\n      <a href=\"/{{slug}}\" class=\"block py-1.5 px-2 -mx-2 rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition group\">\n        <div class=\"text-xs font-semibold text-slate-700 dark:text-slate-300 univers-group-accent transition-colors\">{{title}}</div>\n        <div class=\"text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5\">&larr; /{{slug}}</div>\n      </a>\n      {{/each}}\n    </div>\n  </div>\n  {{/if}}\n</univers-toc-sidebar>"
+      "template_html": "<univers-toc-sidebar class=\"block space-y-6\">\n  <details open class=\"univers-toc-section border-l border-slate-200 dark:border-slate-800 pl-4 space-y-2.5\">\n    <summary class=\"univers-toc-summary flex items-center justify-between gap-2 cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white\">\n      <span>{{#if toc_title}}{{toc_title}}{{else}}{{#if i18n.outline_title}}{{i18n.outline_title}}{{else}}On This Page{{/if}}{{/if}}</span>\n      <span class=\"univers-toc-chevron text-slate-400 font-mono text-xs\">+</span>\n    </summary>\n    <nav class=\"univers-toc-list space-y-1 text-xs text-slate-600 dark:text-slate-400\">\n      <div class=\"text-xs text-slate-400 py-1\">{{#if i18n.loading_outline}}{{i18n.loading_outline}}{{else}}Loading outline...{{/if}}</div>\n    </nav>\n  </details>\n  {{#if backlinks}}\n  <div class=\"univers-toc-section border-l border-slate-200 dark:border-slate-800 pl-4 space-y-2.5\">\n    <h3 class=\"text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white\">{{#if backlinks_title}}{{backlinks_title}}{{else}}{{#if i18n.backlinks_title}}{{i18n.backlinks_title}}{{else}}Backlinks{{/if}}{{/if}}</h3>\n    <div class=\"space-y-1.5\">\n      {{#each backlinks}}\n      <a href=\"{{#if url}}{{url}}{{else}}/{{slug}}{{/if}}\" class=\"block py-1.5 px-2 -mx-2 rounded-lg hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition group\">\n        <div class=\"text-xs font-semibold text-slate-700 dark:text-slate-300 univers-group-accent transition-colors\">{{title}}</div>\n        <div class=\"text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5\">&larr; {{#if url}}{{url}}{{else}}/{{slug}}{{/if}}</div>\n      </a>\n      {{/each}}\n    </div>\n  </div>\n  {{/if}}\n</univers-toc-sidebar>"
     },
     {
       "slug": "univers-lead-form",
@@ -910,6 +1119,7 @@
       "slots": [
         "main"
       ],
+      "description": "通用线索与联系表单，体量较大，适合页面中下部转化",
       "summary": "通用联系与线索提交表单，支持 split / compact 布局与 contrast / soft 视觉基调，可选左侧要点列表。",
       "ui_schema": [
         {
@@ -995,13 +1205,13 @@
         "layout": "split",
         "tone": "soft",
         "badge_text": "CONTACT",
-        "title": "保持联系或提交反馈",
-        "subtitle": "填写您的称呼、邮箱与留言内容，提交后可通过后台 Webhook 自动转发至指定通道。",
+        "title": "保持联系",
+        "subtitle": "欢迎就项目合作、技术交流或文章想法来信，通常会在一至两个工作日内回复。",
         "button_text": "发送消息",
         "form_action": "/api/forms/submit/contact",
         "highlights": []
       },
-      "template_html": "<univers-convert-block class=\"univers-lead-form block\" data-layout=\"{{#if layout}}{{layout}}{{else}}split{{/if}}\" data-tone=\"{{#if tone}}{{tone}}{{else}}soft{{/if}}\" data-action=\"api\" data-target=\"{{#if form_action}}{{form_action}}{{else}}/api/forms/submit/contact{{/if}}\">\n  <div class=\"univers-lead-surface rounded-2xl p-6 sm:p-10\">\n    <div class=\"univers-lead-grid grid grid-cols-1 lg:grid-cols-12 gap-8 items-start\">\n      <div class=\"lg:col-span-5 space-y-4\">\n        {{#if badge_text}}<span class=\"inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge_text}}</span>{{/if}}\n        {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight leading-tight\">{{title}}</h2>{{/if}}\n        {{#if subtitle}}<p class=\"univers-lead-muted text-sm text-slate-600 dark:text-slate-400 leading-relaxed\">{{subtitle}}</p>{{/if}}\n        {{#if highlights}}\n        <ul class=\"univers-lead-highlights space-y-2 pt-2 text-xs text-slate-600 dark:text-slate-300\">\n          {{#each highlights}}\n          <li class=\"flex items-center gap-2\"><span class=\"w-1.5 h-1.5 rounded-full univers-accent-dot shrink-0\"></span><span>{{text}}</span></li>\n          {{/each}}\n        </ul>\n        {{/if}}\n      </div>\n      <div class=\"lg:col-span-7\">\n        <form class=\"univers-convert-form space-y-4\">\n          <input type=\"text\" name=\"_honeypot\" class=\"hidden\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" />\n          <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-4\">\n            <div class=\"space-y-1.5\">\n              <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">称呼 / Name</label>\n              <input type=\"text\" name=\"name\" placeholder=\"您的姓名或昵称\" class=\"univers-convert-name univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none\" />\n            </div>\n            <div class=\"space-y-1.5\">\n              <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">邮箱 / Email *</label>\n              <input type=\"email\" name=\"email\" required placeholder=\"you@example.com\" class=\"univers-convert-input univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none\" />\n            </div>\n          </div>\n          <div class=\"space-y-1.5\">\n            <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">留言内容 / Message</label>\n            <textarea name=\"message\" rows=\"3\" placeholder=\"请简述您的想法、合作咨询或反馈建议...\" class=\"univers-convert-message univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none resize-y\"></textarea>\n          </div>\n          <div class=\"flex justify-end pt-1\">\n            <button type=\"submit\" class=\"w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold univers-btn-primary cursor-pointer\">{{#if button_text}}{{button_text}}{{else}}发送消息{{/if}} &rarr;</button>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</univers-convert-block>"
+      "template_html": "<univers-convert-block class=\"univers-lead-form block\" data-layout=\"{{#if layout}}{{layout}}{{else}}split{{/if}}\" data-tone=\"{{#if tone}}{{tone}}{{else}}soft{{/if}}\" data-action=\"api\" data-target=\"{{#if form_action}}{{form_action}}{{else}}/api/forms/submit/contact{{/if}}\">\n  <div class=\"univers-lead-surface rounded-2xl p-6 sm:p-10\">\n    <div class=\"univers-lead-grid grid grid-cols-1 lg:grid-cols-12 gap-8 items-start\">\n      <div class=\"lg:col-span-5 space-y-4\">\n        {{#if badge_text}}<span class=\"inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge_text}}</span>{{/if}}\n        {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight leading-tight\">{{title}}</h2>{{/if}}\n        {{#if subtitle}}<p class=\"univers-lead-muted text-sm text-slate-600 dark:text-slate-400 leading-relaxed\">{{subtitle}}</p>{{/if}}\n        {{#if highlights}}\n        <ul class=\"univers-lead-highlights space-y-2 pt-2 text-xs text-slate-600 dark:text-slate-300\">\n          {{#each highlights}}\n          <li class=\"flex items-center gap-2\"><span class=\"w-1.5 h-1.5 rounded-full univers-accent-dot shrink-0\"></span><span>{{text}}</span></li>\n          {{/each}}\n        </ul>\n        {{/if}}\n      </div>\n      <div class=\"lg:col-span-7\">\n        <form class=\"univers-convert-form space-y-4\">\n          <input type=\"text\" name=\"_honeypot\" class=\"hidden\" tabindex=\"-1\" autocomplete=\"off\" aria-hidden=\"true\" />\n          <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-4\">\n            <div class=\"space-y-1.5\">\n              <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">{{#if name_label}}{{name_label}}{{else}}{{#if i18n.form_name}}{{i18n.form_name}}{{else}}Name{{/if}}{{/if}}</label>\n              <input type=\"text\" name=\"name\" placeholder=\"{{#if name_placeholder}}{{name_placeholder}}{{else}}{{#if i18n.form_name_placeholder}}{{i18n.form_name_placeholder}}{{else}}Your name{{/if}}{{/if}}\" class=\"univers-convert-name univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none\" />\n            </div>\n            <div class=\"space-y-1.5\">\n              <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">{{#if email_label}}{{email_label}}{{else}}{{#if i18n.form_email}}{{i18n.form_email}}{{else}}Email *{{/if}}{{/if}}</label>\n              <input type=\"email\" name=\"email\" required placeholder=\"{{#if email_placeholder}}{{email_placeholder}}{{else}}you@example.com{{/if}}\" class=\"univers-convert-input univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none\" />\n            </div>\n          </div>\n          <div class=\"space-y-1.5\">\n            <label class=\"univers-lead-muted block text-[11px] font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider\">{{#if message_label}}{{message_label}}{{else}}{{#if i18n.form_message}}{{i18n.form_message}}{{else}}Message{{/if}}{{/if}}</label>\n            <textarea name=\"message\" rows=\"3\" placeholder=\"{{#if message_placeholder}}{{message_placeholder}}{{else}}{{#if i18n.form_message_placeholder}}{{i18n.form_message_placeholder}}{{else}}Share your thoughts or inquiry...{{/if}}{{/if}}\" class=\"univers-convert-message univers-lead-input w-full px-3.5 py-2.5 rounded-lg border text-sm outline-none resize-y\"></textarea>\n          </div>\n          <div class=\"flex justify-end pt-1\">\n            <button type=\"submit\" class=\"w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold univers-btn-primary cursor-pointer\">{{#if button_text}}{{button_text}}{{else}}{{#if i18n.form_submit}}{{i18n.form_submit}}{{else}}Send Message{{/if}}{{/if}} &rarr;</button>\n          </div>\n        </form>\n      </div>\n    </div>\n  </div>\n</univers-convert-block>"
     },
     {
       "slug": "univers-footer",
@@ -1012,6 +1222,7 @@
       "slots": [
         "footer"
       ],
+      "description": "全局底部版权页脚，限放 footer 槽位，含链接与署名",
       "summary": "支持 simple / rich 两种页脚形态，原生消费 tagline、footer_links 与 powered_by 契约。",
       "ui_schema": [
         {
@@ -1076,7 +1287,7 @@
         "copyright_text": "",
         "footer_links": []
       },
-      "template_html": "<univers-footer data-layout=\"{{#if layout}}{{layout}}{{else}}simple{{/if}}\" class=\"block w-full\">\n  <div class=\"max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5 text-xs text-slate-500 dark:text-slate-400\">\n    <div class=\"flex flex-col sm:flex-row sm:items-center justify-between gap-4\">\n      <div class=\"space-y-1\">\n        <div class=\"flex items-center gap-2\">\n          <span class=\"font-bold text-slate-800 dark:text-slate-200\">{{#if brand_name}}{{brand_name}}{{else}}{{site.name}}{{/if}}</span>\n          <span>·</span>\n          <span class=\"font-mono text-[11px]\">{{#if copyright_text}}{{copyright_text}}{{else}}{{site.copyright}}{{/if}}</span>\n        </div>\n        {{#if tagline}}<p class=\"univers-footer-tagline text-xs text-slate-500 dark:text-slate-400 max-w-md\">{{tagline}}</p>{{/if}}\n      </div>\n      {{#if footer_links}}\n      <nav class=\"flex flex-wrap items-center gap-5 font-medium\">\n        {{#each footer_links}}\n        <a href=\"{{#if url}}{{url}}{{else}}{{href}}{{/if}}\" class=\"univers-link-accent\">{{#if text}}{{text}}{{else}}{{label}}{{/if}}</a>\n        {{/each}}\n      </nav>\n      {{/if}}\n      {{#if powered_by.enabled}}\n      <div class=\"univers-footer-whitelabel font-mono text-[11px] text-slate-400 dark:text-slate-500 sm:text-right\">\n        <a href=\"{{powered_by.url}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"univers-link-accent\">{{powered_by.label}}</a>\n      </div>\n      {{/if}}\n    </div>\n  </div>\n</univers-footer>"
+      "template_html": "<univers-footer data-layout=\"{{#if layout}}{{layout}}{{else}}simple{{/if}}\" class=\"block w-full\">\n  <div class=\"max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5 text-xs text-slate-500 dark:text-slate-400\">\n    <div class=\"univers-footer-top flex flex-col sm:flex-row sm:items-center justify-between gap-4\">\n      <div class=\"space-y-1\">\n        <div class=\"font-bold text-sm text-slate-900 dark:text-white\">{{#if brand_name}}{{brand_name}}{{else}}{{site.name}}{{/if}}</div>\n        {{#if tagline}}<p class=\"univers-footer-tagline text-xs text-slate-500 dark:text-slate-400 max-w-md\">{{tagline}}</p>{{/if}}\n      </div>\n      {{#if footer_links}}\n      <nav class=\"flex flex-wrap items-center gap-5 font-medium\">\n        {{#each footer_links}}\n        <a href=\"{{#if url}}{{url}}{{else}}{{href}}{{/if}}\" class=\"univers-link-accent\">{{#if text}}{{text}}{{else}}{{label}}{{/if}}</a>\n        {{/each}}\n      </nav>\n      {{/if}}\n    </div>\n    <div class=\"univers-footer-bottom pt-4 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2\">\n      <span class=\"font-mono text-[11px]\">{{#if copyright_text}}{{copyright_text}}{{else}}{{site.copyright}}{{/if}}</span>\n      {{#if powered_by.enabled}}\n      <div class=\"univers-footer-whitelabel font-mono text-[11px] text-slate-400 dark:text-slate-500 sm:text-right\">\n        <a href=\"{{powered_by.url}}\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"univers-link-accent\">{{powered_by.label}}</a>\n      </div>\n      {{/if}}\n    </div>\n  </div>\n</univers-footer>"
     },
     {
       "slug": "univers-article-archive",
@@ -1088,6 +1299,7 @@
         "main"
       ],
       "version": "1.2.0",
+      "description": "文章时间线归档列表，适合博客目录与分类文章聚合页",
       "summary": "支持 clean / card / compact 三档展示风格，兼容 published_date 与 published_at。",
       "ui_schema": [
         {
@@ -1132,7 +1344,40 @@
         {
           "key": "items",
           "label": "数据源",
-          "type": "text",
+          "type": "json",
+          "widget": "list",
+          "item_schema": [
+            {
+              "key": "title",
+              "label": "文章标题",
+              "type": "text"
+            },
+            {
+              "key": "slug",
+              "label": "路径 (Slug)",
+              "type": "text"
+            },
+            {
+              "key": "summary",
+              "label": "文章摘要",
+              "type": "textarea"
+            },
+            {
+              "key": "folder",
+              "label": "目录",
+              "type": "text"
+            },
+            {
+              "key": "locale",
+              "label": "语言",
+              "type": "text"
+            },
+            {
+              "key": "published_date",
+              "label": "发布日期",
+              "type": "text"
+            }
+          ],
           "default": "@api:articles:limit=12"
         }
       ],
@@ -1160,7 +1405,7 @@
           }
         ]
       },
-      "template_html": "<univers-article-archive class=\"univers-archive block space-y-5\" data-variant=\"{{#if variant}}{{variant}}{{else}}clean{{/if}}\" data-page-size=\"{{#if page_size}}{{page_size}}{{else}}12{{/if}}\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-slate-200/80 dark:border-slate-800 pb-3.5 empty:hidden\">\n    <div class=\"space-y-1 empty:hidden\">\n      {{#if title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"univers-archive-filters flex flex-wrap items-center gap-1.5 text-xs font-bold empty:hidden\"></div>\n  </div>\n  <div class=\"univers-archive-list grid grid-cols-1 md:grid-cols-2 gap-5\">\n    {{#each items}}\n    <a href=\"{{#if url}}{{url}}{{else}}/{{slug}}{{/if}}\" class=\"univers-archive-item group p-5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover flex flex-col justify-between space-y-2.5\" data-folder=\"{{folder}}\" data-locale=\"{{locale}}\">\n      <div class=\"univers-archive-body space-y-2\">\n        <div class=\"flex items-center gap-2 text-[11px] font-mono empty:hidden\">{{#if folder}}<span class=\"px-2 py-0.5 rounded-md univers-badge-accent font-bold\">{{folder}}</span>{{/if}}{{#if locale}}<span class=\"px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400\">{{locale}}</span>{{/if}}</div>\n        {{#if title}}<h3 class=\"univers-archive-title text-base sm:text-lg font-bold text-slate-900 dark:text-white univers-group-accent transition-colors\">{{title}}</h3>{{/if}}\n        {{#if summary}}<p class=\"univers-archive-summary text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed\">{{summary}}</p>{{/if}}\n      </div>\n      <div class=\"flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0 gap-3 empty:hidden\">{{#if published_date}}<span>{{published_date}}</span>{{else}}{{#if published_at}}<span>{{published_at}}</span>{{/if}}{{/if}}{{#if slug}}<span class=\"univers-archive-slug\">/{{slug}}</span>{{/if}}</div>\n    </a>\n    {{/each}}\n  </div>\n  <div class=\"univers-archive-pager flex items-center justify-center gap-2 pt-2 empty:hidden\"></div>\n</univers-article-archive>"
+      "template_html": "<univers-article-archive class=\"univers-archive block space-y-5\" data-variant=\"{{#if variant}}{{variant}}{{else}}clean{{/if}}\" data-page-size=\"{{#if page_size}}{{page_size}}{{else}}12{{/if}}\">\n  <div class=\"flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b univers-border-base pb-3.5 empty:hidden\">\n    <div class=\"space-y-1 empty:hidden\">\n      {{#if title}}<h2 class=\"text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"univers-archive-filters flex flex-wrap items-center gap-1.5 text-xs font-bold empty:hidden\"></div>\n  </div>\n  <div class=\"univers-archive-list grid grid-cols-1 md:grid-cols-2 gap-5\">\n    {{#each items}}\n    <a href=\"{{#if url}}{{url}}{{else}}/{{slug}}{{/if}}\" class=\"univers-archive-item group p-5 rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover flex flex-col justify-between space-y-2.5\" data-folder=\"{{folder}}\" data-locale=\"{{locale}}\">\n      <div class=\"univers-archive-body space-y-2\">\n        <div class=\"flex items-center gap-2 text-[11px] font-mono empty:hidden\">{{#if folder}}<span class=\"univers-archive-folder px-2 py-0.5 rounded-md univers-badge-accent font-bold\">{{folder}}</span>{{/if}}{{#if locale}}<span class=\"univers-archive-locale px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400\">{{locale}}</span>{{/if}}</div>\n        {{#if title}}<h3 class=\"univers-archive-title text-base sm:text-lg font-bold text-slate-900 dark:text-white univers-group-accent transition-colors\">{{title}}</h3>{{/if}}\n        {{#if summary}}<p class=\"univers-archive-summary text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed\">{{summary}}</p>{{/if}}\n      </div>\n      <div class=\"flex items-center justify-between text-[11px] font-mono text-slate-400 shrink-0 gap-3 empty:hidden\">{{#if published_date}}<span>{{published_date}}</span>{{else}}{{#if published_at}}<span>{{published_at}}</span>{{/if}}{{/if}}{{#if slug}}<span class=\"univers-archive-slug\">/{{slug}}</span>{{/if}}</div>\n    </a>\n    {{/each}}\n  </div>\n  <div class=\"univers-archive-pager flex items-center justify-center gap-2 pt-2 empty:hidden\"></div>\n</univers-article-archive>"
     },
     {
       "slug": "univers-split-feature",
@@ -1171,6 +1416,7 @@
       "slots": [
         "main"
       ],
+      "description": "左右图文穿插区块，适合细节介绍，多块可镜像交替",
       "summary": "支持 boxed / plain 两种容器风格与镜像翻转；无配图时自动退化为聚焦单栏。",
       "ui_schema": [
         {
@@ -1212,7 +1458,7 @@
           "key": "image_url",
           "label": "配图地址 (留空则自动单栏)",
           "type": "image",
-          "default": "/theme/univers/assets/slots.svg"
+          "default": ""
         },
         {
           "key": "cta_text",
@@ -1239,12 +1485,12 @@
         "badge": "ARCHITECTURE",
         "title": "契约驱动的主题与内容彻底解耦",
         "description": "主题仅声明插槽与视觉契约，业务数据通过页面级 @api: 协议自由装配，更换主题零数据迁移成本。",
-        "image_url": "/theme/univers/assets/slots.svg",
+        "image_url": "",
         "cta_text": "浏览项目展厅",
         "cta_url": "/projects",
         "reverse": false
       },
-      "template_html": "<section class=\"univers-split-feature block\" data-variant=\"{{#if variant}}{{variant}}{{else}}boxed{{/if}}\">\n  <div class=\"univers-split-surface grid grid-cols-1 {{#if image_url}}lg:grid-cols-2{{/if}} gap-8 lg:gap-10 items-center p-6 sm:p-10 rounded-2xl bg-slate-50/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800/80\">\n    <div class=\"space-y-4 {{#if reverse}}lg:order-2{{/if}}\">\n      {{#if badge}}<span class=\"inline-block px-3 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}\n      {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight\">{{title}}</h2>{{/if}}\n      {{#if description}}<p class=\"text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{description}}</p>{{/if}}\n      {{#if cta_text}}<div class=\"pt-1\"><a href=\"{{cta_url}}\" class=\"inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-bold univers-btn-primary\">{{cta_text}} &rarr;</a></div>{{/if}}\n    </div>\n    {{#if image_url}}\n    <div class=\"{{#if reverse}}lg:order-1{{/if}} flex items-center justify-center p-4 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800\">\n      <img src=\"{{image_url}}\" alt=\"{{title}}\" class=\"max-h-60 w-auto object-contain rounded-lg\" />\n    </div>\n    {{/if}}\n  </div>\n</section>"
+      "template_html": "<section class=\"univers-split-feature block\" data-variant=\"{{#if variant}}{{variant}}{{else}}boxed{{/if}}\">\n  <div class=\"univers-split-surface univers-muted-surface grid grid-cols-1 {{#if image_url}}lg:grid-cols-2{{/if}} gap-8 lg:gap-10 items-center p-6 sm:p-10 rounded-2xl border univers-border-base\">\n    <div class=\"space-y-4 {{#if reverse}}lg:order-2{{/if}}\">\n      {{#if badge}}<span class=\"inline-block px-3 py-0.5 rounded-full text-[11px] font-mono font-bold univers-badge-accent\">{{badge}}</span>{{/if}}\n      {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight\">{{title}}</h2>{{/if}}\n      {{#if description}}<p class=\"text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed\">{{description}}</p>{{/if}}\n      {{#if cta_text}}<div class=\"pt-1\"><a href=\"{{cta_url}}\" class=\"inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-xs font-bold univers-btn-primary\">{{cta_text}} &rarr;</a></div>{{/if}}\n    </div>\n    {{#if image_url}}\n    <div class=\"{{#if reverse}}lg:order-1{{/if}} flex items-center justify-center p-4 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800\">\n      <img src=\"{{image_url}}\" alt=\"{{title}}\" class=\"max-h-60 w-auto object-contain rounded-lg\" />\n    </div>\n    {{/if}}\n  </div>\n</section>"
     },
     {
       "slug": "univers-faq-accordion",
@@ -1255,6 +1501,7 @@
       "slots": [
         "main"
       ],
+      "description": "折叠常见问题列表，适合 Hero、方案对比或表单衔接处",
       "summary": "原生零 JS 折叠问答列表，支持 stack（居中堆叠）与 split（左标题右问答）双布局。",
       "ui_schema": [
         {
@@ -1306,7 +1553,7 @@
           "default": [
             {
               "title": "如何通过 Schema 扩展作品集、工具目录或书影音清单？",
-              "summary": "在后台「数据集与 Schema」新建字段定义并录入条目，随后在任意页面将展示组件数据源绑定为 @api:dataset:schema=你的标识 即可实时渲染。"
+              "summary": "在后台「数据集与 Schema」新建字段定义并录入条目，随后在任意页面将展示组件数据源绑定为 @api:dataset:collection=你的标识 即可实时渲染。"
             },
             {
               "title": "更换主题会丢失文章或页面数据吗？",
@@ -1322,7 +1569,7 @@
         "items": [
           {
             "title": "如何通过 Schema 扩展作品集、工具目录或书影音清单？",
-            "summary": "在后台「数据集与 Schema」新建字段定义并录入条目，随后在任意页面将展示组件数据源绑定为 @api:dataset:schema=你的标识 即可实时渲染。"
+            "summary": "在后台「数据集与 Schema」新建字段定义并录入条目，随后在任意页面将展示组件数据源绑定为 @api:dataset:collection=你的标识 即可实时渲染。"
           },
           {
             "title": "更换主题会丢失文章或页面数据吗？",
@@ -1330,7 +1577,7 @@
           }
         ]
       },
-      "template_html": "<section class=\"univers-faq block\" data-layout=\"{{#if layout}}{{layout}}{{else}}stack{{/if}}\">\n  <div class=\"univers-faq-grid space-y-6\">\n    <div class=\"univers-faq-header text-center space-y-2 empty:hidden\">\n      {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400 leading-relaxed\">{{subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"space-y-3\">\n      {{#each items}}\n      <details class=\"group rounded-xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80 univers-border-accent-hover px-5 py-4\">\n        <summary class=\"flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900 dark:text-white\">\n          <span>{{#if question}}{{question}}{{else}}{{title}}{{/if}}</span>\n          <span class=\"univers-accent-text font-mono text-base transition-transform group-open:rotate-45 shrink-0\">+</span>\n        </summary>\n        <div class=\"pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">\n          {{#if answer}}{{answer}}{{else}}{{summary}}{{/if}}\n        </div>\n      </details>\n      {{/each}}\n    </div>\n  </div>\n</section>"
+      "template_html": "<section class=\"univers-faq block\" data-layout=\"{{#if layout}}{{layout}}{{else}}stack{{/if}}\">\n  <div class=\"univers-faq-grid space-y-6\">\n    <div class=\"univers-faq-header text-center space-y-2 empty:hidden\">\n      {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{title}}</h2>{{/if}}\n      {{#if subtitle}}<p class=\"text-sm text-slate-500 dark:text-slate-400 leading-relaxed\">{{subtitle}}</p>{{/if}}\n    </div>\n    <div class=\"space-y-3\">\n      {{#each items}}\n      <details class=\"group rounded-xl univers-card-surface border univers-border-base univers-border-accent-hover px-5 py-4\">\n        <summary class=\"flex items-center justify-between gap-4 cursor-pointer list-none font-bold text-sm text-slate-900 dark:text-white\">\n          <span>{{#if question}}{{question}}{{else}}{{title}}{{/if}}</span>\n          <span class=\"univers-accent-text font-mono text-base transition-transform group-open:rotate-45 shrink-0\">+</span>\n        </summary>\n        <div class=\"pt-3 mt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">\n          {{#if answer}}{{answer}}{{else}}{{summary}}{{/if}}\n        </div>\n      </details>\n      {{/each}}\n    </div>\n  </div>\n</section>"
     },
     {
       "slug": "univers-cta-banner",
@@ -1341,6 +1588,7 @@
       "slots": [
         "main"
       ],
+      "description": "全宽转化号召横幅，视觉醒目，适合页面底部收口引导",
       "summary": "支持 contrast / soft / minimal 三种基调的轻量转化横幅。",
       "ui_schema": [
         {
@@ -1428,6 +1676,7 @@
       "slots": [
         "main"
       ],
+      "description": "面包屑与上下篇翻页条，适合文章或嵌套子页面首尾",
       "summary": "结构化面包屑路径与上下篇翻页卡片，无上下篇链接时自动收起底部容器。",
       "ui_schema": [
         {
@@ -1489,7 +1738,7 @@
         "next_title": "页面装配、微内容与 @api: 数据直连",
         "next_url": "/architecture-and-slots"
       },
-      "template_html": "<nav class=\"univers-breadcrumb-pager block space-y-4\">\n  <ol class=\"flex flex-wrap items-center gap-1.5 text-xs font-mono text-slate-500 dark:text-slate-400\">\n    <li><a href=\"/\" class=\"univers-link-accent\">{{#if home_label}}{{home_label}}{{else}}Home{{/if}}</a></li>\n    {{#if section_label}}<li>/</li><li><a href=\"{{section_url}}\" class=\"univers-link-accent\">{{section_label}}</a></li>{{/if}}\n    {{#if current_title}}<li>/</li><li class=\"text-slate-800 dark:text-slate-200 font-bold truncate max-w-xs\">{{current_title}}</li>{{/if}}\n  </ol>\n  <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 empty:hidden\">{{#if prev_url}}<a href=\"{{prev_url}}\" class=\"p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 univers-border-accent-hover flex flex-col gap-1\"><span class=\"text-[10px] font-mono uppercase text-slate-400\">&larr; Previous</span><span class=\"text-xs font-bold text-slate-800 dark:text-slate-200 truncate\">{{prev_title}}</span></a>{{/if}}{{#if next_url}}<a href=\"{{next_url}}\" class=\"p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 univers-border-accent-hover flex flex-col gap-1 sm:text-right sm:col-start-2\"><span class=\"text-[10px] font-mono uppercase text-slate-400\">Next &rarr;</span><span class=\"text-xs font-bold text-slate-800 dark:text-slate-200 truncate\">{{next_title}}</span></a>{{/if}}</div>\n</nav>"
+      "template_html": "<nav class=\"univers-breadcrumb-pager block space-y-4\">\n  <ol class=\"flex flex-wrap items-center gap-1.5 text-xs font-mono text-slate-500 dark:text-slate-400\">\n    <li><a href=\"/\" class=\"univers-link-accent\">{{#if home_label}}{{home_label}}{{else}}Home{{/if}}</a></li>\n    {{#if section_label}}<li>/</li><li><a href=\"{{section_url}}\" class=\"univers-link-accent\">{{section_label}}</a></li>{{/if}}\n    {{#if current_title}}<li>/</li><li class=\"text-slate-800 dark:text-slate-200 font-bold truncate max-w-xs\">{{current_title}}</li>{{/if}}\n  </ol>\n  <div class=\"grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 empty:hidden\">{{#if prev_url}}<a href=\"{{prev_url}}\" class=\"p-3.5 rounded-xl univers-muted-surface border univers-border-base univers-border-accent-hover flex flex-col gap-1\"><span class=\"text-[10px] font-mono uppercase text-slate-400\">&larr; {{#if prev_label}}{{prev_label}}{{else}}{{#if i18n.prev_label}}{{i18n.prev_label}}{{else}}Previous{{/if}}{{/if}}</span><span class=\"text-xs font-bold text-slate-800 dark:text-slate-200 truncate\">{{prev_title}}</span></a>{{/if}}{{#if next_url}}<a href=\"{{next_url}}\" class=\"p-3.5 rounded-xl univers-muted-surface border univers-border-base univers-border-accent-hover flex flex-col gap-1 sm:text-right sm:col-start-2\"><span class=\"text-[10px] font-mono uppercase text-slate-400\">{{#if next_label}}{{next_label}}{{else}}{{#if i18n.next_label}}{{i18n.next_label}}{{else}}Next{{/if}}{{/if}} &rarr;</span><span class=\"text-xs font-bold text-slate-800 dark:text-slate-200 truncate\">{{next_title}}</span></a>{{/if}}</div>\n</nav>"
     },
     {
       "slug": "univers-profile-card",
@@ -1501,6 +1750,7 @@
         "sidebar",
         "main"
       ],
+      "description": "作者与站点名片卡，侧栏呈竖排，主区自动展为横排条",
       "summary": "容器自适应名片：在 sidebar 呈竖版名片，在宽 main 槽位自动展开为横版名片条。",
       "ui_schema": [
         {
@@ -1561,7 +1811,7 @@
         "status_text": "",
         "links": []
       },
-      "template_html": "<univers-profile-card class=\"block p-5 rounded-xl bg-white dark:bg-slate-900/85 border border-slate-200/80 dark:border-slate-800/80\">\n  <div class=\"univers-profile-body\">\n    <div class=\"space-y-3 min-w-0\">\n      <div class=\"flex items-center gap-3.5 empty:hidden\">\n        {{#if avatar_url}}<img src=\"{{avatar_url}}\" alt=\"{{name}}\" class=\"w-12 h-12 rounded-lg object-cover border border-slate-200/80 dark:border-slate-700 shrink-0\" />{{/if}}\n        <div class=\"min-w-0 space-y-0.5 empty:hidden\">\n          {{#if name}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white truncate\">{{name}}</h3>{{/if}}\n          {{#if role}}<p class=\"text-xs text-slate-500 dark:text-slate-400 truncate\">{{role}}</p>{{/if}}\n        </div>\n      </div>\n      {{#if status_text}}<div class=\"inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono univers-badge-accent\"><span class=\"w-1.5 h-1.5 rounded-full univers-accent-dot\"></span><span>{{status_text}}</span></div>{{/if}}\n      {{#if bio}}<p class=\"text-xs text-slate-600 dark:text-slate-300 leading-relaxed\">{{bio}}</p>{{/if}}\n    </div>\n    {{#if links}}<div class=\"univers-profile-links pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap gap-2 empty:hidden\">{{#each links}}<a href=\"{{#if url}}{{url}}{{else}}{{href}}{{/if}}\" class=\"px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 univers-link-accent\">{{#if text}}{{text}}{{else}}{{label}}{{/if}}</a>{{/each}}</div>{{/if}}\n  </div>\n</univers-profile-card>"
+      "template_html": "<univers-profile-card class=\"block p-5 rounded-xl univers-card-surface border univers-border-base\">\n  <div class=\"univers-profile-body\">\n    <div class=\"space-y-3 min-w-0\">\n      <div class=\"flex items-center gap-3.5 empty:hidden\">\n        {{#if avatar_url}}<img src=\"{{avatar_url}}\" alt=\"{{name}}\" class=\"w-12 h-12 rounded-lg object-cover border border-slate-200/80 dark:border-slate-700 shrink-0\" />{{/if}}\n        <div class=\"min-w-0 space-y-0.5 empty:hidden\">\n          {{#if name}}<h3 class=\"text-base font-bold text-slate-900 dark:text-white truncate\">{{name}}</h3>{{/if}}\n          {{#if role}}<p class=\"text-xs text-slate-500 dark:text-slate-400 truncate\">{{role}}</p>{{/if}}\n        </div>\n      </div>\n      {{#if status_text}}<div class=\"inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono univers-badge-accent\"><span class=\"w-1.5 h-1.5 rounded-full univers-accent-dot\"></span><span>{{status_text}}</span></div>{{/if}}\n      {{#if bio}}<p class=\"text-xs text-slate-600 dark:text-slate-300 leading-relaxed\">{{bio}}</p>{{/if}}\n    </div>\n    {{#if links}}<div class=\"univers-profile-links pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap gap-2 empty:hidden\">{{#each links}}<a href=\"{{#if url}}{{url}}{{else}}{{href}}{{/if}}\" class=\"px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 univers-link-accent\">{{#if text}}{{text}}{{else}}{{label}}{{/if}}</a>{{/each}}</div>{{/if}}\n  </div>\n</univers-profile-card>"
     },
     {
       "slug": "univers-timeline",
@@ -1572,6 +1822,7 @@
       "slots": [
         "main"
       ],
+      "description": "跨类型聚合时间线，适合混排文章、微内容与项目记录",
       "summary": "兼容 @api:feed: 聚合输出，支持 comfortable / compact 两种信息密度。",
       "ui_schema": [
         {
@@ -1612,7 +1863,40 @@
         {
           "key": "items",
           "label": "数据源 (@api:feed:...)",
-          "type": "text",
+          "type": "json",
+          "widget": "list",
+          "item_schema": [
+            {
+              "key": "date",
+              "label": "日期",
+              "type": "text"
+            },
+            {
+              "key": "type_label",
+              "label": "类型标签",
+              "type": "text"
+            },
+            {
+              "key": "badge",
+              "label": "徽章",
+              "type": "text"
+            },
+            {
+              "key": "title",
+              "label": "标题 (可选)",
+              "type": "text"
+            },
+            {
+              "key": "summary",
+              "label": "内容摘要",
+              "type": "textarea"
+            },
+            {
+              "key": "url",
+              "label": "详情链接 (可选)",
+              "type": "text"
+            }
+          ],
           "default": "@api:feed:types=article,micro&limit=20"
         }
       ],
@@ -1642,14 +1926,46 @@
           }
         ]
       },
-      "template_html": "<univers-timeline data-density=\"{{#if density}}{{density}}{{else}}comfortable{{/if}}\" class=\"univers-timeline block space-y-7\">\n  <div class=\"space-y-1.5 border-b border-slate-200/80 dark:border-slate-800 pb-3.5 empty:hidden\">\n    {{#if heading}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{heading}}</h2>{{/if}}\n    {{#if subheading}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subheading}}</p>{{/if}}\n  </div>\n  <div class=\"univers-timeline-track relative border-l-2 border-slate-200 dark:border-slate-800 pl-6 sm:pl-8 flex flex-col gap-7\">\n    {{#each items}}\n    <div class=\"relative space-y-2\">\n      <span class=\"univers-timeline-dot absolute -left-[31px] sm:-left-[39px] top-1.5 w-3 h-3 rounded-full bg-white dark:bg-[#0b1120] border-2\"></span>\n      <div class=\"flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 empty:hidden\">{{#if date}}<time>{{date}}</time>{{/if}}{{#if type_label}}<span class=\"px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold\">{{type_label}}</span>{{/if}}{{#if badge}}<span class=\"px-2 py-0.5 rounded univers-badge-accent\">{{badge}}</span>{{/if}}</div>\n      {{#if title}}<h3 class=\"text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug\">{{#if url}}<a href=\"{{url}}\" class=\"univers-link-accent\">{{title}}</a>{{else}}{{title}}{{/if}}</h3>{{/if}}\n      {{#if summary}}<p class=\"univers-timeline-summary text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{/if}}\n      {{#if url}}<div><a href=\"{{url}}\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline\">{{#if read_more_text}}{{read_more_text}}{{else}}&rarr;{{/if}}</a></div>{{/if}}\n    </div>\n    {{/each}}\n  </div>\n</univers-timeline>"
+      "template_html": "<univers-timeline data-density=\"{{#if density}}{{density}}{{else}}comfortable{{/if}}\" class=\"univers-timeline block space-y-7\">\n  <div class=\"space-y-1.5 border-b univers-border-base pb-3.5 empty:hidden\">\n    {{#if heading}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white\">{{heading}}</h2>{{/if}}\n    {{#if subheading}}<p class=\"text-sm text-slate-500 dark:text-slate-400\">{{subheading}}</p>{{/if}}\n  </div>\n  <div class=\"univers-timeline-track relative border-l-2 border-slate-200 dark:border-slate-800 pl-6 sm:pl-8 flex flex-col gap-7\">\n    {{#each items}}\n    <div class=\"relative space-y-2\">\n      <span class=\"univers-timeline-dot absolute -left-[31px] sm:-left-[39px] top-1.5 w-3 h-3 rounded-full univers-card-surface border-2\"></span>\n      <div class=\"flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 empty:hidden\">{{#if date}}<time>{{date}}</time>{{/if}}{{#if type_label}}<span class=\"px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold\">{{type_label}}</span>{{/if}}{{#if badge}}<span class=\"px-2 py-0.5 rounded univers-badge-accent\">{{badge}}</span>{{/if}}</div>\n      {{#if title}}<h3 class=\"text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug\">{{#if url}}<a href=\"{{url}}\" class=\"univers-link-accent\">{{title}}</a>{{else}}{{title}}{{/if}}</h3>{{/if}}\n      {{#if summary}}<p class=\"univers-timeline-summary text-sm text-slate-600 dark:text-slate-300 leading-relaxed\">{{summary}}</p>{{/if}}\n      {{#if url}}<div><a href=\"{{url}}\" class=\"inline-flex items-center gap-1 text-xs font-bold univers-accent-text hover:underline\">{{#if read_more_text}}{{read_more_text}}{{else}}&rarr;{{/if}}</a></div>{{/if}}\n    </div>\n    {{/each}}\n  </div>\n</univers-timeline>"
+    },
+    {
+      "slug": "univers-markdown",
+      "name": "独立 Markdown 正文 (Univers Markdown)",
+      "title": "独立 Markdown 正文 (Univers Markdown)",
+      "category": "content",
+      "icon": "edit_note",
+      "slots": [
+        "main"
+      ],
+      "description": "单页独立 Markdown 正文块，套用主题正文排版",
+      "summary": "单页与专题页独立 Markdown 正文块，自动走主题 md_components 解析并复用正文排版。",
+      "ui_schema": [
+        {
+          "key": "title",
+          "label": "区块标题 (留空则隐藏)",
+          "type": "text",
+          "default": ""
+        },
+        {
+          "key": "content",
+          "label": "Markdown 正文内容",
+          "type": "markdown",
+          "widget": "markdown",
+          "default": "## 独立内容区块\n\n支持标准 Markdown 语法、`[[双链]]` 与主题 `md_components` 自定义容器。"
+        }
+      ],
+      "default_props": {
+        "title": "",
+        "content": "## 独立内容区块\n\n支持标准 Markdown 语法、`[[双链]]` 与主题 `md_components` 自定义容器。"
+      },
+      "template_html": "<univers-markdown class=\"block\">\n  <div class=\"max-w-3xl mx-auto space-y-6\">\n    {{#if title}}<h2 class=\"text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white border-b univers-border-base pb-3\">{{title}}</h2>{{/if}}\n    {{#if content}}<div class=\"walnut-article-content prose dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed space-y-6\">{{{content}}}</div>{{/if}}\n  </div>\n</univers-markdown>"
     }
   ],
   "schemas": [
     {
       "slug": "projects",
-      "name": "开源项目与工具清单 (Projects)",
-      "description": "用于展示开源仓库、工具或作品条目，可通过 @api:dataset:schema=projects 绑定渲染。",
+      "name": "开源项目与作品集 (Projects)",
+      "description": "展示开源仓库、工具或数字作品条目。",
       "fields": [
         {
           "key": "title",
@@ -1688,14 +2004,45 @@
           "required": false
         }
       ]
+    },
+    {
+      "slug": "links",
+      "name": "常用导航与书签 (Links)",
+      "description": "精选常用工具、技术文档与灵感站点书签。",
+      "fields": [
+        {
+          "key": "title",
+          "label": "站点名称",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "description",
+          "label": "推荐说明",
+          "type": "textarea",
+          "required": true
+        },
+        {
+          "key": "url",
+          "label": "目标网址",
+          "type": "url",
+          "required": true
+        },
+        {
+          "key": "category",
+          "label": "所属分类",
+          "type": "text",
+          "required": false
+        }
+      ]
     }
   ],
   "templates": [
     {
       "id": "tpl-univers-home",
       "slug": "tpl-univers-home",
-      "name": "极简文档首页蓝图 (Minimal Home Template)",
-      "description": "无图居中 Hero + 精选项目展柜 + 文章流 + 微内容动态 + 行动号召与页脚。",
+      "name": "个人主页蓝图 (Minimal Home Template)",
+      "description": "极简首屏 + 精选项目展柜 + 最新随笔 + 碎碎念动态与页脚。",
       "layout": "default",
       "blocks": [
         {
@@ -1719,7 +2066,7 @@
           "target_slot": "main",
           "props": {
             "layout": "grid",
-            "items": "@api:dataset:schema=projects&limit=3"
+            "items": "@api:dataset:collection=projects&limit=3"
           }
         },
         {
@@ -1798,7 +2145,7 @@
       "id": "tpl-univers-archive",
       "slug": "tpl-univers-archive",
       "name": "混排时间线归档模板 (Timeline Archive Template)",
-      "description": "通过 @api:feed: 在垂直时间线上混排文章与无标题微内容。",
+      "description": "在垂直时间线上按发布时间混排文章与短动态。",
       "layout": "default",
       "blocks": [
         {
@@ -1829,8 +2176,8 @@
     {
       "id": "tpl-univers-projects",
       "slug": "tpl-univers-projects",
-      "name": "开源项目清单模板 (Projects Directory Template)",
-      "description": "绑定 @api:dataset:schema=projects 展示结构化项目数据与扩展说明 FAQ。",
+      "name": "项目展厅模板 (Projects Directory Template)",
+      "description": "网格展示项目集并搭配常见问题折叠卡片。",
       "layout": "default",
       "blocks": [
         {
@@ -1845,7 +2192,7 @@
           "target_slot": "main",
           "props": {
             "layout": "grid",
-            "items": "@api:dataset:schema=projects&limit=12"
+            "items": "@api:dataset:collection=projects&limit=12"
           }
         },
         {
@@ -1869,8 +2216,8 @@
     {
       "id": "tpl-univers-landing",
       "slug": "tpl-univers-landing",
-      "name": "产品 / 服务落地页蓝图 (Product Landing Template)",
-      "description": "完整产品官网样板：分栏首屏 + 特性矩阵 + 图文穿插 + 对比卡片 + 双栏 FAQ + 转化横幅 + 联系表单。",
+      "name": "产品 / 作品发布页蓝图 (Product Landing Template)",
+      "description": "分栏首屏 + 特性矩阵 + 图文穿插 + 对比卡片 + 双栏问答 + 转化横幅 + 联系表单。",
       "layout": "default",
       "blocks": [
         {
@@ -1952,7 +2299,7 @@
     }
   ],
   "layout_file": "templates/layout.html",
-  "layout_html": "<!DOCTYPE html>\n<html lang=\"{{page.locale}}\">\n<head>\n  {{walnut_head}}\n</head>\n<body class=\"min-h-screen flex flex-col bg-white dark:bg-[#0b1120] text-slate-900 dark:text-slate-100 antialiased transition-colors duration-200\">\n  <header data-slot=\"header\" class=\"sticky top-0 z-50 w-full backdrop-blur-md bg-white/85 dark:bg-[#0b1120]/85 border-b border-slate-200/80 dark:border-slate-800/80 empty:hidden\">{{slot:header:1}}</header>\n  <div data-slot=\"subnav\" class=\"w-full empty:hidden\">{{slot:subnav:2}}</div>\n  <div class=\"flex-1 w-full univers-page-backdrop\">\n    <div class=\"univers-shell max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12\">\n      <div class=\"univers-shell-grid\">\n        <main data-slot=\"main\" class=\"univers-main w-full min-w-0 space-y-14 sm:space-y-16\">{{slot:main}}</main>\n        <aside data-slot=\"sidebar\" class=\"univers-sidebar w-full min-w-0 space-y-6 empty:hidden\">{{slot:sidebar:3}}</aside>\n      </div>\n    </div>\n  </div>\n  <footer data-slot=\"footer\" class=\"mt-auto border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-900/40 empty:hidden\">{{slot:footer:1}}</footer>\n  {{walnut_foot}}\n</body>\n</html>\n",
+  "layout_html": "<!DOCTYPE html>\n<html lang=\"{{page.locale}}\">\n<head>\n  {{edge_head}}\n</head>\n<body class=\"min-h-screen flex flex-col univers-shell-body antialiased transition-colors duration-200\">\n  <header data-slot=\"header\" class=\"sticky top-0 z-50 w-full backdrop-blur-md univers-header-bar empty:hidden\">{{slot:header:1}}</header>\n  <div data-slot=\"subnav\" class=\"w-full empty:hidden\">{{slot:subnav:2}}</div>\n  <div class=\"flex-1 w-full univers-page-backdrop\">\n    <div class=\"univers-shell max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12\">\n      <div class=\"univers-shell-grid\">\n        <main data-slot=\"main\" class=\"univers-main w-full min-w-0 space-y-14 sm:space-y-16\">{{slot:main}}</main>\n        <aside data-slot=\"sidebar\" class=\"univers-sidebar w-full min-w-0 space-y-6 empty:hidden\">{{slot:sidebar:3}}</aside>\n      </div>\n    </div>\n  </div>\n  <footer data-slot=\"footer\" class=\"mt-auto univers-footer-bar empty:hidden\">{{slot:footer:1}}</footer>\n  {{edge_foot}}\n</body>\n</html>\n",
   "color_schemes": [
     "light",
     "dark"

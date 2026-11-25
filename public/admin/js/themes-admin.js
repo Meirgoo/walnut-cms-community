@@ -2,7 +2,7 @@
     'use strict';
 
     const t = function(k, params) {
-        const fn = window.__WALNUT_I18N__ && window.__WALNUT_I18N__.t;
+        const fn = window.__EDGE_I18N__ && window.__EDGE_I18N__.t;
         return typeof fn === 'function' ? fn(k, params) : k;
     };
 
@@ -22,9 +22,9 @@
             }
             if (btn) {
                 if (id === tabId) {
-                    btn.className = 'px-4 py-2.5 border-b-2 border-slate-900 dark:border-white text-slate-900 dark:text-white transition flex items-center space-x-1.5 cursor-pointer';
+                    btn.className = 'px-4 py-2.5 border-b-2 border-[var(--admin-accent)] text-[var(--admin-text)] transition flex items-center space-x-1.5 cursor-pointer whitespace-nowrap';
                 } else {
-                    btn.className = 'px-4 py-2.5 border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition flex items-center space-x-1.5 cursor-pointer';
+                    btn.className = 'px-4 py-2.5 border-b-2 border-transparent text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition flex items-center space-x-1.5 cursor-pointer whitespace-nowrap';
                 }
             }
         });
@@ -71,13 +71,70 @@
         throw new Error(t('themes.err_no_decompression_stream'));
     }
 
+    function stripSingleZipRootFolder(filesMap) {
+        const keys = Object.keys(filesMap).filter(function(k) { return k && !k.includes('__MACOSX/'); });
+        if (keys.length === 0 || filesMap['manifest.json']) return filesMap;
+        const firstSlash = keys[0].indexOf('/');
+        if (firstSlash <= 0) return filesMap;
+        const prefix = keys[0].slice(0, firstSlash + 1);
+        const allSharePrefix = keys.every(function(k) { return k.startsWith(prefix); });
+        if (!allSharePrefix || !filesMap[prefix + 'manifest.json']) return filesMap;
+        const stripped = {};
+        keys.forEach(function(k) {
+            const rel = k.slice(prefix.length);
+            if (rel) stripped[rel] = filesMap[k];
+        });
+        return stripped;
+    }
+
     async function parseZipInBrowser(arrayBuffer) {
         const view = new DataView(arrayBuffer);
         const bytes = new Uint8Array(arrayBuffer);
         const files = {};
-        let offset = 0;
         const len = bytes.byteLength;
 
+        // Prefer Central Directory so macOS/streaming ZIPs with Bit-3 Data Descriptor (local compSize=0) inflate reliably.
+        let eocdOffset = -1;
+        const minEocd = Math.max(0, len - 65557);
+        for (let i = len - 22; i >= minEocd; i--) {
+            if (view.getUint32(i, true) === 0x06054b50) {
+                eocdOffset = i;
+                break;
+            }
+        }
+
+        if (eocdOffset >= 0) {
+            const totalEntries = view.getUint16(eocdOffset + 10, true);
+            let cdOffset = view.getUint32(eocdOffset + 16, true);
+            for (let idx = 0; idx < totalEntries && cdOffset + 46 <= len; idx++) {
+                if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
+                const method = view.getUint16(cdOffset + 10, true);
+                const compSize = view.getUint32(cdOffset + 20, true);
+                const nameLen = view.getUint16(cdOffset + 28, true);
+                const extraLen = view.getUint16(cdOffset + 30, true);
+                const commentLen = view.getUint16(cdOffset + 32, true);
+                const localOffset = view.getUint32(cdOffset + 42, true);
+                const fileName = new TextDecoder('utf-8').decode(bytes.subarray(cdOffset + 46, cdOffset + 46 + nameLen));
+                cdOffset += 46 + nameLen + extraLen + commentLen;
+
+                if (!fileName || fileName.endsWith('/') || fileName.includes('__MACOSX/')) continue;
+                if (localOffset + 30 > len || view.getUint32(localOffset, true) !== 0x04034b50) continue;
+                const lNameLen = view.getUint16(localOffset + 26, true);
+                const lExtraLen = view.getUint16(localOffset + 28, true);
+                const dataOffset = localOffset + 30 + lNameLen + lExtraLen;
+                if (dataOffset + compSize > len) continue;
+
+                const compData = bytes.subarray(dataOffset, dataOffset + compSize);
+                if (method === 0) {
+                    files[fileName] = compData;
+                } else if (method === 8) {
+                    files[fileName] = await decompressZipChunk(compData);
+                }
+            }
+            return stripSingleZipRootFolder(files);
+        }
+
+        let offset = 0;
         while (offset < len - 4) {
             const sig = view.getUint32(offset, true);
             if (sig === 0x04034b50) {
@@ -90,7 +147,7 @@
                 const fileName = new TextDecoder('utf-8').decode(nameBytes);
                 const dataOffset = offset + 30 + nameLen + extraLen;
 
-                if (!fileName.endsWith('/')) {
+                if (!fileName.endsWith('/') && !fileName.includes('__MACOSX/')) {
                     const compData = bytes.subarray(dataOffset, dataOffset + compSize);
                     let fileData = null;
                     if (method === 0) {
@@ -109,7 +166,7 @@
                 offset++;
             }
         }
-        return files;
+        return stripSingleZipRootFolder(files);
     }
 
     function uint8ArrayToBase64(uint8) {
@@ -233,11 +290,14 @@
 
                 const templates = [];
                 const manifestTemplates = manifestObj.templates || manifestObj.templateNodes || [];
+                const layoutPathNorm = (manifestObj.layout_file || manifestObj.skeleton_file || '').replace(/^\/+/, '').toLowerCase();
                 for (const p in unzippedFiles) {
                     if (p.includes('__MACOSX')) continue;
+                    if (layoutPathNorm && p.toLowerCase() === layoutPathNorm) continue;
                     const match = p.match(/templates\/([^/]+)\.html$/i);
                     if (match) {
                         const tplSlug = match[1];
+                        if (/^(?:layout|base|skeleton)$/i.test(tplSlug)) continue;
                         const html = new TextDecoder('utf-8').decode(unzippedFiles[p]);
                         const existing = manifestTemplates.find(function(t) { return t.slug === tplSlug || t.key === tplSlug; });
                         if (existing) {
@@ -319,6 +379,7 @@
                 }
 
                 updateProgress(100, t('themes.import_status_done'));
+                try { sessionStorage.setItem('edge_theme_activated_check', '1'); } catch {}
                 if (window.showToast) window.showToast(t('themes.import_status_done'), 'success');
                 setTimeout(function() { window.location.reload(); }, 600);
             } else {
@@ -353,23 +414,89 @@
     };
 
     window.switchThemeImportMode = function(mode) {
-        const fileTab = document.getElementById('tab-import-file');
-        const repoTab = document.getElementById('tab-import-repo');
-        const filePanel = document.getElementById('panel-import-file');
-        const repoPanel = document.getElementById('panel-import-repo');
+        const zipBtn = document.getElementById('btn-import-mode-zip');
+        const repoBtn = document.getElementById('btn-import-mode-repo');
+        const zipForm = document.getElementById('theme-import-form');
+        const repoForm = document.getElementById('theme-repo-import-form');
+        const activeCls = 'px-4 py-2 border-b-2 border-[var(--admin-accent)] text-[var(--admin-text)] cursor-pointer transition flex items-center space-x-1.5';
+        const idleCls = 'px-4 py-2 border-b-2 border-transparent text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] cursor-pointer transition flex items-center space-x-1.5';
 
         if (mode === 'repo') {
-            if (fileTab) fileTab.className = 'pb-2 border-b-2 border-transparent text-slate-500 font-bold';
-            if (repoTab) repoTab.className = 'pb-2 border-b-2 border-slate-900 dark:border-white font-bold text-slate-900 dark:text-white';
-            if (filePanel) filePanel.classList.add('hidden');
-            if (repoPanel) repoPanel.classList.remove('hidden');
+            if (zipBtn) zipBtn.className = idleCls;
+            if (repoBtn) repoBtn.className = activeCls;
+            if (zipForm) zipForm.classList.add('hidden');
+            if (repoForm) repoForm.classList.remove('hidden');
         } else {
-            if (repoTab) repoTab.className = 'pb-2 border-b-2 border-transparent text-slate-500 font-bold';
-            if (fileTab) fileTab.className = 'pb-2 border-b-2 border-slate-900 dark:border-white font-bold text-slate-900 dark:text-white';
-            if (repoPanel) repoPanel.classList.add('hidden');
-            if (filePanel) filePanel.classList.remove('hidden');
+            if (repoBtn) repoBtn.className = idleCls;
+            if (zipBtn) zipBtn.className = activeCls;
+            if (repoForm) repoForm.classList.add('hidden');
+            if (zipForm) zipForm.classList.remove('hidden');
         }
     };
+
+    window.clearThemeImportFile = function() {
+        const input = document.getElementById('theme-file-input');
+        const emptyEl = document.getElementById('theme-file-empty');
+        const selEl = document.getElementById('theme-file-selected');
+        const nameEl = document.getElementById('theme-file-name');
+        if (input) input.value = '';
+        if (nameEl) nameEl.textContent = '';
+        if (selEl) selEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
+    };
+
+    function updateThemeDropzoneFile(file) {
+        const emptyEl = document.getElementById('theme-file-empty');
+        const selEl = document.getElementById('theme-file-selected');
+        const nameEl = document.getElementById('theme-file-name');
+        if (!file) {
+            window.clearThemeImportFile();
+            return;
+        }
+        if (nameEl) nameEl.textContent = file.name;
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (selEl) selEl.classList.remove('hidden');
+    }
+
+    function initThemeFileDropzone() {
+        const dropzone = document.getElementById('theme-file-dropzone');
+        const input = document.getElementById('theme-file-input');
+        if (!dropzone || !input || dropzone.dataset.bound === '1') return;
+        dropzone.dataset.bound = '1';
+
+        dropzone.addEventListener('click', function() {
+            input.click();
+        });
+        input.addEventListener('change', function() {
+            updateThemeDropzoneFile(input.files && input.files[0]);
+        });
+        dropzone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropzone.classList.add('border-[var(--admin-accent)]', 'bg-[var(--admin-accent-soft)]');
+        });
+        dropzone.addEventListener('dragleave', function() {
+            dropzone.classList.remove('border-[var(--admin-accent)]', 'bg-[var(--admin-accent-soft)]');
+        });
+        dropzone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropzone.classList.remove('border-[var(--admin-accent)]', 'bg-[var(--admin-accent-soft)]');
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length > 0) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    input.files = dt.files;
+                } catch {}
+                updateThemeDropzoneFile(files[0]);
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initThemeFileDropzone);
+    } else {
+        initThemeFileDropzone();
+    }
 
     window.handleThemeRepoImportSubmit = async function(event) {
         event.preventDefault();
@@ -425,7 +552,7 @@
         if (!modal) return;
         if (titleEl) titleEl.innerText = themeTitle || themeSlug;
         if (subEl) subEl.innerText = themeSlug;
-        if (listEl) listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-8">' + t('common.loading') + '</div>';
+        if (listEl) listEl.innerHTML = '<div class="text-xs text-stone-400 text-center py-8">' + t('common.loading') + '</div>';
 
         modal.classList.remove('hidden');
 
@@ -437,24 +564,24 @@
             const versions = data.versions || [];
             const currentTheme = data.theme || {};
             if (versions.length === 0) {
-                if (listEl) listEl.innerHTML = '<div class="text-xs text-slate-400 text-center py-8">' + t('themes.no_versions') + '</div>';
+                if (listEl) listEl.innerHTML = '<div class="text-xs text-stone-400 text-center py-8">' + t('themes.no_versions') + '</div>';
                 return;
             }
 
             listEl.innerHTML = versions.map(function(v, i) {
                 const isCurrent = (currentTheme.current_version_id === v.id) || (v.version_number === 1 && !currentTheme.current_version_id && i === 0);
                 const tag = isCurrent
-                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/60 dark:border-emerald-800">' + t('themes.version_current') + '</span>'
-                    : '<button type="button" onclick="window.rollbackThemeVersion(\'' + themeId + '\', \'' + v.id + '\')" class="text-xs text-purple-600 hover:text-purple-700 font-bold cursor-pointer">' + t('themes.btn_rollback') + '</button>';
+                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/60 dark:border-amber-800">' + t('themes.version_current') + '</span>'
+                    : '<button type="button" onclick="window.rollbackThemeVersion(\'' + themeId + '\', \'' + v.id + '\')" class="text-xs text-[var(--admin-accent-text)] hover:underline font-semibold cursor-pointer">' + t('themes.btn_rollback') + '</button>';
 
-                return '<div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">' +
+                return '<div class="flex items-center justify-between p-3 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800">' +
                     '<div>' +
                     '<div class="flex items-center space-x-2">' +
-                    '<span class="font-mono text-xs font-bold text-slate-900 dark:text-white">v' + v.version_number + '</span>' +
-                    '<span class="text-xs text-slate-500 font-mono">(' + (v.commit_hash ? v.commit_hash.slice(0, 7) : 'snapshot') + ')</span>' +
+                    '<span class="font-mono text-xs font-bold text-stone-900 dark:text-white">v' + v.version_number + '</span>' +
+                    '<span class="text-xs text-stone-500 font-mono">(' + (v.commit_hash ? v.commit_hash.slice(0, 7) : 'snapshot') + ')</span>' +
                     '</div>' +
-                    '<div class="text-[11px] text-slate-400 mt-0.5">' + (v.changelog || v.commit_message || t('themes.no_changelog')) + '</div>' +
-                    '<div class="text-[10px] text-slate-400 mt-0.5 font-mono">' + new Date(v.created_at).toLocaleString() + '</div>' +
+                    '<div class="text-[11px] text-stone-400 mt-0.5">' + (v.changelog || v.commit_message || t('themes.no_changelog')) + '</div>' +
+                    '<div class="text-[10px] text-stone-400 mt-0.5 font-mono">' + new Date(v.created_at).toLocaleString() + '</div>' +
                     '</div>' +
                     '<div>' + tag + '</div>' +
                     '</div>';
@@ -488,74 +615,6 @@
                 }
             }
         });
-    };
-
-    window.openCreateThemeModal = function() {
-        const modal = document.getElementById('theme-form-modal');
-        const form = document.getElementById('theme-form');
-        const titleEl = document.getElementById('theme-form-modal-title');
-        const idInp = document.getElementById('theme-form-id');
-        const slugInp = document.getElementById('theme-form-slug');
-
-        if (form) form.reset();
-        if (idInp) idInp.value = '';
-        if (slugInp) slugInp.readOnly = false;
-        if (titleEl) titleEl.innerText = t('themes.btn_create_theme');
-        if (modal) modal.classList.remove('hidden');
-    };
-
-    window.openEditThemeModal = function(id, name, slug, desc, author) {
-        const modal = document.getElementById('theme-form-modal');
-        const titleEl = document.getElementById('theme-form-modal-title');
-        const idInp = document.getElementById('theme-form-id');
-        const nameInp = document.getElementById('theme-form-name');
-        const slugInp = document.getElementById('theme-form-slug');
-        const descInp = document.getElementById('theme-form-desc');
-        const authorInp = document.getElementById('theme-form-author');
-
-        if (idInp) idInp.value = id;
-        if (nameInp) nameInp.value = name;
-        if (slugInp) {
-            slugInp.value = slug;
-            slugInp.readOnly = true;
-        }
-        if (descInp) descInp.value = desc || '';
-        if (authorInp) authorInp.value = author || '';
-
-        if (titleEl) titleEl.innerText = t('themes.btn_edit_theme');
-        if (modal) modal.classList.remove('hidden');
-    };
-
-    window.closeThemeFormModal = function() {
-        const modal = document.getElementById('theme-form-modal');
-        if (modal) modal.classList.add('hidden');
-    };
-
-    window.autoFillThemeSlug = function(name) {
-        const slugInp = document.getElementById('theme-form-slug');
-        const idInp = document.getElementById('theme-form-id');
-        if (slugInp && !idInp?.value) {
-            slugInp.value = name.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
-        }
-    };
-
-    window.openForkThemeModal = function(sourceThemeId, sourceName, sourceSlug) {
-        const modal = document.getElementById('theme-fork-modal');
-        const nameInp = document.getElementById('theme-fork-new-name');
-        const slugInp = document.getElementById('theme-fork-new-slug');
-        const sourceInfo = document.getElementById('theme-fork-source-info');
-
-        document.getElementById('theme-fork-source-id').value = sourceThemeId;
-        if (sourceInfo) sourceInfo.innerText = sourceName + ' (' + sourceSlug + ')';
-        if (nameInp) nameInp.value = sourceName + ' (Fork)';
-        if (slugInp) slugInp.value = sourceSlug + '-fork';
-
-        if (modal) modal.classList.remove('hidden');
-    };
-
-    window.closeThemeForkModal = function() {
-        const modal = document.getElementById('theme-fork-modal');
-        if (modal) modal.classList.add('hidden');
     };
 
     window.openComponentContractModal = function(btn) {
@@ -599,7 +658,7 @@
                     return '<span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 px-2 py-0.5 rounded-lg font-mono text-xs font-semibold">' + s + '</span>';
                 }).join(' ');
             } else {
-                slotsEl.innerHTML = '<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg font-mono text-xs font-semibold">main</span>';
+                slotsEl.innerHTML = '<span class="bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded-lg font-mono text-xs font-semibold">main</span>';
             }
         }
 
@@ -613,6 +672,53 @@
         if (schemaEl) schemaEl.value = schemaJson;
 
         modal.classList.remove('hidden');
+    };
+
+    let cachedThemeContractMd = null;
+
+    window.openThemeContractModal = async function() {
+        const modal = document.getElementById('theme-contract-modal');
+        const textEl = document.getElementById('theme-contract-modal-text');
+        if (!modal || !textEl) return;
+        modal.classList.remove('hidden');
+        if (cachedThemeContractMd !== null) {
+            textEl.value = cachedThemeContractMd;
+            return;
+        }
+        textEl.value = t('common.loading');
+        try {
+            const res = await fetch('/admin/theme-contract.md');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            cachedThemeContractMd = await res.text();
+            textEl.value = cachedThemeContractMd;
+        } catch (err) {
+            textEl.value = t('common.error') + ': ' + (err.message || '');
+        }
+    };
+
+    window.closeThemeContractModal = function() {
+        document.getElementById('theme-contract-modal')?.classList.add('hidden');
+    };
+
+    window.copyThemeContractModal = function() {
+        const text = document.getElementById('theme-contract-modal-text')?.value || '';
+        if (text && window.walnutCopyText) {
+            window.walnutCopyText(text, t('common.copy_clipboard_success'), t('common.error'));
+        }
+    };
+
+    window.downloadThemeContractModal = function() {
+        const text = document.getElementById('theme-contract-modal-text')?.value || '';
+        if (text && window.walnutDownloadFile) {
+            window.walnutDownloadFile('theme-contract.md', text, 'text/markdown;charset=utf-8');
+        }
+    };
+
+    window.downloadSchemaJsonFile = function() {
+        const text = document.getElementById('export-schema-modal-json')?.value || '';
+        if (text && window.walnutDownloadFile) {
+            window.walnutDownloadFile('schema-contract.json', text, 'application/json');
+        }
     };
 
     window.closeComponentContractModal = function() {
@@ -688,7 +794,7 @@
 
     window.syncThemePreviewsDarkMode = function(isDark) {
         if (typeof isDark === 'undefined') {
-            const mode = window.getAdminThemeMode ? window.getAdminThemeMode() : (localStorage.getItem('walnut_theme_mode') || 'system');
+            const mode = window.getAdminThemeMode ? window.getAdminThemeMode() : (localStorage.getItem('edge_theme_mode') || 'system');
             if (mode === 'dark') isDark = true;
             else if (mode === 'light') isDark = false;
             else isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -699,14 +805,14 @@
             if (isDark) {
                 doc.documentElement.classList.add('dark');
                 if (doc.body) {
-                    doc.body.classList.add('bg-[#0b1120]', 'text-slate-100');
-                    doc.body.classList.remove('bg-white', 'text-slate-900');
+                    doc.body.classList.add('bg-[#0b1120]', 'text-stone-100');
+                    doc.body.classList.remove('bg-white', 'text-stone-900');
                 }
             } else {
                 doc.documentElement.classList.remove('dark');
                 if (doc.body) {
-                    doc.body.classList.remove('bg-[#0b1120]', 'text-slate-100');
-                    doc.body.classList.add('bg-white', 'text-slate-900');
+                    doc.body.classList.remove('bg-[#0b1120]', 'text-stone-100');
+                    doc.body.classList.add('bg-white', 'text-stone-900');
                 }
             }
         };
@@ -780,8 +886,34 @@
         });
     }
 
+    function notifyBrokenThemeBlocksIfJustActivated() {
+        let justSwitched = false;
+        try {
+            if (sessionStorage.getItem('edge_theme_activated_check') === '1') {
+                sessionStorage.removeItem('edge_theme_activated_check');
+                justSwitched = true;
+            }
+        } catch {}
+        if (!justSwitched) return;
+        const banner = document.getElementById('themes-broken-blocks-banner');
+        if (!banner || !window.showToast) return;
+        const pages = Number(banner.getAttribute('data-broken-pages') || 0);
+        const blocks = Number(banner.getAttribute('data-broken-blocks') || 0);
+        if (pages > 0) {
+            window.showToast(t('themes.broken_blocks_detected_toast', { pages: pages, blocks: blocks }), 'warning');
+        }
+    }
+
+    document.addEventListener('htmx:afterRequest', function(evt) {
+        const reqPath = evt?.detail?.requestConfig?.path || evt?.detail?.pathInfo?.requestPath || '';
+        if (evt?.detail?.successful && String(reqPath).includes('/admin/themes/api/activate/')) {
+            try { sessionStorage.setItem('edge_theme_activated_check', '1'); } catch {}
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         initThemePreviewScalers();
+        notifyBrokenThemeBlocksIfJustActivated();
     });
 
     document.addEventListener('htmx:afterSwap', function() {

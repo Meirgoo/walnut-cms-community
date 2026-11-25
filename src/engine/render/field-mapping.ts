@@ -2,11 +2,56 @@ import type { Site } from '../types';
 import { renderTemplate, sweepTemplateVariables } from './template';
 import { DEFAULT_DEV_HOST, buildAbsoluteUrl } from '../core/url';
 import { resolveSiteBrandInfo } from '../core/dal/sites.dal';
-import { t } from '../core/i18n';
-import { escapeHtmlAttr } from '../core/utils';
+import { t, formatSafeLocaleDate } from '../core/i18n';
+import { escapeHtmlAttr, parseJson } from '../core/utils';
 import { sanitizeUrlAttr } from './markdown-parser';
 
 export { renderTemplate, sweepTemplateVariables };
+
+function extractDatasetFieldValue(record: Record<string, any>, sourceKey: string): any {
+    if (!record || typeof record !== 'object' || !sourceKey) return undefined;
+    if (record[sourceKey] !== undefined && record[sourceKey] !== null) {
+        return record[sourceKey];
+    }
+    if (record.fields && typeof record.fields === 'object' && record.fields[sourceKey] !== undefined && record.fields[sourceKey] !== null) {
+        return record.fields[sourceKey];
+    }
+    const metaObj = typeof record.metadata === 'string'
+        ? parseJson<Record<string, any>>(record.metadata, {})
+        : (record.metadata && typeof record.metadata === 'object' ? record.metadata : null);
+    if (metaObj) {
+        if (metaObj.fields && typeof metaObj.fields === 'object' && metaObj.fields[sourceKey] !== undefined && metaObj.fields[sourceKey] !== null) {
+            return metaObj.fields[sourceKey];
+        }
+        if (metaObj[sourceKey] !== undefined && metaObj[sourceKey] !== null) {
+            return metaObj[sourceKey];
+        }
+    }
+    return undefined;
+}
+
+/** Projects dataset items onto component data_slots while preserving unmapped keys as fallback. */
+export function applyBlockFieldMap(items: any[], fieldMap?: Record<string, string>): any[] {
+    if (!Array.isArray(items) || items.length === 0) return items;
+    if (!fieldMap || typeof fieldMap !== 'object' || Array.isArray(fieldMap)) return items;
+
+    const entries = Object.entries(fieldMap).filter(
+        ([slotKey, sourceKey]) => typeof slotKey === 'string' && slotKey.trim().length > 0 && typeof sourceKey === 'string' && sourceKey.trim().length > 0
+    );
+    if (entries.length === 0) return items;
+
+    return items.map((item) => {
+        if (!item || typeof item !== 'object') return item;
+        const projected: Record<string, any> = { ...item };
+        for (const [slotKey, sourceKey] of entries) {
+            const val = extractDatasetFieldValue(item, sourceKey.trim());
+            if (val !== undefined) {
+                projected[slotKey.trim()] = val;
+            }
+        }
+        return projected;
+    });
+}
 
 export interface PoweredByInfo {
     enabled: boolean;
@@ -25,6 +70,7 @@ export interface BuiltinSiteFields {
     email: string;
     socials: Array<{ name: string; url: string; icon?: string }>;
     assetsBase?: string;
+    default_locale?: string;
     powered_by: PoweredByInfo;
 }
 
@@ -144,6 +190,7 @@ export function resolveBuiltinSiteFields(
         email,
         socials,
         assetsBase,
+        default_locale: site.default_locale || 'zh-CN',
         powered_by
     };
 }
@@ -159,10 +206,7 @@ export function resolveBuiltinPageFields(
     const node = targetNodeData?.node;
     const version = targetNodeData?.version;
 
-    let meta: Record<string, any> = {};
-    if (node?.metadata) {
-        meta = typeof node.metadata === 'string' ? (JSON.parse(node.metadata) || {}) : node.metadata;
-    }
+    const meta = parseJson<Record<string, any>>(node?.metadata, {});
 
     const title = escapeHtmlAttr(node?.title || (rawPath === '/' ? site.name : 'Untitled'));
     const slug = escapeHtmlAttr(node?.slug || rawPath.replace(/^\//, '') || 'home');
@@ -189,8 +233,8 @@ export function resolveBuiltinPageFields(
     const updatedAtDate = node?.updated_at ? new Date(node.updated_at) : now;
 
     const effectiveLocale = node?.locale || meta.locale || locale || 'zh-CN';
-    const published_date = publishedAtDate.toLocaleDateString(effectiveLocale);
-    const updated_date = updatedAtDate.toLocaleDateString(effectiveLocale);
+    const published_date = formatSafeLocaleDate(publishedAtDate, effectiveLocale);
+    const updated_date = formatSafeLocaleDate(updatedAtDate, effectiveLocale);
     const published_at = publishedAtDate.toISOString();
     const updated_at = updatedAtDate.toISOString();
 
@@ -198,10 +242,10 @@ export function resolveBuiltinPageFields(
     const author = escapeHtmlAttr(meta.author || meta.author_name || brandInfoForAuthor.brandName || site.name || 'Editorial Team');
     const curator_name = author;
 
-    // Approximate reading time at 300 chars/min.
+    // Approximate reading time at 300 chars/min; themes append localized units via {{i18n.reading_unit}}.
     const rawLen = content_raw.length;
     const minutes = Math.max(1, Math.ceil(rawLen / 300));
-    const reading_time = `${minutes} min read`;
+    const reading_time = String(minutes);
 
     const rawCover = meta.cover_image || meta.og_image || meta.preview_image || '';
     const cover_image = rawCover ? sanitizeUrlAttr(rawCover) : '';

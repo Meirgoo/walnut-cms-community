@@ -13,12 +13,26 @@ import {
     SUPPORTED_LOCALES,
     renderLocaleOptions,
     extractCFAccessIdentity,
+    isCFAccessBuildEnabled,
     invalidateSiteMemoryCache
 } from '../../engine';
 import { installSystem, ensureSchema } from './installer';
 import { renderStatusMessage } from '../routes/common';
 
 export const setupRouter = new Hono<AppHonoEnv>();
+
+async function resolveSetupCFAccessEmail(c: any): Promise<{ cfaEnabled: boolean; cfEmail: string }> {
+    const cfaEnabled = isCFAccessBuildEnabled();
+    let cfEmail = cfaEnabled ? (c.get('cfAccessEmail') || '') : '';
+    if (cfaEnabled && !cfEmail) {
+        const cfIdentity = await extractCFAccessIdentity(c);
+        if (cfIdentity?.email) {
+            cfEmail = cfIdentity.email;
+            c.set('cfAccessEmail', cfEmail);
+        }
+    }
+    return { cfaEnabled, cfEmail };
+}
 
 setupRouter.get('/', async (c) => {
     await loadAdminLocales(c.env);
@@ -40,29 +54,23 @@ setupRouter.get('/', async (c) => {
         const alreadyTpl = await fetchAsset('/auth/pages/setup-already-installed.html', c.env);
         return c.html(renderTemplate(alreadyTpl, {
             title: i18n.setup?.already_installed_title || i18n.already_installed_title || 'System Already Initialized',
-            desc: i18n.setup?.already_installed_desc || i18n.already_installed_desc || 'Walnut CMS setup has already been completed.',
+            desc: i18n.setup?.already_installed_desc || i18n.already_installed_desc || 'Setup has already been completed.',
             btn_text: i18n.common?.return_admin || i18n.return_admin || 'Enter Admin'
         }, i18n));
     }
 
-    let cfEmail = c.get('cfAccessEmail') || '';
-    if (!cfEmail) {
-        const cfIdentity = await extractCFAccessIdentity(c);
-        if (cfIdentity?.email) {
-            cfEmail = cfIdentity.email;
-            c.set('cfAccessEmail', cfEmail);
-        }
-    }
+    const { cfaEnabled, cfEmail } = await resolveSetupCFAccessEmail(c);
 
-    // Initial setup exclusively trusts verified Cloudflare Access identity (or guarded local dev bypass).
-    if (!cfEmail) {
+    // Initial setup trusts verified Cloudflare Access identity when CFA build is enabled.
+    if (cfaEnabled && !cfEmail) {
         return c.text('Forbidden: Cloudflare Access authentication required for initial setup', 403);
     }
 
     const host = c.get('host') || DEFAULT_DEV_HOST;
 
-    const cfNoticePassTpl = await fetchAsset('/auth/snippets/setup-cf-notice-pass.html', c.env);
-    const cfNoticeHtml = renderTemplate(cfNoticePassTpl, { cf_email: cfEmail }, i18n);
+    const cfNoticeHtml = cfEmail
+        ? renderTemplate(await fetchAsset('/auth/snippets/setup-cf-notice-pass.html', c.env), { cf_email: cfEmail }, i18n)
+        : '';
 
     const setupTpl = await fetchAsset('/auth/pages/setup.html', c.env);
     const inlineI18nScript = getInlineI18nScript(locale, { setup: i18n.setup || {}, common: i18n.common || {} });
@@ -98,15 +106,8 @@ setupRouter.post('/api/init', async (c) => {
         return renderStatusMessage(c, i18n.already_initialized_warn, 'warning', 403);
     }
 
-    let cfEmail = c.get('cfAccessEmail') || '';
-    if (!cfEmail) {
-        const cfIdentity = await extractCFAccessIdentity(c);
-        if (cfIdentity?.email) {
-            cfEmail = cfIdentity.email;
-            c.set('cfAccessEmail', cfEmail);
-        }
-    }
-    if (!cfEmail) {
+    const { cfaEnabled, cfEmail } = await resolveSetupCFAccessEmail(c);
+    if (cfaEnabled && !cfEmail) {
         return renderStatusMessage(c, 'Forbidden: Cloudflare Access authentication required for initial setup', 'error', 403);
     }
 
@@ -115,7 +116,6 @@ setupRouter.post('/api/init', async (c) => {
         const email = (body.email as string || '').trim();
         const username = (body.username as string || '').trim();
         const password = (body.password as string || '').trim();
-        const tenantName = (body.tenant_name as string || '').trim() || 'Default Tenant';
         const siteName = (body.site_name as string || '').trim() || 'Default Site';
         const host = c.get('host') || c.req.header('host') || DEFAULT_DEV_HOST;
         let primaryDomain = (body.primary_domain as string || '').trim();
@@ -132,7 +132,6 @@ setupRouter.post('/api/init', async (c) => {
             superadminUsername: username,
             superadminPassword: password || undefined,
             cfAccessSub: cfEmail ? `cf_${email}` : undefined,
-            initialTenantName: tenantName,
             initialSiteName: siteName,
             primaryDomain: primaryDomain
         });

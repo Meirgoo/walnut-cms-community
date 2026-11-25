@@ -1,103 +1,140 @@
-<div class="w-full h-full p-8 overflow-y-auto space-y-6 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-    <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{datasets_title}}</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{datasets_subtitle}}</p>
-        </div>
-
-        <div class="flex items-center space-x-2.5 shrink-0">
-            <button
-                type="button"
-                onclick="window.openDatasetImportModal && window.openDatasetImportModal()"
-                class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
-            >
-                <span class="material-symbols-outlined text-[16px]">upload_file</span>
-                <span>{{btn_batch_import}}</span>
-            </button>
-
-            <button
-                type="button"
-                onclick="window.handleBatchExportDatasetJson && window.handleBatchExportDatasetJson()"
-                class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer"
-            >
-                <span class="material-symbols-outlined text-[16px]">file_download</span>
-                <span>{{btn_batch_export}}</span>
-            </button>
-
-            <a
-                href="/admin/datasets/new"
-                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
-            >
-                <span class="material-symbols-outlined text-[16px]">add</span>
-                <span>{{btn_new}}</span>
-            </a>
-        </div>
-    </div>
-
-    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="relative w-full md:w-80">
-            <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
-            <input
-                type="text"
-                id="dataset-search-input"
-                oninput="window.filterDatasetTable && window.filterDatasetTable(this.value)"
-                placeholder="{{search_placeholder}}"
-                class="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:border-emerald-500 text-slate-800 dark:text-slate-200"
-            />
-        </div>
-
+<div class="p-6 md:p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-4 w-full">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-2 text-xs font-bold text-slate-500">
-                <span>{{total_count_label}}</span>
-                <span class="font-mono text-emerald-600 font-black">{{total_count}}</span>
-            </div>
+            <h1 class="text-xl font-black text-[var(--admin-text)] tracking-tight">{{datasets_title}}</h1>
+            <span class="text-xs font-mono font-medium bg-[var(--admin-surface)] text-[var(--admin-text-muted)] px-2.5 py-0.5 rounded-full border border-[var(--admin-border)]">
+                {{total_collections_text}}
+            </span>
+        </div>
 
-            <div class="relative" id="column-picker-wrapper-datasets">
+        <div class="flex items-center flex-wrap gap-2 shrink-0">
+            <a
+                href="/admin/trash?tab=dataset"
+                class="h-8 px-2.5 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] text-xs font-medium border border-[var(--admin-border)] transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[15px]">delete</span>
+                <span>{{btn_trash}}</span>
+                {{trash_badge_html}}
+            </a>
+
+            <div class="relative more-actions-wrapper" id="column-picker-wrapper-datasets">
                 <button
                     type="button"
-                    onclick="window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('datasets-table', 'datasets')"
-                    class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center space-x-1.5 cursor-pointer"
+                    onclick="window.toggleMoreActionsMenu('datasets-more-menu', event)"
+                    class="h-8 w-8 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-[var(--admin-border)] transition flex items-center justify-center cursor-pointer"
+                    title="{{more_actions}}"
                 >
-                    <span class="material-symbols-outlined text-[16px]">view_column</span>
-                    <span>{{common.btn_columns}}</span>
+                    <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                 </button>
-                <div id="column-picker-menu-datasets" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl p-2.5 z-30 space-y-1.5 text-xs">
-                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                        <input type="checkbox" class="col-toggle-schema_slug rounded text-emerald-600" data-col="schema_slug" onchange="window.toggleTableColumn('datasets-table', 'schema_slug', this.checked, 'datasets')" />
+                <div
+                    id="datasets-more-menu"
+                    class="more-actions-menu hidden absolute right-0 top-full mt-1.5 w-48 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-lg p-1.5 z-50 space-y-0.5"
+                >
+                    <button
+                        type="button"
+                        onclick="window.toggleMoreActionsMenu('datasets-more-menu'); window.openDatasetImportModal && window.openDatasetImportModal()"
+                        class="w-full px-3 py-2 text-left text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] rounded-lg flex items-center space-x-2 cursor-pointer transition"
+                    >
+                        <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)]">upload_file</span>
+                        <span>{{btn_batch_import}}</span>
+                    </button>
+                    <button
+                        type="button"
+                        onclick="window.toggleMoreActionsMenu('datasets-more-menu'); window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('datasets-table', 'datasets')"
+                        class="w-full px-3 py-2 text-left text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] rounded-lg flex items-center space-x-2 cursor-pointer transition"
+                    >
+                        <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)]">view_column</span>
+                        <span>{{common.btn_columns}}</span>
+                    </button>
+                </div>
+                <div id="column-picker-menu-datasets" class="hidden absolute right-0 top-full mt-1.5 w-48 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-lg p-3 z-50 space-y-1.5 text-xs">
+                    <div class="font-semibold text-[var(--admin-text-muted)] text-[10px] uppercase tracking-wider pb-1.5 border-b border-[var(--admin-border)]">{{common.custom_columns}}</div>
+                    <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                        <input type="checkbox" class="col-toggle-schema_slug rounded accent-[var(--admin-accent)]" data-col="schema_slug" onchange="window.toggleTableColumn('datasets-table', 'schema_slug', this.checked, 'datasets')" />
                         <span>{{datasets.col_schema_slug}}</span>
                     </label>
-                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                        <input type="checkbox" class="col-toggle-ref_pages rounded text-emerald-600" data-col="ref_pages" onchange="window.toggleTableColumn('datasets-table', 'ref_pages', this.checked, 'datasets')" />
+                    <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                        <input type="checkbox" class="col-toggle-ref_pages rounded accent-[var(--admin-accent)]" data-col="ref_pages" onchange="window.toggleTableColumn('datasets-table', 'ref_pages', this.checked, 'datasets')" />
                         <span>{{datasets.col_ref_pages}}</span>
                     </label>
-                    <label class="flex items-center space-x-2 px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
-                        <input type="checkbox" class="col-toggle-created rounded text-emerald-600" data-col="created" onchange="window.toggleTableColumn('datasets-table', 'created', this.checked, 'datasets')" />
+                    <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                        <input type="checkbox" class="col-toggle-created rounded accent-[var(--admin-accent)]" data-col="created" onchange="window.toggleTableColumn('datasets-table', 'created', this.checked, 'datasets')" />
                         <span>{{datasets.col_created}}</span>
                     </label>
                 </div>
             </div>
+
+            <button
+                type="button"
+                onclick="window.openManageSchemasModal && window.openManageSchemasModal()"
+                class="h-8 px-3 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] border border-[var(--admin-border)] text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[15px] text-[var(--admin-accent-text)]">data_object</span>
+                <span>{{schemas.btn_manage_schemas}}</span>
+            </button>
+
+            <button
+                type="button"
+                onclick="window.openCreateCollectionModal && window.openCreateCollectionModal()"
+                class="h-8 px-3 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-[13px] font-semibold shadow-sm transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[16px]">add</span>
+                <span>{{btn_new_collection}}</span>
+            </button>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto thin-scrollbar">
+    <div class="bg-[var(--admin-surface)] rounded-2xl border border-[var(--admin-border)] shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div class="px-4 py-2.5 border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div class="flex items-center space-x-2 bg-[var(--admin-surface)] px-2.5 h-8 rounded-lg border border-[var(--admin-border)] w-full sm:w-64 shrink-0 focus-within:border-[var(--admin-accent)] transition">
+                <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[16px]">search</span>
+                <input
+                    type="text"
+                    id="dataset-search-input"
+                    oninput="window.filterDatasetTable && window.filterDatasetTable(this.value)"
+                    placeholder="{{search_placeholder}}"
+                    class="bg-transparent text-xs text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] outline-none w-full font-medium"
+                />
+            </div>
+        </div>
+
+        <div id="datasets-batch-toolbar" class="hidden bg-[var(--admin-accent-soft)] border-b border-[var(--admin-accent-border)] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 transition-all">
+            <div class="flex items-center space-x-3">
+                <span id="datasets-selected-badge" class="font-semibold font-mono text-[var(--admin-accent-text)]">{{selected_count_zero}}</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="window.handleBatchExportDatasetJson && window.handleBatchExportDatasetJson()" class="h-7 px-2.5 rounded-md bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] border border-[var(--admin-border)] font-medium flex items-center space-x-1 cursor-pointer transition">
+                    <span class="material-symbols-outlined text-[14px]">file_download</span>
+                    <span>{{btn_batch_export}}</span>
+                </button>
+                <button type="button" onclick="window.handleBatchDeleteCollections && window.handleBatchDeleteCollections()" class="h-7 px-2.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-medium flex items-center space-x-1 cursor-pointer transition">
+                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                    <span>{{common.delete}}</span>
+                </button>
+                <button type="button" onclick="window.clearDatasetCollectionSelection && window.clearDatasetCollectionSelection()" class="h-7 px-2 rounded-md text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition cursor-pointer">
+                    {{common.cancel_selection}}
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto flex-1">
             <table class="w-full text-left border-collapse" id="datasets-table">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-400 uppercase tracking-wider font-mono whitespace-nowrap">
-                        <th class="w-12 px-4 py-3.5 text-center whitespace-nowrap">
-                            <input type="checkbox" id="dataset-select-all" onclick="window.toggleAllDatasetCheckboxes && window.toggleAllDatasetCheckboxes(this)" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500" />
+                    <tr class="bg-[var(--admin-chrome)]/60 border-b border-[var(--admin-border)] text-[11px] font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider whitespace-nowrap">
+                        <th class="w-12 px-4 py-3 text-center whitespace-nowrap">
+                            <input type="checkbox" id="dataset-select-all" onclick="window.toggleAllDatasetCheckboxes && window.toggleAllDatasetCheckboxes(this)" class="w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500" />
                         </th>
-                        <th class="min-w-[200px] px-6 py-3.5 text-left whitespace-nowrap">{{col_collection}}</th>
-                        <th class="px-6 py-3.5 text-center hidden whitespace-nowrap" data-col="schema_slug">{{datasets.col_schema_slug}}</th>
-                        <th class="px-6 py-3.5 text-center whitespace-nowrap">{{col_schema}}</th>
-                        <th class="px-6 py-3.5 text-center whitespace-nowrap">{{col_items_count}}</th>
-                        <th class="px-6 py-3.5 text-center hidden whitespace-nowrap" data-col="ref_pages">{{datasets.col_ref_pages}}</th>
-                        <th class="px-6 py-3.5 text-center hidden whitespace-nowrap" data-col="created">{{datasets.col_created}}</th>
-                        <th class="px-6 py-3.5 text-center whitespace-nowrap">{{col_updated}}</th>
-                        <th class="px-6 py-3.5 text-center whitespace-nowrap">{{col_actions}}</th>
+                        <th class="min-w-[200px] px-6 py-3 text-left whitespace-nowrap">{{col_collection}}</th>
+                        <th class="px-6 py-3 text-center hidden whitespace-nowrap" data-col="schema_slug">{{datasets.col_schema_slug}}</th>
+                        <th class="px-6 py-3 text-center whitespace-nowrap">{{col_schema}}</th>
+                        <th class="px-6 py-3 text-center whitespace-nowrap">{{col_items_count}}</th>
+                        <th class="px-6 py-3 text-center hidden whitespace-nowrap" data-col="ref_pages">{{datasets.col_ref_pages}}</th>
+                        <th class="px-6 py-3 text-center hidden whitespace-nowrap" data-col="created">{{datasets.col_created}}</th>
+                        <th class="px-6 py-3 text-center whitespace-nowrap">{{col_updated}}</th>
+                        <th class="px-6 py-3 text-center whitespace-nowrap">{{col_actions}}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-700 dark:text-slate-300">
+                <tbody class="divide-y divide-stone-100 dark:divide-stone-700/60 text-xs text-[var(--admin-text)]">
                     {{dataset_rows_html}}
                 </tbody>
             </table>
@@ -105,42 +142,128 @@
     </div>
 </div>
 
-<div id="dataset-import-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
-        <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
-            <div class="flex items-center space-x-2">
-                <span class="material-symbols-outlined text-emerald-500 text-[20px]">upload_file</span>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{modal_import_title}}</h3>
-            </div>
-            <button type="button" onclick="document.getElementById('dataset-import-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-white cursor-pointer">
+<div id="dataset-create-collection-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[var(--admin-surface)] rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[var(--admin-border)] space-y-4">
+        <div class="flex justify-between items-center border-b border-[var(--admin-border)] pb-3">
+            <h3 class="text-sm font-bold text-[var(--admin-text)]">{{modal_create_collection_title}}</h3>
+            <button type="button" onclick="document.getElementById('dataset-create-collection-modal').classList.add('hidden')" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] cursor-pointer">
                 <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
 
         <div class="space-y-3">
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{modal_select_schema}}</label>
-                <walnut-select id="import-target-schema" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none focus:border-emerald-500">
+                <label class="block text-xs font-semibold text-[var(--admin-text)] mb-1">{{field_collection_name}}</label>
+                <input type="text" id="new-collection-name" placeholder="{{placeholder_collection_name}}" class="w-full h-9 px-3 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]" />
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-[var(--admin-text)] mb-1">{{field_collection_slug}}</label>
+                <input type="text" id="new-collection-slug" placeholder="{{placeholder_collection_slug}}" class="w-full h-9 px-3 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg text-xs font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]" />
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-semibold text-[var(--admin-text)]">{{field_collection_schema}}</label>
+                    <button
+                        type="button"
+                        onclick="window.openNewSchemaModal && window.openNewSchemaModal()"
+                        class="text-[11px] font-bold text-[var(--admin-accent-text)] hover:underline inline-flex items-center space-x-0.5 cursor-pointer"
+                    >
+                        <span>{{schemas.btn_new_schema_short}}</span>
+                    </button>
+                </div>
+                <edge-select id="new-collection-schema" class="w-full h-9 px-3 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg text-xs font-medium text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]">
                     {{schema_options_html}}
-                </walnut-select>
-                <span class="text-[10px] text-slate-400 mt-0.5 block">{{modal_tip_structure}}</span>
+                </edge-select>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--admin-border)]">
+            <button type="button" onclick="document.getElementById('dataset-create-collection-modal').classList.add('hidden')" class="h-8 px-3 rounded-lg text-xs font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{cancel}}</button>
+            <button type="button" onclick="window.submitCreateCollection && window.submitCreateCollection()" class="h-8 px-4 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-xs font-semibold shadow-sm transition cursor-pointer">{{btn_create_collection}}</button>
+        </div>
+    </div>
+</div>
+
+<div id="dataset-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-[var(--admin-surface)] rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[var(--admin-border)] space-y-4">
+        <div class="flex justify-between items-center border-b border-[var(--admin-border)] pb-3">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-[var(--admin-accent-text)] text-[20px]">upload_file</span>
+                <h3 class="text-sm font-bold text-[var(--admin-text)]">{{modal_import_title}}</h3>
+            </div>
+            <button type="button" onclick="document.getElementById('dataset-import-modal').classList.add('hidden')" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-[var(--admin-text)] mb-1">{{modal_select_collection}}</label>
+                <edge-select id="import-target-collection" class="w-full bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg p-2 text-xs font-medium text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]">
+                    {{collection_options_html}}
+                </edge-select>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{modal_select_file}}</label>
-                <input type="file" id="import-json-file" accept=".json,application/json" onchange="window.handleDatasetFileSelected && window.handleDatasetFileSelected(this)" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-100 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-200 cursor-pointer" />
+                <label class="block text-xs font-semibold text-[var(--admin-text)] mb-1">{{modal_select_file}}</label>
+                <input type="file" id="import-json-file" accept=".json,application/json" onchange="window.handleDatasetFileSelected && window.handleDatasetFileSelected(this)" class="w-full text-xs text-[var(--admin-text-muted)] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[var(--admin-chrome)] file:text-[var(--admin-text)] hover:file:bg-[var(--admin-surface-hover)] cursor-pointer" />
             </div>
 
             <div id="import-validation-feedback" class="text-xs space-y-1"></div>
         </div>
 
-        <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100 dark:border-slate-700">
-            <button type="button" onclick="document.getElementById('dataset-import-modal').classList.add('hidden')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">{{cancel}}</button>
-            <button type="button" id="btn-submit-dataset-import" onclick="window.submitDatasetImport && window.submitDatasetImport()" disabled class="bg-slate-400 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-not-allowed">
+        <div class="flex justify-end space-x-2 pt-3 border-t border-[var(--admin-border)]">
+            <button type="button" onclick="document.getElementById('dataset-import-modal').classList.add('hidden')" class="h-8 px-3 rounded-lg text-xs font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{cancel}}</button>
+            <button type="button" id="btn-submit-dataset-import" onclick="window.submitDatasetImport && window.submitDatasetImport()" disabled class="h-8 bg-stone-400 text-white px-4 rounded-lg text-xs font-semibold shadow-sm transition flex items-center space-x-1.5 cursor-not-allowed">
                 <span class="material-symbols-outlined text-[16px]">check</span>
                 <span>{{btn_confirm_import}}</span>
             </button>
         </div>
     </div>
 </div>
+<div id="manage-schemas-modal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4" onclick="if(event.target===this) window.closeManageSchemasModal && window.closeManageSchemasModal()">
+    <div class="bg-[var(--admin-surface)] rounded-2xl max-w-xl w-full shadow-2xl border border-[var(--admin-border)] overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="px-5 py-3.5 border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-[18px] text-[var(--admin-accent-text)]">data_object</span>
+                <h3 class="text-sm font-bold text-[var(--admin-text)]">{{schemas.modal_manage_title}}</h3>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="window.toggleImportSchemaPanel && window.toggleImportSchemaPanel()" class="h-7 px-2.5 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-[var(--admin-text)] text-xs font-semibold transition cursor-pointer inline-flex items-center space-x-1">
+                    <span class="material-symbols-outlined text-[14px]">upload_file</span>
+                    <span>{{schemas.btn_import_json}}</span>
+                </button>
+                <button type="button" onclick="window.exportAllSiteSchemasJson && window.exportAllSiteSchemasJson()" class="h-7 px-2.5 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-[var(--admin-text)] text-xs font-semibold transition cursor-pointer inline-flex items-center space-x-1">
+                    <span class="material-symbols-outlined text-[14px]">download</span>
+                    <span>{{schemas.btn_export_all}}</span>
+                </button>
+                <button type="button" onclick="window.openNewSchemaModal && window.openNewSchemaModal()" class="h-7 px-2.5 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-xs font-semibold transition cursor-pointer">
+                    {{schemas.btn_new_schema_short}}
+                </button>
+                <button type="button" onclick="window.closeManageSchemasModal && window.closeManageSchemasModal()" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] p-1 rounded-lg hover:bg-[var(--admin-surface-hover)] cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+        </div>
+        <div id="import-schema-panel" class="hidden px-4 py-3 border-b border-[var(--admin-border)] bg-[var(--admin-canvas)] space-y-2 text-xs">
+            <div class="flex items-center justify-between gap-2">
+                <span class="font-semibold text-[var(--admin-text)]">{{schemas.import_hint}}</span>
+                <input type="file" id="import-schema-file" accept=".json,application/json" onchange="window.handleSchemaJsonFileSelected && window.handleSchemaJsonFileSelected(this)" class="text-[11px] text-[var(--admin-text-muted)] file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-[var(--admin-chrome)] file:text-[var(--admin-text)] cursor-pointer" />
+            </div>
+            <textarea id="import-schema-textarea" rows="4" placeholder="{{schemas.import_placeholder}}" class="w-full bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg p-2 font-mono text-[11px] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"></textarea>
+            <div class="flex items-center justify-between gap-2">
+                <div id="import-schema-feedback" class="text-[11px]"></div>
+                <button type="button" onclick="window.submitImportSchemaJson && window.submitImportSchemaJson()" class="h-7 px-3 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-xs font-semibold transition cursor-pointer shrink-0">
+                    {{schemas.import_confirm}}
+                </button>
+            </div>
+        </div>
+        <div id="manage-schemas-list" class="p-4 space-y-2 overflow-y-auto flex-1 text-xs"></div>
+    </div>
+</div>
+
+{{modal_new_schema}}
+
+<script id="dataset-schemas-data" type="application/json">{{schemas_json}}</script>
+<script src="/admin/js/admin-tables.js" defer></script>
 <script src="/admin/js/datasets-schemas.js?v={{engine_version}}" defer></script>

@@ -11,6 +11,7 @@ import {
     loadAdminLocales,
     handleSpecialRouteFallback,
     getSharedPluginEngine,
+    createHookContext,
     coreServicePlugins,
     DEFAULT_DEV_HOST,
     ServerTimingRecorder,
@@ -19,7 +20,11 @@ import {
     extractClientIp,
     getCookieValue,
     sanitizeHostHeader,
-    isLocalDevCFAccessBypassEnabled
+    isLocalDevCFAccessBypassEnabled,
+    resolveCurrentUser,
+    isSiteAdminUser,
+    forwardWorkerBridgeProxy,
+    parseJson
 } from './engine';
 
 const app = new Hono<AppHonoEnv>();
@@ -57,6 +62,7 @@ const serveStaticAsset = async (c: any) => {
 
 app.get('/shared/*', serveStaticAsset);
 app.get('/admin/js/*', serveStaticAsset);
+app.get('/admin/palettes.css', serveStaticAsset);
 
 const serveR2MediaAsset = async (c: any, r2Key: string) => {
     if (r2Key.includes('\0') || r2Key.includes('%00')) {
@@ -125,7 +131,7 @@ app.use('*', async (c, next) => {
     // Reject unauthenticated admin/API requests before loading admin modules or querying D1.
     const rawPathname = url.pathname;
     const cookieStr = c.req.header('cookie') || '';
-    const sessionToken = getCookieValue(cookieStr, 'walnut_session');
+    const sessionToken = getCookieValue(cookieStr, 'edge_session');
     const hasValidFormatSession = Boolean(sessionToken && sessionToken.length >= 16);
     const cfJwtHeader = c.req.header('cf-access-jwt-assertion') || c.req.header('Cf-Access-Jwt-Assertion');
     const hasCfAccess = Boolean(((c.env as any)?.CF_ACCESS_TEAM_NAME && cfJwtHeader) || isLocalDevCFAccessBypassEnabled(c));
@@ -133,7 +139,7 @@ app.use('*', async (c, next) => {
     if (rawPathname === '/api/quick-actions/state') {
         const rawHost = (c.req.header('host') || url.host || '').toLowerCase();
         const isLocalDevProbe = (c.env as any)?.ENVIRONMENT !== 'production' && (rawHost.startsWith('localhost') || rawHost.startsWith('127.0.0.1'));
-        const hasDevAuth = isLocalDevProbe && (c.req.header('X-Walnut-Dev-Auth') === 'admin' || url.searchParams.get('__walnut_dev_auth') === 'admin');
+        const hasDevAuth = isLocalDevProbe && (c.req.header('X-Edge-Dev-Auth') === 'admin' || url.searchParams.get('__edge_dev_auth') === 'admin');
         if (!hasValidFormatSession && !hasCfAccess && !hasDevAuth) {
             return c.json({ authenticated: false });
         }
@@ -170,7 +176,7 @@ app.use('*', async (c, next) => {
         'zh-CN': 'zh-CN'
     };
     const pathParts = url.pathname.split('/').filter(Boolean);
-    let locale = 'zh-CN';
+    let locale = '';
     let actualPath = url.pathname;
 
     if (pathParts.length > 0 && LOCALE_PREFIX_MAP[pathParts[0]]) {
@@ -179,13 +185,20 @@ app.use('*', async (c, next) => {
         if (actualPath === '') actualPath = '/';
     }
 
-    c.set('locale', locale);
+    if (locale) {
+        c.set('locale', locale);
+    }
     c.set('actualPath', actualPath);
 
     const clientIp = extractClientIp(c);
     const isWriteEndpoint = c.req.method !== 'GET' && c.req.method !== 'HEAD';
+    let isAdminSession = false;
+    if ((isAdminPath || isApiAdminPath) && hasValidFormatSession && c.env?.DB) {
+        const fwUser = await resolveCurrentUser(c).catch(() => null);
+        isAdminSession = isSiteAdminUser(fwUser);
+    }
     if (pluginEngine && typeof (pluginEngine as any).checkFirewall === 'function') {
-        const firewallResult = await (pluginEngine as any).checkFirewall(clientIp, isWriteEndpoint, url, c.env, c.req.raw.headers);
+        const firewallResult = await (pluginEngine as any).checkFirewall(clientIp, isWriteEndpoint, url, c.env, c.req.raw.headers, { isAdminSession });
         if (!firewallResult.allowed) {
             return c.text(firewallResult.reason || 'Forbidden', (firewallResult.status || 403) as any);
         }
@@ -225,7 +238,6 @@ app.use('*', async (c, next) => {
             const site = await resolveSiteWithMemoryCache(db, host);
             if (site) {
                 c.set('siteId', site.id);
-                c.set('tenantId', site.tenant_id);
                 c.set('siteDomain', site.primary_domain);
                 c.set('site' as any, site);
                 if (site.license_key) {
@@ -270,6 +282,31 @@ const dispatchAdminApp = async (c: any) => {
 app.all('/admin', dispatchAdminApp);
 app.all('/admin/*', dispatchAdminApp);
 app.route('/api', apiApp);
+
+const handlePublicExtProxy = async (c: any) => {
+    if (!pluginEngine.hasService('WORKER_BRIDGE_PROXY')) {
+        return c.notFound();
+    }
+    const db = c.env?.DB;
+    if (!db) return c.text('Database unavailable', 500);
+    const host = sanitizeHostHeader(c.req.header('host')) || DEFAULT_DEV_HOST;
+    const site = await resolveSiteWithMemoryCache(db, host);
+    if (!site) return c.notFound();
+    const siteSettings = parseJson<Record<string, any>>(site.settings, {});
+    const rawSiteMode = siteSettings.site_mode as string | undefined;
+    const isInternalMode = rawSiteMode === 'internal' || rawSiteMode === 'maintenance' || siteSettings.routing?.maintenance_mode === 1;
+    if (isInternalMode) {
+        const user = c.get('user') || await resolveCurrentUser(c).catch(() => null);
+        if (!isSiteAdminUser(user)) {
+            return c.text('Forbidden: Internal mode closes public extension proxy', 403);
+        }
+    }
+
+    return await forwardWorkerBridgeProxy(c, pluginEngine, 'public', '/ext', site.id);
+};
+app.all('/ext/:slug', handlePublicExtProxy);
+app.all('/ext/:slug/*', handlePublicExtProxy);
+
 app.route('/', visitorApp);
 
 app.onError(async (err, c) => {
@@ -312,6 +349,7 @@ export default {
         await taskPluginInstance.handleScheduled(
             event,
             {
+                ...(env || {}),
                 DB: env.DB,
                 BUCKET: env.BUCKET,
                 BUCKET_BACKUP: env.BUCKET_BACKUP,

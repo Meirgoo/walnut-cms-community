@@ -1,12 +1,12 @@
 (function() {
     'use strict';
 
-    const rt = (window.__WALNUT_RUNTIME__ = window.__WALNUT_RUNTIME__ || {});
+    const rt = (window.__EDGE_RUNTIME__ = window.__EDGE_RUNTIME__ || {});
     if (rt.quickActionInitialized) return;
     rt.quickActionInitialized = true;
 
     const t = (k, params) => {
-        const i18n = window.__WALNUT_I18N__;
+        const i18n = window.__EDGE_I18N__;
         return i18n && typeof i18n.t === 'function' ? i18n.t(k, params) : k;
     };
 
@@ -22,10 +22,10 @@
 
             const toast = document.createElement('div');
             const bgClass = type === 'success'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-[#B45309] text-white'
                 : (type === 'error'
                     ? 'bg-rose-600 text-white'
-                    : (type === 'warning' ? 'bg-amber-500 text-white' : 'bg-slate-900 text-white'));
+                    : (type === 'warning' ? 'bg-amber-500 text-white' : 'bg-stone-900 text-white'));
 
             toast.className = `pointer-events-auto px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center space-x-2 transition-all transform duration-200 translate-y-2 opacity-0 ${bgClass}`;
             toast.innerHTML = `<span>${message}</span>`;
@@ -42,7 +42,7 @@
         };
     }
 
-    class WalnutQuickActionEngine {
+    class EdgeQuickActionEngine {
         constructor() {
             this.state = null;
             this.activeModal = null;
@@ -58,7 +58,7 @@
                     try {
                         if (window.self !== window.top) return true;
                         const params = new URLSearchParams(window.location.search);
-                        if (params.has('walnut_preview') || params.has('preview')) return true;
+                        if (params.has('edge_preview') || params.has('preview')) return true;
                         if (rt.previewMode) return true;
                     } catch (e) {
                         return true;
@@ -77,7 +77,7 @@
 
                 const data = await res.json();
                 if (!data || !data.authenticated) {
-                    try { localStorage.removeItem('walnut_admin_hint'); } catch {}
+                    try { localStorage.removeItem('edge_admin_hint'); } catch {}
                     return;
                 }
 
@@ -85,7 +85,7 @@
                 rt.isAdmin = true;
 
                 if (data.i18n && typeof data.i18n === 'object') {
-                    const i18nStore = (window.__WALNUT_I18N__ = window.__WALNUT_I18N__ || {});
+                    const i18nStore = (window.__EDGE_I18N__ = window.__EDGE_I18N__ || {});
                     i18nStore.dict = i18nStore.dict || {};
                     for (const ns of Object.keys(data.i18n)) {
                         i18nStore.dict[ns] = Object.assign({}, i18nStore.dict[ns] || {}, data.i18n[ns]);
@@ -126,7 +126,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Admin-CSRF-Token': 'walnut-admin-csrf-valid-token'
+                            'X-Admin-CSRF-Token': 'edge-admin-csrf-valid-token'
                         },
                         body: JSON.stringify({ path: targetPath || undefined, siteId: this.state?.siteId })
                     });
@@ -144,7 +144,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Admin-CSRF-Token': 'walnut-admin-csrf-valid-token'
+                            'X-Admin-CSRF-Token': 'edge-admin-csrf-valid-token'
                         },
                         body: JSON.stringify({ siteId: this.state?.siteId })
                     });
@@ -161,7 +161,7 @@
 
             this.availableCommands = [];
 
-            const pageMeta = window.__WALNUT__;
+            const pageMeta = window.__EDGE__;
             if (pageMeta?.route?.targetId) {
                 const targetId = pageMeta.route.targetId;
                 const rType = pageMeta.route.type || 'single';
@@ -324,7 +324,7 @@
                     handler: () => {
                         const isDark = document.documentElement.classList.contains('dark');
                         const nextMode = isDark ? 'light' : 'dark';
-                        localStorage.setItem('walnut_theme_mode', nextMode);
+                        localStorage.setItem('edge_theme_mode', nextMode);
                         document.documentElement.setAttribute('data-theme-mode', nextMode);
                         document.documentElement.classList.toggle('dark', nextMode === 'dark');
                         const modeLabel = t(nextMode === 'dark' ? 'quick_actions.theme_dark' : 'quick_actions.theme_light');
@@ -335,29 +335,26 @@
         }
 
         mountFloatingActionButton() {
-            if (document.getElementById('walnut-quick-action-fab')) return;
+            const legacyFab = document.getElementById('edge-quick-action-fab');
+            if (legacyFab) legacyFab.remove();
 
-            const fab = document.createElement('div');
-            fab.id = 'walnut-quick-action-fab';
-            fab.className = 'fixed bottom-6 right-6 z-[9999] select-none flex items-center space-x-2 transition-transform duration-200 hover:scale-105';
-            fab.innerHTML = `
-                <button
-                    type="button"
-                    id="walnut-fab-trigger-btn"
-                    title="${t('quick_actions.fab_title')} (${this.getDisplayShortcut()})"
-                    class="w-12 h-12 rounded-full bg-slate-900/90 dark:bg-emerald-600/90 hover:bg-black dark:hover:bg-emerald-500 text-white shadow-2xl backdrop-blur-md border border-slate-700/60 dark:border-emerald-400/30 flex items-center justify-center cursor-pointer transition"
-                >
-                    <span class="material-symbols-outlined text-[22px]">bolt</span>
-                </button>
-            `;
-
-            document.body.appendChild(fab);
-
-            document.getElementById('walnut-fab-trigger-btn')?.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.toggleCommandPalette();
-            });
+            const bindBtn = (id, withTitle) => {
+                const btn = document.getElementById(id);
+                if (!btn || btn.dataset.qaBound === '1') return;
+                btn.dataset.qaBound = '1';
+                if (withTitle) {
+                    btn.setAttribute('title', `${t('quick_actions.fab_title')} (${this.getDisplayShortcut()})`);
+                }
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.toggleCommandPalette();
+                });
+            };
+            bindBtn('sidebar-quick-action-btn', false);
+            bindBtn('sidebar-quick-action-collapsed-btn', true);
+            const kbdEl = document.getElementById('sidebar-quick-action-kbd');
+            if (kbdEl) kbdEl.textContent = this.getDisplayShortcut();
         }
 
         getDisplayShortcut() {
@@ -369,10 +366,11 @@
         updateShortcut(newShortcut) {
             if (!this.state) this.state = {};
             this.state.shortcut = (newShortcut || '').trim() || 'alt+k,cmd+k';
-            const fabBtn = document.getElementById('walnut-fab-trigger-btn');
-            if (fabBtn) {
-                fabBtn.setAttribute('title', `${t('quick_actions.fab_title')} (${this.getDisplayShortcut()})`);
-            }
+            const display = this.getDisplayShortcut();
+            const collapsedBtn = document.getElementById('sidebar-quick-action-collapsed-btn');
+            if (collapsedBtn) collapsedBtn.setAttribute('title', `${t('quick_actions.fab_title')} (${display})`);
+            const kbdEl = document.getElementById('sidebar-quick-action-kbd');
+            if (kbdEl) kbdEl.textContent = display;
         }
 
         // Normalize via e.code to avoid macOS Option+letter producing special characters.
@@ -470,29 +468,29 @@
             this.buildAvailableCommands();
 
             const modal = document.createElement('div');
-            modal.id = 'walnut-command-palette-modal';
+            modal.id = 'edge-command-palette-modal';
             modal.className = 'fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-4 select-none';
 
             modal.innerHTML = `
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150">
-                    <div class="p-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center space-x-3 bg-slate-50/50 dark:bg-slate-900/50">
-                        <span class="material-symbols-outlined text-[18px] text-slate-400">search</span>
+                <div class="bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150">
+                    <div class="p-3.5 border-b border-[var(--admin-border)] flex items-center space-x-3 bg-[var(--admin-chrome)]">
+                        <span class="material-symbols-outlined text-[18px] text-[var(--admin-text-muted)]">search</span>
                         <input
                             type="text"
-                            id="walnut-palette-input"
+                            id="edge-palette-input"
                             placeholder="${t('quick_actions.search_ph')}"
-                            class="flex-1 bg-transparent border-0 outline-none text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                            class="flex-1 bg-transparent border-0 outline-none text-sm font-medium text-[var(--admin-text)] placeholder-[var(--admin-text-muted)]"
                             autocomplete="off"
                         />
-                        <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded-md">${t('quick_actions.esc_close')}</span>
+                        <span class="text-[10px] font-mono text-[var(--admin-text-muted)] bg-[var(--admin-surface)] border border-[var(--admin-border)] px-2 py-0.5 rounded-md">${t('quick_actions.esc_close')}</span>
                     </div>
 
-                    <div id="walnut-palette-results" class="overflow-y-auto p-2 space-y-1 divide-y divide-slate-100/50 dark:divide-slate-800/50">
+                    <div id="edge-palette-results" class="overflow-y-auto p-2 space-y-1 divide-y divide-[var(--admin-border)]">
                     </div>
 
-                    <div class="px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
+                    <div class="px-4 py-2 border-t border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-between text-[11px] text-[var(--admin-text-muted)]">
                         <span>${t('quick_actions.footer_hint')}</span>
-                        <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold">Admin Active</span>
+                        <span class="font-mono text-[var(--admin-accent-text)] font-bold">Admin Active</span>
                     </div>
                 </div>
             `;
@@ -510,7 +508,7 @@
                 this.searchTimer = null;
             }
 
-            const input = document.getElementById('walnut-palette-input');
+            const input = document.getElementById('edge-palette-input');
             input?.focus();
 
             this.renderPaletteResults('');
@@ -550,8 +548,8 @@
             });
 
             input?.addEventListener('keydown', (e) => {
-                const resultsContainer = document.getElementById('walnut-palette-results');
-                const items = resultsContainer?.querySelectorAll('.walnut-palette-item') || [];
+                const resultsContainer = document.getElementById('edge-palette-results');
+                const items = resultsContainer?.querySelectorAll('.edge-palette-item') || [];
 
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
@@ -585,7 +583,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Admin-CSRF-Token': 'walnut-admin-csrf-valid-token'
+                        'X-Admin-CSRF-Token': 'edge-admin-csrf-valid-token'
                     },
                     body: JSON.stringify({
                         contentRaw,
@@ -606,7 +604,7 @@
         }
 
         renderPaletteResults(query) {
-            const container = document.getElementById('walnut-palette-results');
+            const container = document.getElementById('edge-palette-results');
             if (!container) return;
 
             const trimmed = (query || '').trim();
@@ -654,7 +652,7 @@
                     ? t('quick_actions.searching')
                     : `${t('quick_actions.no_match')} "${this.escapeHtml(trimmed)}". /micro`;
                 container.innerHTML = `
-                    <div class="py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                    <div class="py-8 text-center text-xs text-stone-400 dark:text-stone-500">
                         ${emptyText}
                     </div>
                 `;
@@ -664,24 +662,24 @@
             this.paletteActiveIndex = 0;
             container.innerHTML = entries.map((cmd, i) => `
                 <div
-                    class="walnut-palette-item px-3 py-2.5 rounded-xl cursor-pointer flex items-center justify-between text-xs transition ${i === 0 ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'}"
+                    class="edge-palette-item px-3 py-2.5 rounded-xl cursor-pointer flex items-center justify-between text-xs transition ${i === 0 ? 'bg-stone-100 dark:bg-stone-800 font-semibold' : 'hover:bg-stone-50 dark:hover:bg-stone-800/60'}"
                     data-index="${i}"
                 >
                     <div class="flex items-center space-x-3 min-w-0">
-                        <span class="material-symbols-outlined text-[18px] text-slate-500 dark:text-slate-400 shrink-0">${cmd.icon || 'terminal'}</span>
+                        <span class="material-symbols-outlined text-[18px] text-stone-500 dark:text-stone-400 shrink-0">${cmd.icon || 'terminal'}</span>
                         <div class="min-w-0">
-                            <div class="text-slate-800 dark:text-slate-100 font-medium flex items-center space-x-2">
-                                <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold shrink-0">${cmd.cmd}</span>
+                            <div class="text-stone-800 dark:text-stone-100 font-medium flex items-center space-x-2">
+                                <span class="font-mono text-amber-600 dark:text-amber-400 font-bold shrink-0">${cmd.cmd}</span>
                                 <span class="truncate">${cmd.label}</span>
                             </div>
-                            ${cmd.description ? `<div class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">${cmd.description}</div>` : ''}
+                            ${cmd.description ? `<div class="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5 truncate">${cmd.description}</div>` : ''}
                         </div>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-mono shrink-0 ml-2">${t('quick_actions.enter_exec')}</span>
+                    <span class="text-[10px] text-stone-400 font-mono shrink-0 ml-2">${t('quick_actions.enter_exec')}</span>
                 </div>
             `).join('');
 
-            const items = container.querySelectorAll('.walnut-palette-item');
+            const items = container.querySelectorAll('.edge-palette-item');
             items.forEach((elem, index) => {
                 elem.addEventListener('click', () => {
                     const matched = entries[index];
@@ -696,10 +694,10 @@
         updatePaletteActiveItem(items) {
             items.forEach((item, idx) => {
                 if (idx === this.paletteActiveIndex) {
-                    item.classList.add('bg-slate-100', 'dark:bg-slate-800', 'font-semibold');
+                    item.classList.add('bg-stone-100', 'dark:bg-stone-800', 'font-semibold');
                     item.scrollIntoView({ block: 'nearest' });
                 } else {
-                    item.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'font-semibold');
+                    item.classList.remove('bg-stone-100', 'dark:bg-stone-800', 'font-semibold');
                 }
             });
         }
@@ -719,17 +717,17 @@
             this.closeActiveModal();
 
             const cardModal = document.createElement('div');
-            cardModal.id = 'walnut-micro-modal';
+            cardModal.id = 'edge-micro-modal';
             cardModal.className = 'fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 select-none';
 
             cardModal.innerHTML = `
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+                    <div class="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
                         <div class="flex items-center space-x-2">
-                            <span class="material-symbols-outlined text-[20px] text-emerald-500">eco</span>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">${t('quick_actions.record_micro')}</h3>
+                            <span class="material-symbols-outlined text-[20px] text-amber-500">eco</span>
+                            <h3 class="text-sm font-bold text-stone-900 dark:text-white">${t('quick_actions.record_micro')}</h3>
                         </div>
-                        <button type="button" id="micro-modal-close" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer">&times;</button>
+                        <button type="button" id="micro-modal-close" class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-lg cursor-pointer">&times;</button>
                     </div>
 
                     <div class="space-y-3">
@@ -738,7 +736,7 @@
                                 type="text"
                                 id="micro-title-input"
                                 placeholder="${t('quick_actions.title_ph')}"
-                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"
+                                class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500"
                             />
                         </div>
 
@@ -747,25 +745,25 @@
                                 id="micro-raw-input"
                                 placeholder="${t('quick_actions.body_ph')}"
                                 rows="5"
-                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                                class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl p-3.5 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 resize-none leading-relaxed"
                             ></textarea>
                         </div>
 
                         <div class="flex items-center justify-between pt-1">
                             <div class="flex items-center space-x-2 text-xs">
-                                <span class="text-slate-500 text-[11px]">${t('editor.field_progress') || 'Progress'}:</span>
+                                <span class="text-stone-500 text-[11px]">${t('editor.field_progress') || 'Progress'}:</span>
                                 <input
                                     type="text"
                                     id="micro-progress-input"
                                     name="micro-progress"
                                     placeholder="${t('editor.progress_placeholder') || ''}"
-                                    class="w-36 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-800 dark:text-slate-200 outline-none"
+                                    class="w-36 bg-stone-100 dark:bg-stone-800 border border-[var(--admin-border)] rounded-lg px-2 py-1 text-xs text-stone-800 dark:text-stone-200 outline-none"
                                 />
                             </div>
 
                             <div class="flex items-center space-x-2">
-                                <button type="button" id="micro-cancel-btn" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer">${t('common.cancel')}</button>
-                                <button type="button" id="micro-save-btn" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white shadow-md transition cursor-pointer flex items-center space-x-1">
+                                <button type="button" id="micro-cancel-btn" class="h-8 px-3 rounded-lg text-xs font-semibold text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] transition cursor-pointer">${t('common.cancel')}</button>
+                                <button type="button" id="micro-save-btn" class="h-8 px-4 rounded-lg text-[13px] font-semibold bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] shadow-sm transition cursor-pointer flex items-center space-x-1">
                                     <span>${t('quick_actions.save_thought')}</span>
                                 </button>
                             </div>
@@ -803,7 +801,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Admin-CSRF-Token': 'walnut-admin-csrf-valid-token'
+                            'X-Admin-CSRF-Token': 'edge-admin-csrf-valid-token'
                         },
                         body: JSON.stringify({
                             title,
@@ -855,16 +853,16 @@
         }
 
         bindComponentVisualHover() {
-            const editableWrappers = document.querySelectorAll('[data-walnut-editable="true"]');
+            const editableWrappers = document.querySelectorAll('[data-edge-editable="true"]');
             if (editableWrappers.length === 0) return;
 
             editableWrappers.forEach(wrapper => {
-                wrapper.classList.add('relative', 'walnut-editable-boundary');
+                wrapper.classList.add('relative', 'edge-editable-boundary');
 
-                let badge = wrapper.querySelector('.walnut-edit-inspect-badge');
+                let badge = wrapper.querySelector('.edge-edit-inspect-badge');
                 if (!badge) {
                     badge = document.createElement('div');
-                    badge.className = 'walnut-edit-inspect-badge hidden absolute top-3 right-3 z-40 bg-slate-900/90 hover:bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl border border-slate-700/80 backdrop-blur-md cursor-pointer flex items-center space-x-1.5 transition select-none';
+                    badge.className = 'edge-edit-inspect-badge hidden absolute top-3 right-3 z-40 bg-stone-900/90 hover:bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl border border-stone-700/80 backdrop-blur-md cursor-pointer flex items-center space-x-1.5 transition select-none';
                     badge.innerHTML = `<span class="material-symbols-outlined text-[14px]">edit</span><span>${t('quick_actions.visual_inspect_badge')}</span>`;
                     wrapper.appendChild(badge);
 
@@ -877,12 +875,12 @@
 
                 wrapper.addEventListener('mouseenter', () => {
                     badge.classList.remove('hidden');
-                    wrapper.classList.add('ring-2', 'ring-emerald-500/40', 'rounded-2xl');
+                    wrapper.classList.add('ring-2', 'ring-amber-500/40', 'rounded-2xl');
                 });
 
                 wrapper.addEventListener('mouseleave', () => {
                     badge.classList.add('hidden');
-                    wrapper.classList.remove('ring-2', 'ring-emerald-500/40', 'rounded-2xl');
+                    wrapper.classList.remove('ring-2', 'ring-amber-500/40', 'rounded-2xl');
                 });
             });
         }
@@ -890,9 +888,9 @@
         async openComponentEditCard(wrapper) {
             this.closeActiveModal();
 
-            const compSlug = wrapper.getAttribute('data-walnut-component') || 'component';
-            const schemaSlug = wrapper.getAttribute('data-walnut-schema') || compSlug;
-            const entityId = wrapper.getAttribute('data-walnut-entity-id') || '';
+            const compSlug = wrapper.getAttribute('data-edge-component') || 'component';
+            const schemaSlug = wrapper.getAttribute('data-edge-schema') || compSlug;
+            const entityId = wrapper.getAttribute('data-edge-entity-id') || '';
 
             let existingItem = null;
             if (entityId) {
@@ -909,51 +907,51 @@
             const fields = existingItem?.fields ? Object.keys(existingItem.fields) : defaultFields;
 
             const modal = document.createElement('div');
-            modal.id = 'walnut-visual-edit-modal';
+            modal.id = 'edge-visual-edit-modal';
             modal.className = 'fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 select-none';
 
             const fieldsHtml = fields.map(f => {
                 const val = existingItem?.fields?.[f] || '';
                 return `
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 capitalize">${f}</label>
+                        <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1 capitalize">${f}</label>
                         <textarea
                             data-field="${f}"
                             rows="2"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"
+                            class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500"
                         >${val}</textarea>
                     </div>
                 `;
             }).join('');
 
             modal.innerHTML = `
-                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4">
-                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
                         <div class="flex items-center space-x-2">
-                            <span class="material-symbols-outlined text-[20px] text-emerald-500">edit_note</span>
-                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">${(t('quick_actions.visual_modal_title') || '').replace('{{slug}}', compSlug)}</h3>
+                            <span class="material-symbols-outlined text-[20px] text-amber-500">edit_note</span>
+                            <h3 class="text-sm font-bold text-stone-900 dark:text-white">${(t('quick_actions.visual_modal_title') || '').replace('{{slug}}', compSlug)}</h3>
                         </div>
-                        <button type="button" id="edit-modal-close" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg cursor-pointer">&times;</button>
+                        <button type="button" id="edit-modal-close" class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-lg cursor-pointer">&times;</button>
                     </div>
 
                     <div class="space-y-3">
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">${t('quick_actions.item_title')}</label>
+                            <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">${t('quick_actions.item_title')}</label>
                             <input
                                 type="text"
                                 id="edit-title-input"
                                 value="${existingItem?.title || (t('quick_actions.item_default_title') || '').replace('{{slug}}', compSlug)}"
-                                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500"
+                                class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl px-3.5 py-2 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500"
                             />
                         </div>
                         ${fieldsHtml}
                     </div>
 
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <span class="text-[11px] text-slate-400">${t('quick_actions.save_refresh_tip')}</span>
+                    <div class="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-stone-800">
+                        <span class="text-[11px] text-stone-400">${t('quick_actions.save_refresh_tip')}</span>
                         <div class="flex space-x-2">
-                            <button type="button" id="edit-cancel-btn" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">${t('common.cancel')}</button>
-                            <button type="button" id="edit-submit-btn" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white shadow-md cursor-pointer">${t('quick_actions.save_sync')}</button>
+                            <button type="button" id="edit-cancel-btn" class="h-8 px-3.5 rounded-lg text-xs font-semibold text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] cursor-pointer">${t('common.cancel')}</button>
+                            <button type="button" id="edit-submit-btn" class="h-8 px-4 rounded-lg text-[13px] font-semibold bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] shadow-sm cursor-pointer">${t('quick_actions.save_sync')}</button>
                         </div>
                     </div>
                 </div>
@@ -981,7 +979,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-Admin-CSRF-Token': 'walnut-admin-csrf-valid-token'
+                            'X-Admin-CSRF-Token': 'edge-admin-csrf-valid-token'
                         },
                         body: JSON.stringify({
                             id: existingItem?.id || entityId || undefined,
@@ -1019,10 +1017,10 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            rt.quickAction = new WalnutQuickActionEngine();
+            rt.quickAction = new EdgeQuickActionEngine();
         });
     } else {
-        rt.quickAction = new WalnutQuickActionEngine();
+        rt.quickAction = new EdgeQuickActionEngine();
     }
 
     document.addEventListener('htmx:afterSwap', () => {

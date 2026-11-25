@@ -1,11 +1,12 @@
 import { raw } from 'hono/html';
 import { AdminLayout } from '../layout';
-import type { Site, AuthenticatedUser, Theme } from '../../engine';
+import type { Site, AuthenticatedUser, Theme, BrokenComponentsDiagnostic } from '../../engine';
 import { renderTemplate, fetchAsset, getAdminI18nSlice, t, parseJson, escapeHtmlAttr } from '../../engine';
 import { processThemeMarkdownComponents } from '../../engine/render';
 
-export function buildThemePreviewIframeSrcdoc(contentHtml: string, themeAssetPrefix = '/theme/univers', isComp = false, rawMode = false): string {
-    const html = `<!DOCTYPE html><html class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=${isComp ? 1080 : 1280}"><link rel="stylesheet" href="/shared/app.css"><link rel="stylesheet" href="/shared/material-symbols.css"><link rel="stylesheet" href="${themeAssetPrefix}/assets/css/style.css"><style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow-x:hidden;font-family:ui-sans-serif,system-ui,sans-serif}.fixed,.sticky{position:relative!important}[id*="mobile"],[class*="mobile"],[class*="drawer"],[class*="backdrop"],.fixed.inset-0,[x-cloak]{display:none!important}${isComp ? 'body{min-height:auto;padding:12px 16px!important}body>*{width:100%}.h-screen,.min-h-screen{height:480px!important;min-height:480px!important}' : ''}</style><script>function __applyDocTheme(isDark){if(isDark){document.documentElement.classList.add('dark');if(document.body){document.body.classList.remove('bg-white','text-slate-900');document.body.classList.add('bg-[#0b1120]','text-slate-100');}}else{document.documentElement.classList.remove('dark');if(document.body){document.body.classList.remove('bg-[#0b1120]','text-slate-100');document.body.classList.add('bg-white','text-slate-900');}}}try{var p=window.parent;if(p&&p.document&&p.document.documentElement){var isDark=p.document.documentElement.classList.contains('dark')||p.document.documentElement.getAttribute('data-theme-mode')==='dark';if(!isDark){__applyDocTheme(false);}}}catch(_){}window.addEventListener('message',function(e){if(e.data&&e.data.type==='walnut:theme_mode'&&typeof e.data.isDark==='boolean'){__applyDocTheme(e.data.isDark);}});${isComp ? "window.addEventListener('load',function(){try{window.parent?.adaptThemeComponentHeight?.(window.frameElement)}catch(_){}});" : ''}</script></head><body class="bg-[#0b1120] text-slate-100 p-6 antialiased">${contentHtml}</body></html>`;
+export function buildThemePreviewIframeSrcdoc(contentHtml: string, themeAssetPrefix = '', isComp = false, rawMode = false): string {
+    const themeCssLink = themeAssetPrefix ? `<link rel="stylesheet" href="${themeAssetPrefix}/assets/css/style.css">` : '';
+    const html = `<!DOCTYPE html><html class="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=${isComp ? 1080 : 1280}"><link rel="stylesheet" href="/shared/app.css"><link rel="stylesheet" href="/shared/material-symbols.css">${themeCssLink}<style>*{box-sizing:border-box}html,body{margin:0;padding:0;overflow-x:hidden;font-family:ui-sans-serif,system-ui,sans-serif}.fixed,.sticky{position:relative!important}[id*="mobile"],[class*="mobile"],[class*="drawer"],[class*="backdrop"],.fixed.inset-0,[x-cloak]{display:none!important}${isComp ? 'body{min-height:auto;padding:12px 16px!important}body>*{width:100%}.h-screen,.min-h-screen{height:480px!important;min-height:480px!important}' : ''}</style><script>function __applyDocTheme(isDark){if(isDark){document.documentElement.classList.add('dark');if(document.body){document.body.classList.remove('bg-white','text-stone-900');document.body.classList.add('bg-[#0b1120]','text-stone-100');}}else{document.documentElement.classList.remove('dark');if(document.body){document.body.classList.remove('bg-[#0b1120]','text-stone-100');document.body.classList.add('bg-white','text-stone-900');}}}try{var p=window.parent;if(p&&p.document&&p.document.documentElement){var isDark=p.document.documentElement.classList.contains('dark')||p.document.documentElement.getAttribute('data-theme-mode')==='dark';if(!isDark){__applyDocTheme(false);}}}catch(_){}window.addEventListener('message',function(e){if(e.data&&e.data.type==='walnut:theme_mode'&&typeof e.data.isDark==='boolean'){__applyDocTheme(e.data.isDark);}});${isComp ? "window.addEventListener('load',function(){try{window.parent?.adaptThemeComponentHeight?.(window.frameElement)}catch(_){}});" : ''}</script></head><body class="bg-[#0b1120] text-stone-100 p-6 antialiased">${contentHtml}</body></html>`;
     return rawMode ? html : escapeHtmlAttr(html);
 }
 
@@ -16,6 +17,7 @@ export const ThemesListPage = async (props: {
     templateNodes: any[];
     componentNodes: any[];
     schemaNodes?: any[];
+    brokenDiagnostic?: BrokenComponentsDiagnostic;
     sites: Site[];
     currentSiteId: string;
     currentUser?: AuthenticatedUser;
@@ -29,8 +31,6 @@ export const ThemesListPage = async (props: {
     const [
         themesListTemplate,
         importThemeModalTemplate,
-        themeFormModalTemplate,
-        themeForkModalTemplate,
         cloneTemplatePageModalTemplate,
         themeCardTemplate,
         trashThemeCardTemplate,
@@ -42,8 +42,6 @@ export const ThemesListPage = async (props: {
     ] = await Promise.all([
         fetchAsset('/admin/pages/themes-list.html'),
         fetchAsset('/admin/modals/import-theme-modal.html'),
-        fetchAsset('/admin/modals/theme-form-modal.html'),
-        fetchAsset('/admin/modals/theme-fork-modal.html'),
         fetchAsset('/admin/modals/clone-template-page-modal.html'),
         fetchAsset('/admin/snippets/theme-card.html'),
         fetchAsset('/admin/snippets/theme-trash-card.html'),
@@ -78,14 +76,14 @@ export const ThemesListPage = async (props: {
         const borderClass = isProblematic
             ? 'border-red-500 ring-2 ring-red-500/20 bg-red-50/10'
             : isCurrent
-                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-                : 'border-slate-200/80 dark:border-slate-700 hover:border-slate-300';
+                ? 'border-amber-500 ring-2 ring-amber-500/20'
+                : 'border-stone-200/80 dark:border-stone-700 hover:border-stone-300';
 
         const statusBadge = isCurrent
-            ? `<span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">${i18n.active_status}</span>`
+            ? `<span class="list-pill list-pill-published">${i18n.active_status}</span>`
             : isProblematic
                 ? `<span class="text-[10px] font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-950 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded flex items-center space-x-1"><span class="material-symbols-outlined text-[12px]">warning</span><span>${i18n.status_abnormal}</span></span>`
-                : `<span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">${i18n.installed_status}</span>`;
+                : `<span class="list-pill list-pill-draft">${i18n.installed_status}</span>`;
 
         const isRepoTheme = !!meta.repo_config?.url;
         const safeTitle = (th.title || th.name || '').replace(/'/g, "\\'");
@@ -132,7 +130,7 @@ export const ThemesListPage = async (props: {
         if (cMeta.type) compMap.set(cMeta.type, { ...comp, meta: cMeta });
     }
 
-    const themeAssetPrefix = activeTheme?.slug ? `/theme/${activeTheme.slug}` : '/theme/univers';
+    const themeAssetPrefix = activeTheme?.slug ? `/theme/${activeTheme.slug}` : '';
     const buildTemplateIframeSrcdoc = (h: string) => buildThemePreviewIframeSrcdoc(h, themeAssetPrefix, false);
     const buildComponentIframeSrcdoc = (h: string) => buildThemePreviewIframeSrcdoc(h, themeAssetPrefix, true);
 
@@ -149,7 +147,7 @@ export const ThemesListPage = async (props: {
                 const defaultProps = comp?.meta?.default_props || comp?.meta?.defaultProps || {};
                 const propsObj = { ...defaultProps, ...(b.props || {}) };
                 return tplHtml ? renderTemplate(tplHtml, propsObj) : '';
-            }).filter(Boolean).join('\n') || `<div class="p-8 text-center text-xs text-slate-400">${i18n.themes?.no_preview_comps || 'No preview components'}</div>`;
+            }).filter(Boolean).join('\n') || `<div class="p-8 text-center text-xs text-stone-400">${i18n.themes?.no_preview_comps || 'No preview components'}</div>`;
 
             const safeTitle = (tpl.title || tpl.name || tpl.slug || '').replace(/'/g, "\\'");
             const safeSummary = (tpl.summary || tpl.description || '').replace(/'/g, "\\'");
@@ -170,16 +168,16 @@ export const ThemesListPage = async (props: {
 
     const renderFieldTableRows = (fields: any[]) => {
         if (!fields || fields.length === 0) {
-            return `<tr><td colspan="3" class="py-3 px-3 text-center text-xs text-slate-400 italic">${i18n.themes?.no_schema_fields || ''}</td></tr>`;
+            return `<tr><td colspan="3" class="py-3 px-3 text-center text-xs text-stone-400 italic">${i18n.themes?.no_schema_fields || ''}</td></tr>`;
         }
         return fields.map((f: any) => {
             const key = f.key || f.name || '-';
             const label = f.label || f.title || f.name || key;
             const type = f.type || f.widget || 'text';
-            return `<tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition">
-                <td class="py-2 px-3 font-mono font-medium text-emerald-600 dark:text-emerald-400 text-xs">${key}</td>
-                <td class="py-2 px-3 font-medium text-slate-700 dark:text-slate-200 text-xs">${label}</td>
-                <td class="py-2 px-3 text-slate-400 font-mono text-[11px]"><span class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-slate-700/60">${type}</span></td>
+            return `<tr class="hover:bg-stone-50/60 dark:hover:bg-stone-800/40 transition">
+                <td class="py-2 px-3 font-mono font-medium text-amber-600 dark:text-amber-400 text-xs">${key}</td>
+                <td class="py-2 px-3 font-medium text-stone-700 dark:text-stone-200 text-xs">${label}</td>
+                <td class="py-2 px-3 text-stone-400 font-mono text-[11px]"><span class="bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded border border-stone-200/60 dark:border-stone-700/60">${type}</span></td>
             </tr>`;
         }).join('');
     };
@@ -191,14 +189,14 @@ export const ThemesListPage = async (props: {
             const cMeta = parseJson<Record<string, any>>(comp.metadata, {});
             const tplHtml = cMeta.template_html || cMeta.templateHtml || comp.template_html || '';
             const defaultProps = cMeta.default_props || cMeta.defaultProps || {};
-            const previewHtml = tplHtml ? renderTemplate(tplHtml, defaultProps) : `<div class="text-xs text-slate-400 text-center py-4">${i18n.themes?.no_template_content || 'No template content'}</div>`;
+            const previewHtml = tplHtml ? renderTemplate(tplHtml, defaultProps) : `<div class="text-xs text-stone-400 text-center py-4">${i18n.themes?.no_template_content || 'No template content'}</div>`;
 
             const rawSlots = cMeta.slots || cMeta.allowed_slots || ['main'];
             const slotsArr = Array.isArray(rawSlots) ? rawSlots : (typeof rawSlots === 'string' ? rawSlots.split(',').map((s: string) => s.trim()).filter(Boolean) : ['main']);
             const safeSlotsAttr = encodeURIComponent(JSON.stringify(slotsArr));
             const slotsBadgesHtml = slotsArr.length > 0
-                ? slotsArr.map((s: string) => `<span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 px-2 py-0.5 rounded-lg font-mono text-[10px] font-semibold">${s}</span>`).join(' ')
-                : `<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-lg font-mono text-[10px] font-semibold">main</span>`;
+                ? slotsArr.map((s: string) => `<span class="list-pill list-pill-locale">${s}</span>`).join(' ')
+                : `<span class="list-pill list-pill-locale">main</span>`;
 
             const safeTitle = (comp.title || comp.slug || '').replace(/'/g, "\\'");
             const safeSummary = (comp.summary || i18n.themes.no_description || '').replace(/'/g, "\\'");
@@ -262,18 +260,30 @@ export const ThemesListPage = async (props: {
     );
 
     const importThemeModalHtml = renderTemplate(importThemeModalTemplate, {}, i18n);
-    const themeFormModalHtml = renderTemplate(themeFormModalTemplate, {}, i18n);
-    const themeForkModalHtml = renderTemplate(themeForkModalTemplate, {}, i18n);
     const cloneTemplatePageModalHtml = renderTemplate(cloneTemplatePageModalTemplate, {}, i18n);
 
+    const brokenDiag = props.brokenDiagnostic;
+    const brokenBannerHtml = (brokenDiag && brokenDiag.broken_pages_count > 0)
+        ? `<div id="themes-broken-blocks-banner" data-broken-pages="${brokenDiag.broken_pages_count}" data-broken-blocks="${brokenDiag.broken_blocks_count}" class="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center space-x-2.5 min-w-0">
+                <span class="material-symbols-outlined text-[18px] text-amber-600 dark:text-amber-400 shrink-0">warning</span>
+                <span class="text-xs font-semibold text-amber-900 dark:text-amber-200">${escapeHtmlAttr(t(locale, 'themes.broken_blocks_banner_title', { pages: brokenDiag.broken_pages_count, blocks: brokenDiag.broken_blocks_count }))}</span>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+                <a href="/admin" class="h-7 px-3 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-[var(--admin-text)] text-xs font-semibold inline-flex items-center transition">${escapeHtmlAttr(t(locale, 'themes.btn_goto_dashboard'))}</a>
+                <a href="/admin/pages" class="h-7 px-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold inline-flex items-center transition">${escapeHtmlAttr(t(locale, 'themes.btn_goto_pages'))}</a>
+            </div>
+        </div>`
+        : '';
+
     const pageHtml = renderTemplate(themesListTemplate, {
+        broken_blocks_banner_html: brokenBannerHtml,
         tab_themes_label: `${i18n.tab_themes} (${allThemes.length})`,
         tab_templates_label: `${i18n.tab_templates} (${props.templateNodes.length})`,
         tab_components_label: `${i18n.tab_components} (${props.componentNodes.length})`,
         tab_md_components_label: t(locale, 'themes.tab_md_components', { count: mdKeys.length }),
         tab_dataset_schemas_label: t(locale, 'themes.tab_dataset_schemas', { count: schemaNodes.length }),
         tab_themes_trash_label: `${t(locale, 'themes.tab_trash')} (${deletedThemes.length})`,
-        active_theme_card: '',
         all_themes_grid: allThemesGridHtml,
         template_nodes_content: templateNodesContentHtml,
         component_nodes_content: componentNodesContentHtml,
@@ -282,8 +292,6 @@ export const ThemesListPage = async (props: {
         themes_trash_content: themesTrashContentHtml,
         modal_export_schema_header: i18n.export_schema_title,
         import_theme_modal: importThemeModalHtml,
-        theme_form_modal: themeFormModalHtml,
-        theme_fork_modal: themeForkModalHtml,
         clone_template_page_modal: cloneTemplatePageModalHtml
     }, i18n);
 

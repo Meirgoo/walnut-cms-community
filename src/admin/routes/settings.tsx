@@ -83,13 +83,13 @@ const handleCreateSite = async (c: Context<AppHonoEnv>) => {
                 primaryDomain,
                 description: String(form['description'] || '').trim(),
                 defaultLocale: String(form['default_locale'] || 'zh-CN').trim(),
-                isMediaBedOnly: form['is_media_bed_only'] === '1' ? 1 : 0,
+                siteMode: form['site_mode'] === 'internal' ? 'internal' : 'standard',
                 sitemapDomain: String(form['sitemap_domain'] || '').trim() || primaryDomain
             });
             newSiteId = created.siteId;
         }
 
-        c.header('Set-Cookie', `walnut_active_site=${newSiteId}; Path=/; SameSite=Lax; Max-Age=2592000`);
+        c.header('Set-Cookie', `edge_active_site=${newSiteId}; Path=/; SameSite=Lax; Max-Age=2592000`);
         if (c.req.path.endsWith('/api/create') || c.req.header('HX-Request')) {
             c.header('HX-Redirect', '/admin');
             return c.json({ success: true, siteId: newSiteId }, 200);
@@ -130,16 +130,20 @@ settingsRouter.post('/api/save', async (c) => {
         p[k] = str(k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`));
     }
     p.defaultLocale = str('default_locale', 'zh-CN');
-    p.timezone = str('timezone', 'Asia/Shanghai');
+    p.timezone = str('timezone', '+08:00');
     p.robotsControl = str('robots_control', 'index, follow');
-    p.quickActionShortcut = str('quick_action_shortcut', 'alt+k,cmd+k');
     p.themeMode = f.theme_mode || 'system';
     if ('primary_color' in f) p.primaryColor = str('primary_color');
     if ('primary_color_dark' in f) p.primaryColorDark = str('primary_color_dark');
     p.brandColor = str('brand_color') || str('primary_color') || '#10b981';
     p.maintenanceMode = f.maintenance_mode === '1' ? 1 : 0;
-    p.isMediaBedOnly = f.is_media_bed_only === '1' ? 1 : 0;
-    p.siteMode = f.site_mode || (p.isMediaBedOnly ? 'media_bed' : (p.maintenanceMode ? 'maintenance' : 'standard'));
+    p.ogUseFirstImage = f.og_use_first_image === '1' || f.og_use_first_image === 'true';
+    const rawMode = str('site_mode');
+    p.siteMode = (rawMode === 'internal' || rawMode === 'maintenance' || p.maintenanceMode === 1) ? 'internal' : 'standard';
+    p.internalStatus = Number(f.internal_status || 503);
+    p.internalRedirectUrl = str('internal_redirect_url');
+    p.internalPageTitle = str('internal_page_title');
+    p.internalPageMessage = str('internal_page_message');
     p.whitelabel = {
         brand_name: str('wl_brand_name') || str('wl_system_title'),
         system_title: str('wl_system_title') || str('wl_brand_name'),

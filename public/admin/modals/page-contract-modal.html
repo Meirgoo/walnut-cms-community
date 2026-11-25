@@ -1,0 +1,128 @@
+<div id="page-contract-modal" data-context="{{page_contract_ctx_mode}}" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) window.closePageContractModal && window.closePageContractModal()">
+    <div class="bg-[var(--admin-surface)] rounded-2xl max-w-3xl w-full shadow-2xl border border-[var(--admin-border)] overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="px-5 py-3.5 border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-between shrink-0">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-[18px] text-[var(--admin-accent-text)]">auto_awesome</span>
+                <h3 class="text-sm font-bold text-[var(--admin-text)]">{{pages.modal_contract_title}}</h3>
+            </div>
+            <button type="button" onclick="window.closePageContractModal && window.closePageContractModal()" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] p-1 rounded-lg hover:bg-[var(--admin-surface-hover)] transition cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+        </div>
+
+        <div class="flex border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] px-5 text-xs font-semibold shrink-0">
+            <button
+                type="button"
+                id="btn-page-contract-tab-export"
+                onclick="window.switchPageContractTab && window.switchPageContractTab('export')"
+                class="px-4 py-2.5 border-b-2 border-[var(--admin-accent)] text-[var(--admin-text)] cursor-pointer transition flex items-center space-x-1.5"
+            >
+                <span class="material-symbols-outlined text-[15px]">description</span>
+                <span>{{pages.modal_tab_export_contract}}</span>
+            </button>
+            <button
+                type="button"
+                id="btn-page-contract-tab-import"
+                onclick="window.switchPageContractTab && window.switchPageContractTab('import')"
+                class="px-4 py-2.5 border-b-2 border-transparent text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] cursor-pointer transition flex items-center space-x-1.5"
+            >
+                <span class="material-symbols-outlined text-[15px]">upload_file</span>
+                <span>{{pages.modal_tab_import_json}}</span>
+            </button>
+        </div>
+
+        <div id="page-contract-pane-export" class="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div class="p-5 space-y-3 overflow-y-auto thin-scrollbar flex-1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+                    <div>
+                        <label class="block text-[11px] font-bold text-[var(--admin-text-muted)] uppercase tracking-wider mb-1.5">{{pages.contract_target_mode_label}}</label>
+                        <edge-select id="page-contract-target-mode" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-medium text-[var(--admin-text)] block"></edge-select>
+                    </div>
+                    <div class="flex items-center justify-between md:justify-end gap-3 h-8">
+                        <label class="inline-flex items-center space-x-2 text-xs font-medium text-[var(--admin-text)] cursor-pointer select-none">
+                            <input type="checkbox" id="page-contract-include-payload" class="w-4 h-4 rounded accent-[var(--admin-accent)] border-[var(--admin-border)] cursor-pointer" />
+                            <span>{{pages.contract_include_payload_label}}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-bold text-[var(--admin-text-muted)] uppercase tracking-wider">{{pages.contract_preview_label}}</span>
+                        <span id="page-contract-mode-hint" class="text-[11px] font-mono text-[var(--admin-accent-text)] truncate max-w-xs"></span>
+                    </div>
+                    <textarea id="page-contract-export-preview" readonly class="w-full h-72 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-xl p-3 text-xs font-mono text-[var(--admin-text)] resize-none outline-none leading-relaxed thin-scrollbar"></textarea>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 border-t border-[var(--admin-border)] bg-[var(--admin-chrome)] flex flex-wrap items-center justify-between gap-2 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="window.exportPagePayloadJson && window.exportPagePayloadJson()" class="h-8 px-3 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-xs font-semibold text-[var(--admin-text)] flex items-center space-x-1.5 transition cursor-pointer">
+                        <span class="material-symbols-outlined text-[15px]">download</span>
+                        <span>{{pages.btn_download_payload_json}}</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="window.closePageContractModal && window.closePageContractModal()" class="h-8 px-3 rounded-lg text-xs font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{common.close}}</button>
+                    <button type="button" onclick="window.downloadPageAiContext && window.downloadPageAiContext()" class="h-8 px-3 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] text-xs font-semibold text-[var(--admin-text)] flex items-center space-x-1.5 transition cursor-pointer">
+                        <span class="material-symbols-outlined text-[15px]">file_download</span>
+                        <span>{{pages.btn_download_contract_md}}</span>
+                    </button>
+                    <button type="button" onclick="window.copyPageAiContext && window.copyPageAiContext()" class="h-8 px-4 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition cursor-pointer">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                        <span>{{pages.btn_copy_ai_context}}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-contract-pane-import" class="hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div class="p-5 space-y-3 overflow-y-auto thin-scrollbar flex-1">
+                <div id="page-contract-import-meta" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-[var(--admin-text-muted)] mb-1">{{pages.import_page_title_label}}</label>
+                        <input type="text" id="page-contract-import-title" placeholder="{{pages.import_page_title_ph}}" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-[var(--admin-text-muted)] mb-1">{{pages.import_page_slug_label}}</label>
+                        <input type="text" id="page-contract-import-slug" placeholder="{{pages.import_page_slug_ph}}" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-[var(--admin-text)] mb-1.5">{{pages.import_select_or_paste_label}}</label>
+                    <input type="file" id="page-contract-import-file" accept=".json,application/json" class="w-full text-xs text-[var(--admin-text-muted)] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-[var(--admin-border)] file:text-xs file:font-semibold file:bg-[var(--admin-chrome)] file:text-[var(--admin-text)] hover:file:bg-[var(--admin-surface-hover)] cursor-pointer mb-2.5" />
+                    <textarea id="page-contract-import-textarea" rows="9" placeholder="{{pages.import_json_placeholder}}" class="w-full bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-xl p-3 text-xs font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] thin-scrollbar"></textarea>
+                </div>
+
+                <div id="page-contract-datasets-box" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+                    <label class="flex items-start space-x-2 text-xs font-medium text-[var(--admin-text)] cursor-pointer select-none">
+                        <input type="checkbox" id="page-contract-import-datasets" checked class="w-4 h-4 mt-0.5 rounded accent-[var(--admin-accent)] border-[var(--admin-border)] cursor-pointer shrink-0" />
+                        <span id="page-contract-datasets-summary"></span>
+                    </label>
+                    <div id="page-contract-datasets-list" class="flex flex-wrap gap-1.5 pl-6"></div>
+                </div>
+
+                <label class="flex items-center space-x-2 text-xs text-[var(--admin-text)] cursor-pointer select-none">
+                    <input type="checkbox" id="page-contract-filter-chrome" checked class="w-4 h-4 rounded accent-[var(--admin-accent)] border-[var(--admin-border)] cursor-pointer" />
+                    <span>{{pages.import_filter_template_chrome}}</span>
+                </label>
+
+                <div id="page-contract-ghost-datasets-warning" class="hidden rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 flex items-start space-x-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    <span class="material-symbols-outlined text-[16px] shrink-0 mt-0.5">warning</span>
+                    <span id="page-contract-ghost-datasets-text" class="leading-relaxed"></span>
+                </div>
+
+                <div id="page-contract-import-feedback" class="text-xs font-semibold"></div>
+            </div>
+
+            <div class="px-5 py-3 border-t border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-end space-x-2 shrink-0">
+                <button type="button" onclick="window.closePageContractModal && window.closePageContractModal()" class="h-8 px-3 rounded-lg text-xs font-medium text-[var(--admin-text-muted)] hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{common.cancel}}</button>
+                <button type="button" id="btn-page-contract-import-confirm" onclick="window.submitPageContractImport && window.submitPageContractImport()" class="h-8 px-4 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition cursor-pointer">
+                    <span class="material-symbols-outlined text-[15px]">check</span>
+                    <span>{{pages.btn_confirm_import_json}}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

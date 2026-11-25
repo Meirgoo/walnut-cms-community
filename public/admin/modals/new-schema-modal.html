@@ -1,0 +1,67 @@
+<div id="new-schema-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target===this) window.closeNewSchemaModal && window.closeNewSchemaModal()">
+    <div class="bg-[var(--admin-surface)] rounded-2xl border border-[var(--admin-border)] w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="px-5 py-3.5 border-b border-[var(--admin-border)] flex items-center justify-between bg-[var(--admin-chrome)]">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-[18px] text-[var(--admin-accent-text)]">data_object</span>
+                <h3 class="text-sm font-bold text-[var(--admin-text)]">{{new_title}}</h3>
+            </div>
+            <button type="button" onclick="window.closeNewSchemaModal && window.closeNewSchemaModal()" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] p-1 rounded-lg hover:bg-[var(--admin-surface-hover)] transition cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+        </div>
+
+        <form id="new-schema-modal-form" onsubmit="window.handleNewSchemaModalSubmit && window.handleNewSchemaModalSubmit(event)" class="flex flex-col flex-1 min-h-0">
+            <div class="p-5 space-y-4 overflow-y-auto flex-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-[var(--admin-text)] mb-1">{{field_title}}</label>
+                        <input type="text" id="new-schema-title-input" required placeholder="{{placeholder_title}}" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-medium text-[var(--admin-text)] focus:border-[var(--admin-accent)] outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-[var(--admin-text)] mb-1">{{field_slug}}</label>
+                        <input type="text" id="new-schema-slug-input" required placeholder="{{placeholder_slug}}" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-mono text-[var(--admin-text)] focus:border-[var(--admin-accent)] outline-none" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-[var(--admin-text)] mb-1">{{field_summary}}</label>
+                    <input type="text" id="new-schema-summary-input" placeholder="{{placeholder_summary}}" class="w-full h-8 bg-[var(--admin-canvas)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs text-[var(--admin-text)] focus:border-[var(--admin-accent)] outline-none" />
+                </div>
+
+                {{slot_schema_api_only_option}}
+
+                <div class="pt-2 border-t border-[var(--admin-border)] space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-[var(--admin-text)] uppercase tracking-wider">{{sec_fields}}</span>
+                        <button
+                            type="button"
+                            onclick="window.addNewSchemaFieldRow && window.addNewSchemaFieldRow()"
+                            class="h-7 px-2.5 rounded-lg bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] text-[11px] font-bold flex items-center space-x-1 hover:opacity-90 transition cursor-pointer"
+                        >
+                            <span class="material-symbols-outlined text-[14px]">add_circle</span>
+                            <span>{{btn_add_field}}</span>
+                        </button>
+                    </div>
+
+                    <div id="new-schema-fields-list" class="space-y-2">
+                        <div class="p-4 text-center text-[var(--admin-text-muted)] text-xs italic border border-dashed border-[var(--admin-border)] rounded-xl" id="new-schema-fields-empty">
+                            {{empty_fields_tip}}
+                        </div>
+                    </div>
+                </div>
+
+                <div id="new-schema-modal-feedback" class="text-xs font-bold"></div>
+            </div>
+
+            <div class="px-5 py-3 border-t border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-end space-x-2">
+                <button type="button" onclick="window.closeNewSchemaModal && window.closeNewSchemaModal()" class="h-8 px-3.5 rounded-lg text-xs font-bold text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] transition cursor-pointer">
+                    {{cancel}}
+                </button>
+                <button type="submit" class="h-8 px-4 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-xs font-bold shadow-sm transition cursor-pointer flex items-center space-x-1.5">
+                    <span class="material-symbols-outlined text-[15px]">save</span>
+                    <span>{{btn_save}}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

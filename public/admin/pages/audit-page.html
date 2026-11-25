@@ -1,12 +1,12 @@
-<div class="p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-6 w-full">
-    <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4 flex justify-between items-center shrink-0">
+<div class="p-6 md:p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-5 w-full">
+    <div class="border-b border-[var(--admin-border)] pb-4 flex justify-between items-center shrink-0">
         <div>
-            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{audit_title}}</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{audit_subtitle}}</p>
+            <h1 class="text-xl font-black text-[var(--admin-text)] tracking-tight">{{audit_title}}</h1>
+            <p class="text-xs text-[var(--admin-text-muted)] mt-1">{{audit_subtitle}}</p>
         </div>
     </div>
 
-    <div class="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 text-xs font-bold shrink-0">
+    <div class="flex items-center justify-between gap-4 border-b border-[var(--admin-border)] text-xs font-semibold shrink-0 overflow-x-auto no-scrollbar">
         <div class="flex space-x-2">
             {{slot_commercial_audit_tab_buttons}}
             <button type="button" onclick="switchAuditSubTab('tab-users')" id="btn-tab-users" class="{{tab_users_btn_class}}">
@@ -41,7 +41,13 @@
         {{slot_audit_traffic_content}}
     </div>
 
+    <div id="tab-workers" style="{{tab_workers_style}}" class="space-y-4">
+        {{slot_audit_workers_content}}
+    </div>
+
     <div id="tab-users" style="{{tab_users_style}}" class="space-y-4">
         {{users_tab_content}}
     </div>
 </div>
+<script src="/admin/js/admin-tables.js" defer></script>
+<script src="/admin/js/ops-modals.js" defer></script>

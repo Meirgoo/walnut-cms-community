@@ -112,13 +112,15 @@ profileRouter.post('/api/preferences', async (c) => {
     const timezone = String(formData.timezone || 'auto').trim() || 'auto';
     const editorSplitMode = String(formData.editor_split_mode || 'split').trim();
     const listPageSize = Math.max(10, Math.min(200, Number(formData.list_page_size || 20) || 20));
+    const quickActionShortcut = String(formData.quick_action_shortcut || '').trim() || 'alt+k,cmd+k';
 
     try {
         await runAdminPipeline(c, 'USER_PREFERENCES_SAVE', {
             userId: currentUser.id,
             timezone,
             editor_split_mode: editorSplitMode,
-            list_page_size: listPageSize
+            list_page_size: listPageSize,
+            quick_action_shortcut: quickActionShortcut
         });
         return renderStatusMessage(c, t(locale, 'profile.preferences_saved'), 'success');
     } catch (err: any) {

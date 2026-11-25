@@ -83,7 +83,7 @@ tasksRouter.post('/api/save', async (c) => {
         c.header('HX-Refresh', 'true');
         return renderStatusMessage(c, i18n.tasks.save_success, 'success');
     } catch (err: any) {
-        return renderStatusMessage(c, `❌ ${err.message || 'Error'}`, 'error', 500);
+        return renderStatusMessage(c, `${err.message || 'Error'}`, 'error', 500);
     }
 });
 
@@ -105,7 +105,7 @@ tasksRouter.post('/:id/run', async (c) => {
         }
         return renderStatusMessage(c, `${i18n.tasks.run_now_success}: ${result.details}`, result.success ? 'success' : 'error');
     } catch (err: any) {
-        return renderStatusMessage(c, `❌ ${err.message || 'Error'}`, 'error', 500);
+        return renderStatusMessage(c, `${err.message || 'Error'}`, 'error', 500);
     }
 });
 

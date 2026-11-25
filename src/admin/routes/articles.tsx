@@ -95,7 +95,7 @@ articlesRouter.get('/edit/:id', async (c) => {
     const id = c.req.param('id');
     const ctx = await getAdminRouteContext(c);
 
-    const node = await findNodeById(ctx.db, id);
+    const node = await findNodeById(ctx.db, id, undefined, ctx.activeSiteId);
     if (!node) return c.redirect('/admin/articles');
 
     const [deps, theme] = await Promise.all([
@@ -183,7 +183,8 @@ articlesRouter.post('/api/save-chunk', async (c) => {
             slug: body.slug,
             summary: body.summary,
             locale: body.locale,
-            status: body.status
+            status: body.status,
+            visibility: body.visibility || 'public'
         });
         return c.json({ success: true, ...res });
     } catch (err: any) {

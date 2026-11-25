@@ -1,5 +1,11 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 import type { ArticleVersion } from '../../types';
+import {
+    VersionEntityType,
+    findLatestEntityVersionByType,
+    findMaxEntityVersionNumberByType,
+    buildInsertEntityVersionStatement
+} from './versions.dal';
 
 export interface ContentEntity {
     id: string;
@@ -29,6 +35,16 @@ export type GardenMaturity = 'none' | 'seedling' | 'budding' | 'evergreen';
 
 import { parseJson } from '../utils';
 export { parseJson };
+
+export function isRestrictedAccess(visibility?: string | null, metadata?: unknown): boolean {
+    const vis = visibility ? String(visibility).trim().toLowerCase() : 'public';
+    if (vis && vis !== 'public') return true;
+    const meta = typeof metadata === 'string'
+        ? parseJson<Record<string, any>>(metadata, {})
+        : ((metadata && typeof metadata === 'object') ? (metadata as Record<string, any>) : {});
+    const perm = String(meta?.access_permission || 'public').trim().toLowerCase();
+    return Boolean(perm && perm !== 'public');
+}
 
 export function mapContentEntityRow(row: any, defaultType = 'article'): ContentEntity {
     if (!row) return row;
@@ -77,39 +93,53 @@ export const toVirtualNode = (item: any, type: string, siteId: string, keyField 
     };
 };
 
-export const findEntityForVcs = (db: D1Database, table: string, id: string) =>
-    db.prepare(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`).bind(id).first<any>();
+export const findEntityForVcs = (db: D1Database, table: string, id: string, siteId?: string) =>
+    siteId
+        ? db.prepare(`SELECT * FROM ${table} WHERE id = ? AND site_id = ? LIMIT 1`).bind(id, siteId).first<any>()
+        : db.prepare(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`).bind(id).first<any>();
 
-export const findLatestEntityVersion = (db: D1Database, verTable: string, fkCol: string, id: string) =>
-    db.prepare(`SELECT * FROM ${verTable} WHERE ${fkCol} = ? AND deleted_at IS NULL ORDER BY version_number DESC LIMIT 1`).bind(id).first<any>();
+export const findLatestEntityVersion = (db: D1Database, entityType: VersionEntityType, id: string) =>
+    findLatestEntityVersionByType(db, entityType, id);
 
-export const findMaxEntityVersionNumber = async (db: D1Database, verTable: string, fkCol: string, id: string): Promise<number> => {
-    const row = await db.prepare(`SELECT COALESCE(MAX(version_number), 0) as max_ver FROM ${verTable} WHERE ${fkCol} = ?`).bind(id).first<{ max_ver: number }>();
-    return row?.max_ver || 0;
-};
+export const findMaxEntityVersionNumber = (db: D1Database, entityType: VersionEntityType, id: string): Promise<number> =>
+    findMaxEntityVersionNumberByType(db, entityType, id);
 
 export const insStmt = (db: D1Database, table: string, cols: string, vals: any[]) =>
     db.prepare(`INSERT INTO ${table} (${cols}) VALUES (${vals.map(() => '?').join(', ')})`).bind(...vals);
 
-export const updStmt = (db: D1Database, table: string, setClause: string, vals: any[], id: string) =>
-    db.prepare(`UPDATE ${table} SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(...vals, id);
+export const updStmt = (db: D1Database, table: string, setClause: string, vals: any[], id: string, siteId?: string) =>
+    siteId
+        ? db.prepare(`UPDATE ${table} SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(...vals, id, siteId)
+        : db.prepare(`UPDATE ${table} SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(...vals, id);
 
-export function bindInsertVersion(db: D1Database, table: string, fkCol: string, params: any): D1PreparedStatement {
-    const fk = table === 'micro_versions' ? (params.microId || params.microContentId) : (params.articleId || params.pageId);
-    if (table === 'micro_versions') {
-        return insStmt(db, table, `id, ${fkCol}, version_number, title, content_raw, metadata_snapshot, commit_message, author_id, created_at`,
-            [params.id, fk, params.versionNumber, params.title, params.contentRaw, params.metadataSnapshot, params.commitMessage, params.authorId, params.createdAt]);
-    }
-    return insStmt(db, table, `id, ${fkCol}, version_number, title, summary, content_raw, metadata_snapshot, commit_message, author_id, created_at`,
-        [params.id, fk, params.versionNumber, params.title, params.summary, params.contentRaw, params.metadataSnapshot, params.commitMessage, params.authorId, params.createdAt]);
+export function bindInsertVersion(db: D1Database, entityType: VersionEntityType, params: any): D1PreparedStatement {
+    const entityId = params.entityId
+        || (entityType === 'micro' ? (params.microId || params.microContentId) : (params.articleId || params.pageId || params.datasetId || params.themeId));
+    return buildInsertEntityVersionStatement(db, {
+        id: params.id,
+        siteId: params.siteId,
+        entityType,
+        entityId,
+        versionNumber: params.versionNumber,
+        versionTag: params.versionTag,
+        title: params.title || '',
+        summary: entityType === 'micro' ? '' : (params.summary || ''),
+        contentRaw: params.contentRaw || '',
+        contentRendered: params.contentRendered || '',
+        metadataSnapshot: params.metadataSnapshot || '{}',
+        commitMessage: params.commitMessage || null,
+        authorId: params.authorId || null,
+        createdAt: params.createdAt
+    });
 }
 
 export const insEntity = (db: D1Database, tbl: string, midCols: string, midVals: any[], p: any) =>
     insStmt(db, tbl, `id, site_id, slug, ${midCols}status, visibility, title, summary, metadata, current_version_id, curator_id, published_at, created_at, updated_at`,
-        [p.id, p.siteId, p.slug, ...midVals, p.status, 'public', p.title, p.summary, p.metadataStr, p.currentVersionId, p.curatorId, p.publishedAt, p.createdAt, p.updatedAt]);
+        [p.id, p.siteId, p.slug, ...midVals, p.status, p.visibility || 'public', p.title, p.summary, p.metadataStr, p.currentVersionId, p.curatorId, p.publishedAt, p.createdAt, p.updatedAt]);
 
 export const ENTITY_TABLE_CONFIGS = [
-    { type: 'article', table: 'articles', verTable: 'article_versions', fk: 'article_id' },
-    { type: 'page', table: 'pages', verTable: 'page_versions', fk: 'page_id' },
-    { type: 'micro', table: 'micros', verTable: 'micro_versions', fk: 'micro_id' }
+    { type: 'article', table: 'articles' },
+    { type: 'page', table: 'pages' },
+    { type: 'micro', table: 'micros' },
+    { type: 'dataset', table: 'datasets' }
 ] as const;

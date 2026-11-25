@@ -2,6 +2,10 @@
 (function() {
   'use strict';
 
+  function isZhLocale() {
+    return (document.documentElement.lang || '').toLowerCase().startsWith('zh');
+  }
+
 class UniversNavbar extends HTMLElement {
   connectedCallback() {
     const toggleBtn = this.querySelector('.univers-drawer-toggle');
@@ -42,12 +46,12 @@ class UniversNavbar extends HTMLElement {
         if (isDark) {
           html.classList.remove('dark');
           localStorage.setItem('theme', 'light');
-          localStorage.setItem('walnut_theme_mode', 'light');
+          localStorage.setItem('edge_theme_mode', 'light');
           html.setAttribute('data-theme-mode', 'light');
         } else {
           html.classList.add('dark');
           localStorage.setItem('theme', 'dark');
-          localStorage.setItem('walnut_theme_mode', 'dark');
+          localStorage.setItem('edge_theme_mode', 'dark');
           html.setAttribute('data-theme-mode', 'dark');
         }
       });
@@ -139,19 +143,47 @@ if (!customElements.get('univers-cards')) {
 
 class UniversConvertBlock extends HTMLElement {
   connectedCallback() {
+    if (this._boundSubmit) return;
+    this._boundSubmit = true;
     const form = this.querySelector('.univers-convert-form');
     const emailInput = this.querySelector('.univers-convert-input');
     const nameInput = this.querySelector('.univers-convert-name');
     const msgInput = this.querySelector('.univers-convert-message');
     const honeypot = this.querySelector('input[name="_honeypot"]');
+    const submitBtn = form?.querySelector('button[type="submit"]');
     const actionType = this.getAttribute('data-action') || 'toast';
     const actionTarget = this.getAttribute('data-target') || '/api/forms/submit/contact';
 
-    form?.addEventListener('submit', (e) => {
+    const ensureStatusEl = () => {
+      if (!form) return null;
+      let el = form.querySelector('.univers-form-status');
+      if (!el) {
+        el = document.createElement('p');
+        el.className = 'univers-form-status hidden text-xs font-medium rounded-lg px-3 py-2 border';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-live', 'polite');
+        form.appendChild(el);
+      }
+      return el;
+    };
+
+    const setStatus = (type, message) => {
+      if (window.showToast) {
+        window.showToast(message, type);
+      }
+      const statusEl = ensureStatusEl();
+      if (!statusEl) return;
+      statusEl.textContent = message;
+      statusEl.setAttribute('data-status', type);
+      statusEl.classList.remove('hidden');
+    };
+
+    form?.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const zh = isZhLocale();
       // Fake success when a bot fills the honeypot field without writing to the database.
       if (honeypot && honeypot.value.trim().length > 0) {
-        if (window.showToast) window.showToast('Submission received! Thank you for your feedback.', 'success');
+        setStatus('success', zh ? '提交已收到，感谢您的反馈。' : 'Submission received! Thank you for reaching out.');
         form.reset();
         return;
       }
@@ -159,24 +191,48 @@ class UniversConvertBlock extends HTMLElement {
       const email = emailInput?.value?.trim() || '';
       const name = nameInput?.value?.trim() || '';
       const message = msgInput?.value?.trim() || '';
-      if (!email) return;
+      if (!email) {
+        setStatus('error', zh ? '请填写有效的邮箱地址。' : 'Please enter a valid email address.');
+        return;
+      }
 
-      if (actionType === 'api') {
-        fetch(actionTarget, {
+      if (actionType !== 'api') {
+        setStatus('success', zh ? `已收到来自 ${name || email} 的留言！` : `Message received from ${name || email}!`);
+        form.reset();
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      try {
+        const res = await fetch(actionTarget, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, message, source: 'univers-lead-form' })
-        }).then(() => {
-          if (window.showToast) window.showToast('Submission received! We will be in touch shortly.', 'success');
-          form.reset();
-        }).catch(() => {
-          if (window.showToast) window.showToast('Network error, please try again', 'error');
         });
-      } else {
-        if (window.showToast) {
-          window.showToast(`Message received from ${name || email}!`, 'success');
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {}
+        if (!res.ok || (data && data.success === false)) {
+          const err = new Error(data?.error || data?.message || `HTTP_${res.status}`);
+          err.status = res.status;
+          throw err;
         }
+        setStatus('success', zh ? '提交已收到，感谢您的留言。' : 'Submission received! We will get back to you soon.');
         form.reset();
+      } catch (err) {
+        const status = err?.status || 0;
+        let msg = zh ? '提交失败，请稍后重试。' : 'Submission failed. Please try again later.';
+        if (status === 413) {
+          msg = zh ? '内容超出大小限制，请精简后重试。' : 'Payload too large. Please shorten your message.';
+        } else if (status === 429) {
+          msg = zh ? '提交过于频繁，请稍后再试。' : 'Too many requests. Please wait a moment and try again.';
+        } else if (status === 403) {
+          msg = zh ? '当前站点暂不接收公开提交。' : 'Submissions are currently restricted on this site.';
+        }
+        setStatus('error', msg);
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
   }
@@ -224,14 +280,15 @@ class UniversStreamBlock extends HTMLElement {
       btn.setAttribute('data-filter', filterVal);
       btn.className = `univers-filter-btn px-3 py-1.5 rounded-lg transition font-bold text-xs ${
         isActive
-          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+          ? 'univers-pill-active shadow-xs'
           : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
       }`;
       btn.textContent = label;
       return btn;
     };
 
-    const allBtn = createBtn('全部', 'all', true);
+    const allLabel = isZhLocale() ? '全部' : 'All';
+    const allBtn = createBtn(allLabel, 'all', true);
     filterBar.appendChild(allBtn);
 
     const filterBtns = [allBtn];
@@ -249,7 +306,7 @@ class UniversStreamBlock extends HTMLElement {
         filterBtns.forEach(b => {
           b.className = 'univers-filter-btn px-3 py-1.5 rounded-lg transition font-bold text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white';
         });
-        btn.className = 'univers-filter-btn px-3 py-1.5 rounded-lg transition font-bold text-xs bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs';
+        btn.className = 'univers-filter-btn px-3 py-1.5 rounded-lg transition font-bold text-xs univers-pill-active shadow-xs';
 
         cards.forEach(card => {
           if (activeFilter === 'all') {
@@ -284,32 +341,33 @@ function syncAllUniversTocs() {
   }
 
   tocLists.forEach((tocList) => {
+    tocList.replaceChildren();
     if (!headings || headings.length === 0) {
-      tocList.innerHTML = '<div class="text-xs text-slate-400 py-1">暂无章节大纲</div>';
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'text-xs text-slate-400 py-1';
+      emptyEl.textContent = isZhLocale() ? '暂无章节大纲' : 'No outline available';
+      tocList.appendChild(emptyEl);
       return;
     }
 
-    tocList.innerHTML = Array.from(headings).map((h, i) => {
+    // Build links with textContent so literal angle brackets in headings are never parsed as HTML.
+    headings.forEach((h, i) => {
       const id = h.id || `heading-${i}`;
       h.id = id;
       const level = parseInt(h.tagName.substring(1), 10);
       const indentClass = level <= 2 ? 'font-bold' : 'pl-3 text-slate-500';
-      return `
-        <a href="#${id}" class="univers-link-accent block py-1 text-xs text-slate-600 dark:text-slate-400 truncate transition ${indentClass}">
-          ${h.textContent}
-        </a>
-      `;
-    }).join('');
-
-    tocList.querySelectorAll('a').forEach(anchor => {
+      const anchor = document.createElement('a');
+      anchor.setAttribute('href', `#${id}`);
+      anchor.className = `univers-link-accent block py-1 text-xs text-slate-600 dark:text-slate-400 truncate transition ${indentClass}`;
+      anchor.textContent = (h.textContent || '').trim();
       anchor.addEventListener('click', (e) => {
         e.preventDefault();
-        const targetId = anchor.getAttribute('href')?.replace('#', '');
-        const targetEl = targetId ? document.getElementById(targetId) : null;
+        const targetEl = document.getElementById(id);
         if (targetEl) {
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
+      tocList.appendChild(anchor);
     });
   });
 }
@@ -355,7 +413,7 @@ class UniversSocialSidebar extends HTMLElement {
         e.preventDefault();
         if (navigator.clipboard) {
           navigator.clipboard.writeText(window.location.href);
-          if (window.showToast) window.showToast('Link copied to clipboard', 'success');
+          if (window.showToast) window.showToast(isZhLocale() ? '链接已复制到剪贴板' : 'Link copied to clipboard', 'success');
         }
       });
     }

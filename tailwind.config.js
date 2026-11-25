@@ -3,9 +3,9 @@ export default {
   darkMode: 'class',
   content: [
     "./src/**/*.{ts,tsx,html,js}",
-    "./public/**/*.{html,js,json}",
+    "./public/**/*.{html,js}",
     "./themes/**/*.{html,js,json}",
-    "./scripts/*.mjs",
+    "./scripts/gen-seed-univers.mjs",
     "!./public/shared/app.css",
     "!./public/styles/**"
   ],

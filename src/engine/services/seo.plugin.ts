@@ -1,6 +1,7 @@
 import type { WalnutPlugin, IPluginEngine, Site } from '../types';
 import { buildAbsoluteUrl, resolveEffectiveDomain } from '../core/url';
 import { escapeHtml } from '../core/utils';
+import { buildLocalizedRoutePath } from '../core/i18n';
 import { safeJsonStringify } from '../render/markdown-parser';
 
 export interface SeoTargetEntity {
@@ -119,19 +120,34 @@ export function resolveMostRestrictiveRobots(...robotsList: Array<string | undef
     return resultParts.join(', ');
 }
 
+function extractFirstImageUrl(rawContent?: string): string {
+    if (!rawContent || typeof rawContent !== 'string') return '';
+    const mdMatch = rawContent.match(/!\[[^\]]*\]\(\s*([^\s)"']+)(?:\s+["'][^"']*["'])?\s*\)/);
+    if (mdMatch && mdMatch[1]) {
+        const candidate = mdMatch[1].trim();
+        if (candidate && !/^(?:data|javascript|vbscript):/i.test(candidate)) return candidate;
+    }
+    const htmlMatch = rawContent.match(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+    if (htmlMatch && htmlMatch[1]) {
+        const candidate = htmlMatch[1].trim();
+        if (candidate && !/^(?:data|javascript|vbscript):/i.test(candidate)) return candidate;
+    }
+    return '';
+}
+
 export class SeoPlugin {
     // Precedence rules: content > page > site for TDK/canonical; most-restrictive wins for robots.
     public assembleSeoMetadata(
         site: Site,
         contentNode?: Partial<SeoTargetEntity> | null,
-        optionsOrPage?: { currentUrl: string; rawContent?: string; pageNode?: Partial<SeoTargetEntity> } | Partial<SeoTargetEntity>,
+        optionsOrPage?: { currentUrl: string; rawContent?: string; pageNode?: Partial<SeoTargetEntity>; authorName?: string } | Partial<SeoTargetEntity>,
         legacyOptions?: { currentUrl: string; rawContent?: string }
     ): SeoMetadataPayload {
         let pageNode: Partial<SeoTargetEntity> | undefined = undefined;
-        let options: { currentUrl: string; rawContent?: string } | undefined = undefined;
+        let options: { currentUrl: string; rawContent?: string; authorName?: string } | undefined = undefined;
 
         if (optionsOrPage && 'currentUrl' in optionsOrPage) {
-            options = optionsOrPage as { currentUrl: string; rawContent?: string };
+            options = optionsOrPage as { currentUrl: string; rawContent?: string; authorName?: string };
             pageNode = (optionsOrPage as any).pageNode;
         } else if (optionsOrPage) {
             pageNode = optionsOrPage as Partial<SeoTargetEntity>;
@@ -199,27 +215,62 @@ export class SeoPlugin {
         const rawCanonical = contentCanonical || pageCanonical || defaultCanonical;
         const canonicalUrl = buildAbsoluteUrl(rawCanonical, effectiveHost);
 
-        const rawOgImage = contentMeta.og_image || contentNode?.cover_image_url || pageMeta.og_image || siteSeo.og_image || '';
+        const useFirstImage = contentMeta.og_use_first_image === true || contentMeta.og_use_first_image === '1'
+            ? true
+            : (contentMeta.og_use_first_image === false || contentMeta.og_use_first_image === '0'
+                ? false
+                : Boolean(siteSeo.og_use_first_image));
+        const firstContentImage = (isArticle && useFirstImage) ? extractFirstImageUrl(rawContent) : '';
+        const rawOgImage = contentMeta.og_image
+            || contentNode?.cover_image_url
+            || firstContentImage
+            || pageMeta.og_image
+            || siteSeo.og_image
+            || site.settings?.logo_url
+            || '/shared/og-default.svg';
         const ogImage = rawOgImage ? buildAbsoluteUrl(rawOgImage, effectiveHost) : '';
         const ogTitle = contentMeta.og_title || pageMeta.og_title || baseTitle || siteName;
         const ogDescription = sanitizeDirtySeoText(contentMeta.og_description || pageMeta.og_description) || description;
 
-        const structuredData: Record<string, any> = {
-            "@context": "https://schema.org",
-            "@type": isArticle ? "BlogPosting" : "WebSite",
-            "name": title,
-            "headline": baseTitle || title,
-            "description": description,
-            "url": canonicalUrl,
-            "publisher": {
-                "@type": "Organization",
-                "name": siteName,
-                ...(site.settings?.logo_url ? { "logo": { "@type": "ImageObject", "url": site.settings.logo_url } } : {})
-            },
-            ...(ogImage ? { "image": ogImage } : {}),
-            ...(contentNode?.published_at || contentNode?.created_at ? { "datePublished": contentNode?.published_at || contentNode?.created_at } : {}),
-            ...(contentNode?.updated_at ? { "dateModified": contentNode.updated_at } : {})
-        };
+        const isHome = !contentNode || (contentNode.type === 'page' && (contentNode.slug === '/' || contentNode.slug === 'index'));
+        const authorName = options?.authorName || contentMeta.author || (contentNode as any)?.author || siteName;
+        const publishedTime = contentNode?.published_at || contentNode?.created_at || (isArticle ? (contentNode?.updated_at || new Date().toISOString()) : undefined);
+
+        const structuredData: Record<string, any> = isArticle
+            ? {
+                "@context": "https://schema.org",
+                "@type": "BlogPosting",
+                "headline": baseTitle || title,
+                "name": title,
+                "description": description,
+                "url": canonicalUrl,
+                "datePublished": publishedTime,
+                ...(contentNode?.updated_at ? { "dateModified": contentNode.updated_at } : {}),
+                "author": {
+                    "@type": "Person",
+                    "name": authorName
+                },
+                "publisher": {
+                    "@type": "Organization",
+                    "name": siteName,
+                    ...(site.settings?.logo_url ? { "logo": { "@type": "ImageObject", "url": buildAbsoluteUrl(site.settings.logo_url, effectiveHost) } } : {})
+                },
+                ...(ogImage ? { "image": ogImage } : {})
+            }
+            : {
+                "@context": "https://schema.org",
+                "@type": isHome ? "WebSite" : "WebPage",
+                "name": title,
+                "headline": baseTitle || title,
+                "description": description,
+                "url": canonicalUrl,
+                "publisher": {
+                    "@type": "Organization",
+                    "name": siteName,
+                    ...(site.settings?.logo_url ? { "logo": { "@type": "ImageObject", "url": buildAbsoluteUrl(site.settings.logo_url, effectiveHost) } } : {})
+                },
+                ...(ogImage ? { "image": ogImage } : {})
+            };
 
         return {
             title,
@@ -230,7 +281,7 @@ export class SeoPlugin {
             ogTitle,
             ogDescription,
             ogType: isArticle ? 'article' : 'website',
-            publishedTime: contentNode?.published_at || contentNode?.created_at,
+            publishedTime,
             modifiedTime: contentNode?.updated_at,
             keywords,
             structuredData
@@ -240,7 +291,8 @@ export class SeoPlugin {
     public serializeSeoHeaders(
         site: Site,
         seo: SeoMetadataPayload,
-        hreflangs?: HreflangLink[]
+        hreflangs?: HreflangLink[],
+        locale?: string
     ): string {
         const googleVerification = site.settings?.seo?.google_site_verification || site.settings?.google_analytics_id;
 
@@ -271,10 +323,18 @@ export class SeoPlugin {
         const safeKeywords = seo.keywords && seo.keywords.length > 0 ? escapeHtml(seo.keywords.join(', ')) : '';
         const safeGoogleVer = escapeHtml(googleVerification || '');
 
+        let effectiveHost: string | undefined;
+        try { effectiveHost = new URL(seo.canonicalUrl).host; } catch {}
+        const resolvedDomain = resolveEffectiveDomain(site.primary_domain, effectiveHost);
+        const siteDefaultLocale = site.default_locale || 'zh-CN';
+        const rssPath = buildLocalizedRoutePath('/feed.xml', locale || siteDefaultLocale, siteDefaultLocale);
+        const rssUrl = escapeHtml(buildAbsoluteUrl(rssPath, resolvedDomain));
+
         return [
             `<title>${safeTitle}</title>`,
             `<meta name="description" content="${safeDesc}">`,
             `<link rel="canonical" href="${safeCanonical}">`,
+            `<link rel="alternate" type="application/rss+xml" title="${safeSiteName}" href="${rssUrl}" />`,
             safeRobots && `<meta name="robots" content="${safeRobots}">`,
             safeKeywords && `<meta name="keywords" content="${safeKeywords}">`,
             hreflangTags,
@@ -297,7 +357,6 @@ export class SeoPlugin {
 
 export const seoPlugin: WalnutPlugin = {
     name: 'seo:core',
-    version: '1.0.0',
     tier: 'community',
     setup(_engine: IPluginEngine): void {}
 };

@@ -1,9 +1,9 @@
-<div id="trash-group-{{node_id}}" class="trash-group-card bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden transition">
-    <div class="p-5 flex items-center justify-between bg-slate-50/70 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-700">
+<div id="trash-group-{{node_id}}" class="trash-group-card bg-[var(--admin-surface)] rounded-2xl border border-[var(--admin-border)] shadow-sm overflow-hidden transition">
+    <div class="p-5 flex items-center justify-between bg-stone-50/70 dark:bg-stone-900/60 border-b border-stone-100 dark:border-stone-700">
         <div class="flex items-center space-x-3 flex-1 min-w-0 pr-4">
             <input
                 type="checkbox"
-                class="trash-group-checkbox w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500"
+                class="trash-group-checkbox w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500"
                 data-node-id="{{node_id}}"
                 onchange="updateTrashGroupBatchState()"
             />
@@ -13,17 +13,17 @@
                 onclick="toggleVersionAccordion('{{node_id}}')"
                 class="flex items-center space-x-2 text-left flex-1 min-w-0 cursor-pointer group"
             >
-                <span id="arrow-icon-{{node_id}}" class="material-symbols-outlined text-slate-400 text-[20px] transition-transform duration-200">
+                <span id="arrow-icon-{{node_id}}" class="material-symbols-outlined text-stone-400 text-[20px] transition-transform duration-200">
                     expand_more
                 </span>
                 <div>
-                    <div class="font-bold text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 text-sm truncate flex items-center space-x-2">
+                    <div class="font-bold text-stone-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 text-sm truncate flex items-center space-x-2">
                         <span>{{title}}</span>
-                        <span class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[10px] font-mono px-2 py-0.2 rounded font-bold uppercase">
+                        <span class="bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-200 text-[10px] font-mono px-2 py-0.2 rounded font-bold uppercase">
                             {{type}} · {{snapshots_count_text}}
                         </span>
                     </div>
-                    <div class="text-[11px] text-slate-400 font-mono truncate mt-0.5">
+                    <div class="text-[11px] text-stone-400 font-mono truncate mt-0.5">
                         /{{slug}}{{deleted_time_prefix}}{{deleted_at_formatted}}
                     </div>
                 </div>
@@ -36,7 +36,7 @@
                 hx-post="/admin/trash/api/restore/{{node_id}}"
                 hx-swap="none"
                 hx-confirm="{{confirm_restore}}"
-                class="bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 cursor-pointer"
+                class="bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1 cursor-pointer"
             >
                 <span class="material-symbols-outlined text-[14px]">restore_from_trash</span>
                 <span>{{btn_restore}}</span>
@@ -55,7 +55,7 @@
         </div>
     </div>
 
-    <div id="versions-box-{{node_id}}" class="hidden divide-y divide-slate-100 dark:divide-slate-700/60 bg-white dark:bg-slate-800">
+    <div id="versions-box-{{node_id}}" class="hidden divide-y divide-stone-100 dark:divide-stone-700/60 bg-[var(--admin-surface)]">
         {{versions_html}}
     </div>
 </div>

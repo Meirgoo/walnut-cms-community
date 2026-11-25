@@ -1,19 +1,19 @@
-<label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">{{active_site_label}}</label>
+<label class="block text-[10px] font-bold text-[var(--admin-text-muted)] uppercase tracking-wider mb-1 px-1">{{active_site_label}}</label>
 <div class="relative w-full" id="site-dropdown-wrapper">
     <form action="/admin/switch-site" method="POST" id="site-switcher-form">
         <input type="hidden" name="site_id" id="site-switcher-input" value="{{current_site_id}}">
     </form>
     <button
         type="button"
-        onclick="const m=document.getElementById('site-dropdown-menu');if(m)m.classList.toggle('hidden');"
-        class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-slate-700 outline-none flex items-center justify-between shadow-sm cursor-pointer transition text-left"
+        onclick="window.toggleSiteDropdown && window.toggleSiteDropdown(this, false, event)"
+        class="w-full bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] text-xs font-semibold rounded-lg px-2.5 py-1.5 border border-[var(--admin-border)] outline-none flex items-center justify-between shadow-sm cursor-pointer transition text-left"
     >
-        <span class="truncate">🌐 {{current_site_name}}</span>
-        <span class="material-symbols-outlined text-[15px] text-slate-400 shrink-0 ml-1 {{dropdown_arrow_class}}">unfold_more</span>
+        <span class="inline-flex items-center space-x-1.5 truncate"><span class="material-symbols-outlined text-[15px] text-[var(--admin-text-muted)] shrink-0">language</span><span class="truncate">{{current_site_name}}</span></span>
+        <span class="material-symbols-outlined text-[15px] text-[var(--admin-text-muted)] shrink-0 ml-1 {{dropdown_arrow_class}}">expand_more</span>
     </button>
     <div
         id="site-dropdown-menu"
-        class="hidden absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-800 max-h-56 overflow-y-auto"
+        class="hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)] max-h-56 overflow-y-auto"
     >
         <div class="py-0.5">
             {{site_options_html}}
@@ -21,7 +21,7 @@
         <div class="p-1 {{new_site_wizard_class}}">
             <a
                 href="/admin/sites/new"
-                class="block px-2 py-1.5 text-center text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 rounded-lg transition"
+                class="block px-2 py-1.5 text-center text-xs font-bold text-[var(--admin-accent-text)] hover:bg-[var(--admin-accent-soft)] rounded-lg transition"
             >
                 {{btn_new_site}}
             </a>

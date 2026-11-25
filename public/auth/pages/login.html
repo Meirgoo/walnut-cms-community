@@ -7,59 +7,54 @@
   <meta name="generator" content="{{provider_name}}">
   <title>{{login_title}} - {{system_title}}</title>
   <link rel="stylesheet" href="/shared/app.css" />
-  <link rel="stylesheet" href="/shared/material-symbols.css" />
+  <link rel="stylesheet" href="/admin/palettes.css" />
   <script src="/shared/htmx.min.js"></script>
   {{inline_i18n_script}}
   <script src="/shared/theme-init.js"></script>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center min-h-screen w-full p-4 antialiased text-slate-900 dark:text-slate-100" style="min-height: 100vh; width: 100%; margin: 0;">
-  <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-800 my-auto" style="margin-top: auto !important; margin-bottom: auto !important;">
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 dark:bg-slate-950 text-emerald-400 mb-3 shadow-md border border-slate-800">
-          <span class="material-symbols-outlined text-[24px]">shield_lock</span>
+<body class="admin-ambient-canvas bg-[var(--admin-canvas)] text-[var(--admin-text)] flex flex-col items-center justify-center min-h-screen w-full p-4 antialiased" style="min-height: 100vh; width: 100%; margin: 0;">
+  <div class="bg-[var(--admin-surface)] p-8 rounded-2xl shadow-xl w-full max-w-sm border border-[var(--admin-border)] my-auto" style="margin-top: auto !important; margin-bottom: auto !important;">
+    <div class="pb-5 mb-6 border-b border-[var(--admin-border)] flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold text-[var(--admin-text)] tracking-tight">{{login_title}}</h1>
+        <p class="text-xs text-[var(--admin-text-muted)] mt-0.5">{{login_subtitle}}</p>
       </div>
-      <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">{{login_title}}</h1>
-      <p class="text-xs text-slate-400 mt-1">{{login_subtitle}}</p>
+      <edge-select
+          onchange="window.location.href='/admin/switch-locale?locale=' + this.value + '&redirect=/admin/login'"
+          class="h-7 bg-[var(--admin-surface)] text-[var(--admin-text)] text-xs font-medium rounded-lg px-2 border border-[var(--admin-border)] outline-none cursor-pointer shrink-0"
+      >
+          {{login_locale_options_html}}
+      </edge-select>
     </div>
 
-    <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 rounded-xl text-center space-y-2 {{cf_block_class}}">
-        <div class="text-xs font-bold text-blue-700 dark:text-blue-300">{{cf_detected}}</div>
-        <div class="text-xs font-mono text-slate-600 dark:text-slate-400 truncate">{{cf_email}}</div>
-        <a href="/admin" hx-boost="false" class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded-lg transition">
+    <div class="mb-6 p-4 bg-[var(--admin-accent-soft)] border border-[var(--admin-accent-border)] rounded-lg text-center space-y-2 {{cf_block_class}}">
+        <div class="text-xs font-bold text-[var(--admin-accent-text)]">{{cf_detected}}</div>
+        <div class="text-xs font-mono text-[var(--admin-text-muted)] truncate {{cf_email_class}}">{{cf_email}}</div>
+        <a href="/admin/auth/cf-access" hx-boost="false" class="inline-flex items-center justify-center w-full h-8 bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] font-semibold text-xs rounded-lg transition">
             {{cf_btn}} &rarr;
         </a>
     </div>
     <div class="flex items-center my-4 {{cf_block_class}}">
-        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
-        <span class="px-2 text-[10px] font-bold text-slate-400 uppercase">{{or_password}}</span>
-        <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+        <div class="flex-grow border-t border-[var(--admin-border)]"></div>
+        <span class="px-2 text-[10px] font-bold text-[var(--admin-text-muted)] uppercase">{{or_password}}</span>
+        <div class="flex-grow border-t border-[var(--admin-border)]"></div>
     </div>
-    
+
     <form hx-post="/admin/api/login" hx-target="#error-msg" class="space-y-4">
       <div>
-        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_username}}</label>
-        <input type="text" name="username" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 outline-none text-slate-900 dark:text-white" />
+        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{field_username}}</label>
+        <input type="text" name="username" required class="w-full h-9 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium focus:border-[var(--admin-accent)] outline-none text-[var(--admin-text)]" />
       </div>
       <div>
-        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">{{field_password}}</label>
-        <input type="password" name="password" required class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-slate-900 dark:focus:ring-emerald-500 outline-none text-slate-900 dark:text-white" />
+        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{field_password}}</label>
+        <input type="password" name="password" required class="w-full h-9 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium focus:border-[var(--admin-accent)] outline-none text-[var(--admin-text)]" />
       </div>
-      <div id="error-msg" class="text-red-500 text-xs font-bold min-h-[1rem]">{{error}}</div>
-      <button type="submit" class="w-full bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black py-2.5 px-4 rounded-xl shadow-md transition cursor-pointer">
+      <div id="error-msg" class="text-[var(--admin-danger)] text-xs font-semibold min-h-[1rem]">{{error}}</div>
+      <button type="submit" class="w-full h-9 bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] font-semibold text-[13px] px-4 rounded-lg shadow-sm transition cursor-pointer">
         {{btn_submit}}
       </button>
     </form>
-
-    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-center items-center space-x-2">
-      <span class="material-symbols-outlined text-slate-400 text-[16px]">translate</span>
-      <walnut-select
-          onchange="window.location.href='/admin/switch-locale?locale=' + this.value + '&redirect=/admin/login'"
-          class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-md px-2 py-1 border border-slate-200 dark:border-slate-800 outline-none cursor-pointer"
-      >
-          {{login_locale_options_html}}
-      </walnut-select>
-    </div>
   </div>
-  <script src="/admin/js/admin.js"></script>
+  <script src="/admin/js/edge-select.js"></script>
 </body>
 </html>

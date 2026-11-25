@@ -1,13 +1,13 @@
 (function() {
     try {
-        const rawSchemes = window.__WALNUT__ && Array.isArray(window.__WALNUT__.color_schemes)
-            ? window.__WALNUT__.color_schemes
+        const rawSchemes = window.__EDGE__ && Array.isArray(window.__EDGE__.color_schemes)
+            ? window.__EDGE__.color_schemes
             : null;
         const schemes = rawSchemes && rawSchemes.length > 0 ? rawSchemes : ['light', 'dark'];
         const supportsLight = schemes.indexOf('light') !== -1;
         const supportsDark = schemes.indexOf('dark') !== -1;
 
-        let mode = localStorage.getItem('walnut_theme_mode') || 'system';
+        let mode = localStorage.getItem('edge_theme_mode') || 'system';
         let isDark;
         if (supportsLight && !supportsDark) {
             mode = 'light';
@@ -22,11 +22,16 @@
         else document.documentElement.classList.remove('dark');
         document.documentElement.setAttribute('data-theme-mode', mode);
 
+        // Lock admin color palette before first paint to prevent FOUC across palette switches.
+        const rawPalette = localStorage.getItem('edge_admin_palette') || 'walnut';
+        const validPalettes = ['walnut', 'monochrome', 'cosmic'];
+        document.documentElement.dataset.palette = validPalettes.indexOf(rawPalette) !== -1 ? rawPalette : 'walnut';
+
         // Pre-inject icon visibility rules before app.css parses to prevent all three theme icons flashing on first paint.
-        let styleTheme = document.getElementById('walnut-theme-icons-preload');
+        let styleTheme = document.getElementById('edge-theme-icons-preload');
         if (!styleTheme && document.head) {
             styleTheme = document.createElement('style');
-            styleTheme.id = 'walnut-theme-icons-preload';
+            styleTheme.id = 'edge-theme-icons-preload';
             styleTheme.textContent = 'html[data-theme-mode="light"] .theme-icon-dark,html[data-theme-mode="light"] .theme-icon-system,html[data-theme-mode="dark"] .theme-icon-light,html[data-theme-mode="dark"] .theme-icon-system,html:not([data-theme-mode]) .theme-icon-light,html:not([data-theme-mode]) .theme-icon-dark,html[data-theme-mode="system"] .theme-icon-light,html[data-theme-mode="system"] .theme-icon-dark{display:none!important;}';
             document.head.appendChild(styleTheme);
         }
@@ -47,14 +52,14 @@
         return target;
     }
 
-    const i18nStore = (window.__WALNUT_I18N__ = window.__WALNUT_I18N__ || {});
+    const i18nStore = (window.__EDGE_I18N__ = window.__EDGE_I18N__ || {});
     i18nStore.dict = i18nStore.dict || {};
     i18nStore.adminDict = i18nStore.adminDict || i18nStore.dict;
 
     function syncInlineDict(root) {
         try {
             const doc = root && root.querySelector ? root : document;
-            const el = doc.querySelector ? doc.querySelector('#walnut-i18n-dict') : document.getElementById('walnut-i18n-dict');
+            const el = doc.querySelector ? doc.querySelector('#edge-i18n-dict') : document.getElementById('edge-i18n-dict');
             if (el && el.textContent) {
                 const dict = JSON.parse(el.textContent);
                 mergeDict(i18nStore.dict, dict);

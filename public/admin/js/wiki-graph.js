@@ -2,7 +2,7 @@
     'use strict';
 
     const t = function(k, params) {
-        const fn = window.__WALNUT_I18N__ && window.__WALNUT_I18N__.t;
+        const fn = window.__EDGE_I18N__ && window.__EDGE_I18N__.t;
         return typeof fn === 'function' ? fn(k, params) : k;
     };
 
@@ -261,7 +261,7 @@
             if (btn) {
                 btn.className = highlightIsolated
                     ? 'bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer ring-2 ring-purple-400'
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                    : 'bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200/80 dark:border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
             }
         };
 
@@ -271,7 +271,7 @@
             if (btn) {
                 btn.className = highlightDirty
                     ? 'bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer ring-2 ring-amber-400'
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                    : 'bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200/80 dark:border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
             }
         };
 
@@ -280,8 +280,8 @@
             const btn = document.getElementById('wiki-physics-toggle');
             if (btn) {
                 btn.className = physicsEnabled
-                    ? 'bg-emerald-600/80 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-mono shadow-sm transition flex items-center space-x-1 cursor-pointer'
-                    : 'bg-slate-800 text-slate-400 hover:text-white px-3 py-2 rounded-xl text-xs font-mono border border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                    ? 'bg-amber-600/80 hover:bg-[#92400E] text-white px-3 py-2 rounded-xl text-xs font-mono shadow-sm transition flex items-center space-x-1 cursor-pointer'
+                    : 'bg-stone-800 text-stone-400 hover:text-white px-3 py-2 rounded-xl text-xs font-mono border border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
             }
         };
 
@@ -349,8 +349,8 @@
             const btn = document.getElementById('wiki-orbit-toggle');
             if (btn) {
                 btn.className = autoOrbit
-                    ? 'bg-emerald-600/80 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer'
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                    ? 'bg-amber-600/80 hover:bg-[#92400E] text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer'
+                    : 'bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200/80 dark:border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
             }
         };
 
@@ -362,7 +362,7 @@
             }
             const btn = document.getElementById('wiki-timelapse-toggle');
             if (btn) {
-                btn.className = 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                btn.className = 'bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200/80 dark:border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
                 const lbl = btn.querySelector('span:last-child');
                 if (lbl) lbl.innerText = t('wiki.btn_timelapse') || 'Time-Lapse';
             }
@@ -416,7 +416,7 @@
             if (btn) {
                 btn.className = hierarchicalMode
                     ? 'bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer'
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
+                    : 'bg-white dark:bg-stone-800 hover:bg-stone-50 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 px-3 py-2 rounded-xl text-xs font-bold border border-stone-200/80 dark:border-stone-700 shadow-sm transition flex items-center space-x-1 cursor-pointer';
                 const label = btn.querySelector('span:last-child');
                 if (label) {
                     label.innerText = hierarchicalMode
@@ -1158,14 +1158,14 @@
             const items = Array.from(nodeSet || []);
             if (items.length === 0) {
                 const emptyText = t('wiki.inspector_no_items') || 'No linked nodes';
-                listEl.innerHTML = '<div class="text-[11px] text-slate-500 italic px-2 py-1">' + emptyText + '</div>';
+                listEl.innerHTML = '<div class="text-[11px] text-stone-500 italic px-2 py-1">' + emptyText + '</div>';
                 return;
             }
             listEl.innerHTML = '';
             items.forEach(function(item) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'w-full text-left px-2.5 py-1.5 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800/80 flex items-center justify-between gap-2 text-[11px] transition cursor-pointer';
+                btn.className = 'w-full text-left px-2.5 py-1.5 rounded-xl bg-stone-950/60 hover:bg-stone-800 border border-stone-800/80 flex items-center justify-between gap-2 text-[11px] transition cursor-pointer';
                 const dotColor = colorMap[item.type] || '#10b981';
                 const left = document.createElement('span');
                 left.className = 'flex items-center space-x-2 min-w-0';
@@ -1173,7 +1173,7 @@
                 dot.className = 'w-2 h-2 rounded-full shrink-0';
                 dot.style.backgroundColor = dotColor;
                 const txt = document.createElement('span');
-                txt.className = 'truncate text-slate-200 font-medium';
+                txt.className = 'truncate text-stone-200 font-medium';
                 txt.textContent = item.title || item.path || item.slug || item.id;
                 left.appendChild(dot);
                 left.appendChild(txt);
@@ -1230,7 +1230,7 @@
                     statusEl.className = 'px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30';
                 } else {
                     statusEl.textContent = t('wiki.status_normal') || 'Normal';
-                    statusEl.className = 'px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                    statusEl.className = 'px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
                 }
             }
             if (titleEl) titleEl.textContent = node.title || node.slug || node.id;

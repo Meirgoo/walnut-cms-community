@@ -1,5 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#10B981" />
-  <path d="M16 6C11.58 6 8 9.58 8 14C8 17.5 10.5 21 14 25.5C14.8 26.5 17.2 26.5 18 25.5C21.5 21 24 17.5 24 14C24 9.58 20.42 6 16 6Z" fill="white" fill-opacity="0.95" />
-  <path d="M16 7V25M12 12C13.5 13.5 14.5 15.5 14.5 18M20 12C18.5 13.5 17.5 15.5 17.5 18" stroke="#059669" stroke-width="1.5" stroke-linecap="round" />
+  <defs>
+    <linearGradient id="univers-logo-bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#342E7A" />
+      <stop offset="55%" stop-color="#5B4BE0" />
+      <stop offset="100%" stop-color="#8B7CF6" />
+    </linearGradient>
+    <linearGradient id="univers-logo-vein" x1="16" y1="7" x2="16" y2="25" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4338CA" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#univers-logo-bg)" />
+  <path d="M16 6C11.58 6 8 9.58 8 14C8 17.5 10.5 21 14 25.5C14.8 26.5 17.2 26.5 18 25.5C21.5 21 24 17.5 24 14C24 9.58 20.42 6 16 6Z" fill="white" fill-opacity="0.96" />
+  <path d="M16 7V25M12 12C13.5 13.5 14.5 15.5 14.5 18M20 12C18.5 13.5 17.5 15.5 17.5 18" stroke="url(#univers-logo-vein)" stroke-width="1.5" stroke-linecap="round" />
 </svg>

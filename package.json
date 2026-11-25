@@ -1,5 +1,6 @@
 {
   "name": "walnut",
+  "description": "Walnut Edge CMS — Edge-native headless & slot-assembly CMS built on Cloudflare Workers, D1, and R2.",
   "type": "module",
   "sideEffects": false,
   "scripts": {

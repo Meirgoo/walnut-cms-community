@@ -1,13 +1,13 @@
 <div class="w-full h-full overflow-y-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
     <div class="p-8 max-w-3xl mx-auto w-full space-y-6">
-        <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4 flex items-center justify-between">
+        <div class="border-b border-stone-200/80 dark:border-stone-800 pb-4 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <a href="/admin/settings" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="{{return}}">
+                <a href="/admin/settings" class="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-800 transition" title="{{return}}">
                     <span class="material-symbols-outlined text-[20px]">arrow_back</span>
                 </a>
                 <div>
-                    <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{wizard_title}}</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{subtitle_desc}}</p>
+                    <h1 class="text-2xl font-black text-stone-900 dark:text-white tracking-tight">{{wizard_title}}</h1>
+                    <p class="text-xs text-stone-500 dark:text-stone-400 mt-1">{{subtitle_desc}}</p>
                 </div>
             </div>
         </div>
@@ -15,100 +15,100 @@
     <form
         action="/admin/sites/create"
         method="post"
-        class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700 p-8 shadow-sm space-y-6"
+        class="bg-[var(--admin-surface)] rounded-3xl border border-[var(--admin-border)] p-8 shadow-sm space-y-6"
     >
-        <input type="hidden" name="_csrf" value="walnut-admin-csrf-valid-token" />
+        <input type="hidden" name="_csrf" value="edge-admin-csrf-valid-token" />
 
         <div class="space-y-4">
-            <div class="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-700 pb-2.5">
-                <span class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">1</span>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{step1_title}}</h3>
+            <div class="flex items-center space-x-2 border-b border-stone-100 dark:border-stone-700 pb-2.5">
+                <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center">1</span>
+                <h3 class="text-sm font-bold text-stone-900 dark:text-white">{{step1_title}}</h3>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_site_name}}</label>
+                    <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">{{field_site_name}}</label>
                     <input
                         type="text"
                         name="name"
                         required
                         placeholder="{{placeholder_site_name}}"
-                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 font-semibold"
+                        class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 font-semibold"
                     />
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_primary_domain}}</label>
+                    <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">{{field_primary_domain}}</label>
                     <input
                         type="text"
                         name="primary_domain"
                         required
                         placeholder="{{placeholder_primary_domain}}"
-                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 font-semibold"
+                        class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-2 text-xs font-mono text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 font-semibold"
                     />
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_sitemap_domain}}</label>
+                <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">{{field_sitemap_domain}}</label>
                 <input
                     type="text"
                     name="sitemap_domain"
                     placeholder="{{placeholder_sitemap_domain}}"
-                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 font-semibold"
+                    class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-2 text-xs font-mono text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 font-semibold"
                 />
-                <span class="text-[10px] text-slate-400 mt-0.5 block">{{tip_sitemap_domain}}</span>
+                <span class="text-[10px] text-stone-400 mt-0.5 block">{{tip_sitemap_domain}}</span>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_description}}</label>
+                <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">{{field_description}}</label>
                 <textarea
                     name="description"
                     rows="2"
                     placeholder="{{placeholder_description}}"
-                    class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 resize-none leading-relaxed"
+                    class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded-xl p-3 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 resize-none leading-relaxed"
                 ></textarea>
             </div>
         </div>
 
         <div class="space-y-4 pt-2">
-            <div class="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-700 pb-2.5">
-                <span class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">2</span>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{step2_title}}</h3>
+            <div class="flex items-center space-x-2 border-b border-stone-100 dark:border-stone-700 pb-2.5">
+                <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center">2</span>
+                <h3 class="text-sm font-bold text-stone-900 dark:text-white">{{step2_title}}</h3>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <walnut-select class="relative block" id="dropdown-box-wizard-locale" data-input-id="wizard-locale-input" data-label-id="wizard-locale-selected-label" data-menu-id="dropdown-menu-wizard-locale">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_default_locale}}</label>
+                <edge-select class="relative block" id="dropdown-box-wizard-locale" data-input-id="wizard-locale-input" data-label-id="wizard-locale-selected-label" data-menu-id="dropdown-menu-wizard-locale">
+                    <label class="block text-xs font-bold text-stone-700 dark:text-stone-300 mb-1">{{field_default_locale}}</label>
                     <input type="hidden" name="default_locale" id="wizard-locale-input" value="zh-CN" />
                     <button
                         type="button"
                         data-role="trigger"
-                        class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 font-semibold flex items-center justify-between text-left cursor-pointer shadow-sm"
+                        class="w-full bg-stone-50 dark:bg-stone-950 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-2 text-xs text-stone-800 dark:text-stone-100 outline-none focus:border-amber-500 font-semibold flex items-center justify-between text-left cursor-pointer shadow-sm"
                     >
                         <span id="wizard-locale-selected-label">{{default_locale_display}}</span>
-                        <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                        <span class="material-symbols-outlined text-[16px] text-stone-400 shrink-0 ml-1">expand_more</span>
                     </button>
                     <div
                         id="dropdown-menu-wizard-locale"
                         data-role="menu"
-                        class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-slate-50 dark:divide-slate-700"
+                        class="hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-2xl py-1 z-30 text-xs divide-y divide-stone-50 dark:divide-stone-700"
                     >
                         {{wizard_locale_options_html}}
                     </div>
-                </walnut-select>
+                </edge-select>
 
                 <div class="flex flex-col justify-end">
-                    <label class="flex items-center space-x-2 p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer select-none">
+                    <label class="flex items-center space-x-2 p-3 bg-stone-50 dark:bg-stone-950 rounded-xl border border-[var(--admin-border)] cursor-pointer select-none">
                         <input
                             type="checkbox"
-                            name="is_media_bed_only"
-                            value="1"
-                            class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-emerald-600 focus:ring-0 cursor-pointer"
+                            name="site_mode"
+                            value="internal"
+                            class="w-4 h-4 rounded border-stone-300 dark:border-stone-600 text-amber-600 focus:ring-0 cursor-pointer"
                         />
                         <div class="text-xs">
-                            <div class="font-bold text-slate-800 dark:text-slate-200">{{media_bed_only_title}}</div>
-                            <div class="text-[10px] text-slate-400">{{media_bed_only_desc}}</div>
+                            <div class="font-bold text-stone-800 dark:text-stone-200">{{internal_mode_only_title}}</div>
+                            <div class="text-[10px] text-stone-400">{{internal_mode_only_desc}}</div>
                         </div>
                     </label>
                 </div>
@@ -116,18 +116,18 @@
         </div>
 
         <div class="space-y-3 pt-2">
-            <div class="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-700 pb-2.5">
-                <span class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center">3</span>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white">{{wizard.step3_init_title}}</h3>
+            <div class="flex items-center space-x-2 border-b border-stone-100 dark:border-stone-700 pb-2.5">
+                <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-mono font-bold text-xs flex items-center justify-center">3</span>
+                <h3 class="text-sm font-bold text-stone-900 dark:text-white">{{wizard.step3_init_title}}</h3>
             </div>
 
             <div class="space-y-3">
-                <label class="block p-4 rounded-2xl border border-emerald-500/50 bg-emerald-50/30 dark:bg-emerald-950/20 hover:border-emerald-500 cursor-pointer transition-colors duration-75">
+                <label class="block p-4 rounded-2xl border border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20 hover:border-amber-500 cursor-pointer transition-colors duration-75">
                     <div class="flex items-start space-x-3">
-                        <input type="radio" name="init_mode" value="preset" checked onchange="window.toggleWizardInitMode('preset')" class="mt-0.5 text-emerald-600 focus:ring-0" />
+                        <input type="radio" name="init_mode" value="preset" checked onchange="window.toggleWizardInitMode('preset')" class="mt-0.5 text-amber-600 focus:ring-0" />
                         <div class="min-w-0 flex-1">
-                            <div class="text-xs font-black text-slate-900 dark:text-white">🌱 {{wizard.mode_preset_title}}</div>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{wizard.mode_preset_desc}}</p>
+                            <div class="text-xs font-black text-stone-900 dark:text-white inline-flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] text-[#B45309] dark:text-amber-400">eco</span><span>{{wizard.mode_preset_title}}</span></div>
+                            <p class="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">{{wizard.mode_preset_desc}}</p>
                         </div>
                     </div>
                 </label>
@@ -136,13 +136,13 @@
             </div>
         </div>
 
-        <div class="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end space-x-3">
-            <a href="/admin/settings" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+        <div class="pt-4 border-t border-stone-100 dark:border-stone-700 flex justify-end space-x-3">
+            <a href="/admin/settings" class="px-4 py-2.5 rounded-xl text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 transition">
                 {{cancel}}
             </a>
             <button
                 type="submit"
-                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-xs font-black shadow-md transition flex items-center space-x-1.5 cursor-pointer"
+                class="bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] px-6 py-2.5 rounded-xl text-xs font-black shadow-md transition flex items-center space-x-1.5 cursor-pointer"
             >
                 <span class="material-symbols-outlined text-[16px]">rocket_launch</span>
                 <span>{{btn_finish}}</span>

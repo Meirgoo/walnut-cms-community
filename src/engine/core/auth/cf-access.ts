@@ -1,5 +1,11 @@
 import type { Context } from 'hono';
 
+declare const __BUILD_CFA_ENABLED__: boolean | undefined;
+
+export function isCFAccessBuildEnabled(): boolean {
+    return typeof __BUILD_CFA_ENABLED__ === 'undefined' ? true : Boolean(__BUILD_CFA_ENABLED__);
+}
+
 export interface CFAccessIdentity {
     email: string;
     sub?: string;
@@ -163,13 +169,19 @@ export async function verifyCFAccessJWT(
         return null;
     }
 
-    if (expectedAud) {
-        const aud = payload.aud;
-        const isAudValid = Array.isArray(aud) ? aud.includes(expectedAud) : aud === expectedAud;
-        if (!isAudValid) {
-            console.warn('[CF Access] JWT AUD claim mismatch');
-            return null;
-        }
+    if (!expectedAud) {
+        console.warn('[CF Access] Rejected: expectedAud (CF_ACCESS_AUD) is required');
+        return null;
+    }
+
+    const allowedAuds = expectedAud.split(',').map((s) => s.trim()).filter(Boolean);
+    const aud = payload.aud;
+    const isAudValid = Array.isArray(aud)
+        ? aud.some((a: any) => allowedAuds.includes(String(a)))
+        : allowedAuds.includes(String(aud || ''));
+    if (!isAudValid) {
+        console.warn('[CF Access] JWT AUD claim mismatch');
+        return null;
     }
 
     const expectedIss = `https://${fullTeamDomain}`;
@@ -182,6 +194,9 @@ export async function verifyCFAccessJWT(
 }
 
 export function isLocalDevCFAccessBypassEnabled(c: Context<any>): boolean {
+    if (!isCFAccessBuildEnabled()) {
+        return false;
+    }
     if (c.env?.ENVIRONMENT !== 'development' || c.env?.ALLOW_INSECURE_DEV_CF_ACCESS !== 'true') {
         return false;
     }
@@ -190,9 +205,13 @@ export function isLocalDevCFAccessBypassEnabled(c: Context<any>): boolean {
 }
 
 /**
- * Verify CF Access RS256 JWT when CF_ACCESS_TEAM_NAME is set; local dev bypass requires ENVIRONMENT=development, ALLOW_INSECURE_DEV_CF_ACCESS=true, and localhost.
+ * Verify CF Access RS256 JWT when CF_ACCESS_TEAM_NAME and CF_ACCESS_AUD are set; local dev bypass requires ENVIRONMENT=development, ALLOW_INSECURE_DEV_CF_ACCESS=true, and localhost.
  */
 export async function extractCFAccessIdentity(c: Context<any>): Promise<CFAccessIdentity | null> {
+    if (!isCFAccessBuildEnabled()) {
+        return null;
+    }
+
     const jwtAssertion = c.req.header('cf-access-jwt-assertion') || c.req.header('Cf-Access-Jwt-Assertion');
     const accessEmail = c.req.header('cf-access-authenticated-user-email') || c.req.header('Cf-Access-Authenticated-User-Email');
 
@@ -215,6 +234,10 @@ export async function extractCFAccessIdentity(c: Context<any>): Promise<CFAccess
     const expectedAud = c.env?.CF_ACCESS_AUD;
 
     if (teamName) {
+        if (!expectedAud) {
+            console.warn('[CF Access] Rejected: CF_ACCESS_AUD is required when CF_ACCESS_TEAM_NAME is configured.');
+            return null;
+        }
         if (!jwtAssertion) {
             console.warn('[CF Access] Access denied: cf-access-authenticated-user-email present without valid JWT signature');
             return null;

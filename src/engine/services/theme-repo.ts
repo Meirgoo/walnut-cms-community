@@ -210,6 +210,28 @@ export async function fetchRepoThemeData(options: FetchRepoOptions): Promise<Rep
     }
 
     const templates: any[] = [];
+    if (Array.isArray(manifest.templates)) {
+        for (const tpl of manifest.templates) {
+            if (!tpl || typeof tpl !== 'object') continue;
+            let tplHtml = tpl.templateHtml || tpl.template_html || '';
+            if (tpl.template_path) {
+                const loaded = await fetchRawFile(tpl.template_path);
+                if (loaded) tplHtml = loaded;
+            }
+            if (tplHtml) {
+                assertThemeSafe(tplHtml, `Template [${tpl.name || tpl.slug || tpl.id}] `);
+            }
+            if (Array.isArray(tpl.blocks)) {
+                assertThemeSafe(JSON.stringify(tpl.blocks), `Template [${tpl.name || tpl.slug || tpl.id}] blocks`);
+            }
+            templates.push({
+                ...tpl,
+                slug: tpl.slug || tpl.key || tpl.id,
+                name: tpl.name || tpl.title || tpl.slug,
+                ...(tplHtml ? { templateHtml: tplHtml } : {})
+            });
+        }
+    }
     if (Array.isArray(manifest.layouts)) {
         for (const layout of manifest.layouts) {
             let lHtml = '';

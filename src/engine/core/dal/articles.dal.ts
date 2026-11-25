@@ -8,6 +8,11 @@ import {
     bindInsertVersion,
     insEntity
 } from './content-common';
+import {
+    findMaxEntityVersionNumberByType,
+    buildInsertEntityVersionStatement,
+    buildAppendEntityVersionContentStatement
+} from './versions.dal';
 import { findContentEditorDependencies } from './dashboard.dal';
 import {
     buildUpsertSiteRouteStatement,
@@ -18,35 +23,38 @@ import {
     markRoutesDirtyByDependency,
     purgeEdgeAndZoneCache
 } from './cache-index.dal';
-import { invalidateSiteMemoryCache } from './sites.dal';
+import { invalidateSiteMemoryCache, findSiteById } from './sites.dal';
+import { buildLocalizedRoutePath } from '../i18n';
 
-export const findArticleForVcs = (db: D1Database, articleId: string) =>
-    findEntityForVcs(db, 'articles', articleId);
+export const findArticleForVcs = (db: D1Database, articleId: string, siteId?: string) =>
+    findEntityForVcs(db, 'articles', articleId, siteId);
 
 export const findLatestArticleVersion = (db: D1Database, articleId: string) =>
-    findLatestEntityVersion(db, 'article_versions', 'article_id', articleId);
+    findLatestEntityVersion(db, 'article', articleId);
 
 export function buildUpdateArticleMetadataOnlyStatement(db: D1Database, params: any): D1PreparedStatement {
     return updStmt(
         db,
         'articles',
-        'title = ?, slug = ?, locale = ?, translation_group_id = ?, maturity = ?, status = ?, summary = ?, metadata = ?, published_at = CASE WHEN ? = \'published\' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END',
-        [params.title, params.slug, params.locale, params.translationGroupId, params.maturity, params.status, params.summary, params.metadataStr, params.status],
-        params.articleId
+        'title = ?, slug = ?, locale = ?, translation_group_id = ?, maturity = ?, status = ?, visibility = ?, summary = ?, metadata = ?, published_at = COALESCE(?, CASE WHEN ? = \'published\' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END)',
+        [params.title, params.slug, params.locale, params.translationGroupId, params.maturity, params.status, params.visibility || 'public', params.summary, params.metadataStr, params.publishedAt ?? null, params.status],
+        params.articleId,
+        params.siteId
     );
 }
 
 export function buildInsertArticleVersionStatement(db: D1Database, params: any): D1PreparedStatement {
-    return bindInsertVersion(db, 'article_versions', 'article_id', params);
+    return bindInsertVersion(db, 'article', params);
 }
 
 export function buildUpdateArticleWithVersionStatement(db: D1Database, params: any): D1PreparedStatement {
     return updStmt(
         db,
         'articles',
-        'title = ?, slug = ?, locale = ?, translation_group_id = ?, maturity = ?, status = ?, summary = ?, metadata = ?, current_version_id = ?, published_at = CASE WHEN ? = \'published\' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END',
-        [params.title, params.slug, params.locale, params.translationGroupId, params.maturity, params.status, params.summary, params.metadataStr, params.versionId, params.status],
-        params.articleId
+        'title = ?, slug = ?, locale = ?, translation_group_id = ?, maturity = ?, status = ?, visibility = ?, summary = ?, metadata = ?, current_version_id = ?, published_at = COALESCE(?, CASE WHEN ? = \'published\' AND published_at IS NULL THEN CURRENT_TIMESTAMP ELSE published_at END)',
+        [params.title, params.slug, params.locale, params.translationGroupId, params.maturity, params.status, params.visibility || 'public', params.summary, params.metadataStr, params.versionId, params.publishedAt ?? null, params.status],
+        params.articleId,
+        params.siteId
     );
 }
 
@@ -64,24 +72,36 @@ export async function findArticlesListBundle(
 }> {
     const [artRes, trashRes, sitesRes] = await db.batch([
         db.prepare(`
-            SELECT a.*, 'article' as type, tg.name as translation_group_name
+            SELECT a.*, 'article' as type
             FROM articles a
-            LEFT JOIN translation_groups tg ON tg.id = a.translation_group_id
             WHERE a.site_id = ? AND a.deleted_at IS NULL
             ORDER BY a.updated_at DESC
         `).bind(siteId),
         db.prepare(`
-            SELECT (
-                SELECT COUNT(DISTINCT a.id) FROM articles a LEFT JOIN article_versions v ON v.article_id = a.id WHERE a.site_id = ? AND (a.deleted_at IS NOT NULL OR v.deleted_at IS NOT NULL)
-            ) + (
-                SELECT COUNT(DISTINCT p.id) FROM pages p LEFT JOIN page_versions v ON v.page_id = p.id WHERE p.site_id = ? AND (p.deleted_at IS NOT NULL OR v.deleted_at IS NOT NULL)
-            ) as total
-        `).bind(siteId, siteId),
+            SELECT COUNT(DISTINCT a.id) as total
+            FROM articles a
+            LEFT JOIN entity_versions v ON v.entity_type = 'article' AND v.entity_id = a.id
+            WHERE a.site_id = ? AND (a.deleted_at IS NOT NULL OR v.deleted_at IS NOT NULL)
+        `).bind(siteId),
         db.prepare(`SELECT * FROM sites WHERE status = 'active' ORDER BY created_at ASC`)
     ]);
+    const sites = sitesRes.results || [];
+    const defaultLocale = (sites.find((s: any) => s.id === siteId) as any)?.default_locale || 'zh-CN';
     const articles = (artRes.results || []).map((r: any) => mapContentEntityRow(r, 'article')) as Array<Node & { translation_group_name?: string | null }>;
+    const groupNameMap = new Map<string, string>();
+    for (const a of articles) {
+        const gid = a.translation_group_id || a.metadata?.translation_group_id;
+        if (!gid) continue;
+        if (!groupNameMap.has(gid) || a.locale === defaultLocale) {
+            groupNameMap.set(gid, a.title || gid);
+        }
+    }
+    for (const a of articles) {
+        const gid = a.translation_group_id || a.metadata?.translation_group_id;
+        if (gid) a.translation_group_name = groupNameMap.get(gid) || gid;
+    }
     const trashCount = Number((trashRes.results?.[0] as any)?.total || 0);
-    return { articles, trashCount, sites: sitesRes.results || [] };
+    return { articles, trashCount, sites };
 }
 
 // Append chunks directly in D1 to avoid buffering large bodies in Worker memory; dirty routes only on commit.
@@ -103,27 +123,38 @@ export async function saveArticleChunkInPlace(
         maturity?: string;
         translationGroupId?: string | null;
     }
-): Promise<{ id: string; versionId: string; chunkMode: string }> {
+): Promise<{
+    id: string;
+    versionId: string;
+    chunkMode: string;
+    siteId?: string;
+    localizedPath?: string;
+    oldLocalizedPath?: string | null;
+    translationGroupId?: string | null;
+    oldTranslationGroupId?: string | null;
+}> {
     const nowIso = new Date().toISOString();
     const { siteId, articleId, versionId, chunkMode, chunkText } = params;
     const cleanSlug = (s?: string) => String(s || '').trim().replace(/^\/+|\/+$/g, '').toLowerCase();
 
     if (chunkMode === 'init') {
-        const [artRes, verRes] = await db.batch([
-            db.prepare(`SELECT id, slug FROM articles WHERE id = ? AND site_id = ? LIMIT 1`).bind(articleId, siteId),
-            db.prepare(`SELECT COALESCE(MAX(version_number), 0) as max_ver FROM article_versions WHERE article_id = ?`).bind(articleId)
+        const [existingArt, maxVer] = await Promise.all([
+            db.prepare(`SELECT id, slug FROM articles WHERE id = ? AND site_id = ? LIMIT 1`).bind(articleId, siteId).first<{ id: string; slug: string }>(),
+            findMaxEntityVersionNumberByType(db, 'article', articleId)
         ]);
-        const existingArt = (artRes.results?.[0] as { id: string; slug: string } | undefined) || null;
-        const maxVer = Number((verRes.results?.[0] as any)?.max_ver || 0);
         const nextVerNum = maxVer + 1;
         const targetSlug = cleanSlug(params.slug) || existingArt?.slug || articleId;
 
+        const site = await findSiteById(db, siteId).catch(() => null);
+        const siteDefaultLocale = site?.default_locale || 'zh-CN';
+        const initLocale = params.locale || siteDefaultLocale;
+
         if (!existingArt) {
-            const routeCheck = inspectSpecialRoute(targetSlug, null, params.locale || 'zh-CN');
+            const routeCheck = inspectSpecialRoute(targetSlug, null, initLocale);
             if (routeCheck.level === 'forbidden') {
                 throw new Error(routeCheck.message);
             }
-            await assertSiteRouteUnique(db, siteId, `/${targetSlug}`);
+            await assertSiteRouteUnique(db, siteId, `/${targetSlug}`, null, initLocale, siteDefaultLocale);
         }
 
         const metaStr = params.metadata ? JSON.stringify(params.metadata) : '{}';
@@ -149,30 +180,33 @@ export async function saveArticleChunkInPlace(
             );
         }
         stmts.push(
-            db.prepare(`
-                INSERT INTO article_versions (id, article_id, version_number, title, summary, content_raw, metadata_snapshot, commit_message, author_id, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'Chunked save init', ?, ?)
-                ON CONFLICT(id) DO UPDATE SET content_raw = excluded.content_raw
-            `).bind(
-                versionId,
-                articleId,
-                nextVerNum,
-                params.title || 'Untitled Article',
-                params.summary || '',
-                chunkText,
-                metaStr,
-                params.authorId || 'admin',
-                nowIso
-            )
+            buildInsertEntityVersionStatement(db, {
+                id: versionId,
+                siteId,
+                entityType: 'article',
+                entityId: articleId,
+                versionNumber: nextVerNum,
+                title: params.title || 'Untitled Article',
+                summary: params.summary || '',
+                contentRaw: chunkText,
+                metadataSnapshot: metaStr,
+                commitMessage: 'Chunked save init',
+                authorId: params.authorId || 'admin',
+                createdAt: nowIso,
+                upsertContentOnConflict: true
+            })
         );
         await db.batch(stmts);
         return { id: articleId, versionId, chunkMode };
     }
 
     if (chunkMode === 'append') {
-        await db.prepare(
-            `UPDATE article_versions SET content_raw = COALESCE(content_raw, '') || ? WHERE id = ? AND article_id = ?`
-        ).bind(chunkText, versionId, articleId).run();
+        await buildAppendEntityVersionContentStatement(db, {
+            versionId,
+            entityType: 'article',
+            entityId: articleId,
+            chunkText
+        }).run();
         return { id: articleId, versionId, chunkMode };
     }
 
@@ -180,26 +214,42 @@ export async function saveArticleChunkInPlace(
         `SELECT slug, status, locale, title, translation_group_id FROM articles WHERE id = ? AND site_id = ? LIMIT 1`
     ).bind(articleId, siteId).first<{ slug: string; status: string; locale: string; title: string; translation_group_id: string | null }>();
 
+    const site = await findSiteById(db, siteId).catch(() => null);
+    const siteDefaultLocale = site?.default_locale || 'zh-CN';
     const normSlug = cleanSlug(params.slug) || existingRow?.slug || articleId;
     const normPath = normSlug === '' || normSlug === 'index' ? '/' : `/${normSlug}`;
     const finalStatus = params.status || existingRow?.status || 'published';
-    const finalLocale = params.locale || existingRow?.locale || 'zh-CN';
+    const finalLocale = params.locale || existingRow?.locale || siteDefaultLocale;
+    const localizedPath = buildLocalizedRoutePath(normPath, finalLocale, siteDefaultLocale);
     const finalTitle = params.title || existingRow?.title || 'Untitled Article';
-    const finalTransGroup = params.translationGroupId !== undefined ? params.translationGroupId : (existingRow?.translation_group_id ?? null);
+    const oldTranslationGroupId = existingRow?.translation_group_id ?? null;
+    const finalTransGroup = params.translationGroupId !== undefined ? params.translationGroupId : oldTranslationGroupId;
+    const oldNormPath = existingRow?.slug
+        ? (existingRow.slug === '' || existingRow.slug === 'index' ? '/' : `/${existingRow.slug}`)
+        : null;
+    const oldLocalizedPath = oldNormPath
+        ? buildLocalizedRoutePath(oldNormPath, existingRow?.locale || siteDefaultLocale, siteDefaultLocale)
+        : null;
 
     if (finalStatus === 'published') {
         const routeCheck = inspectSpecialRoute(normSlug, null, finalLocale);
         if (routeCheck.level === 'forbidden') {
             throw new Error(routeCheck.message);
         }
-        await assertSiteRouteUnique(db, siteId, normPath, articleId);
+        await assertSiteRouteUnique(db, siteId, normPath, articleId, finalLocale, siteDefaultLocale);
     }
 
     const metaStr = params.metadata ? JSON.stringify(params.metadata) : null;
     const commitStmts: D1PreparedStatement[] = [
-        db.prepare(
-            `UPDATE article_versions SET content_raw = COALESCE(content_raw, '') || ?, title = COALESCE(?, title), summary = COALESCE(?, summary), metadata_snapshot = COALESCE(?, metadata_snapshot) WHERE id = ? AND article_id = ?`
-        ).bind(chunkText, params.title ?? null, params.summary ?? null, metaStr, versionId, articleId),
+        buildAppendEntityVersionContentStatement(db, {
+            versionId,
+            entityType: 'article',
+            entityId: articleId,
+            chunkText,
+            title: params.title ?? null,
+            summary: params.summary ?? null,
+            metadataSnapshot: metaStr
+        }),
         db.prepare(
             `UPDATE articles SET title = ?, slug = ?, summary = COALESCE(?, summary), status = ?, locale = ?, translation_group_id = ?, maturity = COALESCE(?, maturity), metadata = COALESCE(?, metadata), current_version_id = ?, published_at = CASE WHEN ? = 'published' AND published_at IS NULL THEN ? ELSE published_at END, updated_at = ? WHERE id = ? AND site_id = ?`
         ).bind(
@@ -218,11 +268,11 @@ export async function saveArticleChunkInPlace(
             articleId,
             siteId
         ),
-        buildDeleteOtherSiteRoutesStatement(db, siteId, articleId, normPath),
+        buildDeleteOtherSiteRoutesStatement(db, siteId, articleId, localizedPath),
         finalStatus === 'published'
             ? buildUpsertSiteRouteStatement(db, {
                 siteId,
-                path: normPath,
+                path: localizedPath,
                 entityType: 'article',
                 entityId: articleId,
                 locale: finalLocale,
@@ -234,15 +284,28 @@ export async function saveArticleChunkInPlace(
             })
             : buildDeleteEntitySiteRoutesStatement(db, siteId, articleId),
         db.prepare(
-            `UPDATE site_routes SET is_dirty = 1, rendered_html = NULL, version = version + 1, updated_at = ? WHERE site_id = ? AND path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json')`
+            `UPDATE site_routes SET is_dirty = 1, rendered_html = NULL, version = version + 1, updated_at = ? WHERE site_id = ? AND path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/llm.txt', '/llms.txt')`
         ).bind(nowIso, siteId)
     ];
     await db.batch(commitStmts);
     invalidateSiteMemoryCache(siteId);
     await markRoutesDirtyByDependency(db, siteId, ['article:*'], []);
-    await purgeEdgeAndZoneCache(db, siteId, [normPath, '/', '/sitemap.xml', '/feed.xml', '/feed.json']);
+    const purgeTargets = [localizedPath, '/', '/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/llm.txt', '/llms.txt'];
+    if (oldLocalizedPath && oldLocalizedPath !== localizedPath) {
+        purgeTargets.unshift(oldLocalizedPath);
+    }
+    await purgeEdgeAndZoneCache(db, siteId, purgeTargets);
 
-    return { id: articleId, versionId, chunkMode };
+    return {
+        id: articleId,
+        versionId,
+        chunkMode,
+        siteId,
+        localizedPath,
+        oldLocalizedPath,
+        translationGroupId: finalTransGroup,
+        oldTranslationGroupId
+    };
 }
 
 export async function findNewArticleEditorDependencies(

@@ -1,12 +1,14 @@
 import type { HookContext, IPluginEngine, WalnutPlugin } from '../types';
 import { nanoId } from '../kernel';
 import {
+    findSiteById,
     findSiteSettings,
     buildUpdateSiteSettingsOnlyStatement,
     findWebhooksBySite,
     buildUpsertWebhookStatement,
     buildDeleteWebhookStatement
 } from '../core/dal';
+import { parseJson } from '../core/utils';
 import { assertAdminUser } from './common.helper';
 
 const CONTENT_CHANGE_ACTIONS = new Set([
@@ -26,33 +28,176 @@ const CONTENT_CHANGE_ACTIONS = new Set([
     'DATASET_DELETE'
 ]);
 
-// Block loopback, private-network, and cloud metadata hosts to prevent SSRF.
-export function isSafeCoreWebhookUrl(rawUrl: string): boolean {
+function isPrivateIpv4Octets(o1: number, o2: number): boolean {
+    if (o1 === 0 || o1 === 10 || o1 === 127) return true;
+    if (o1 === 169 && o2 === 254) return true;
+    if (o1 === 172 && o2 >= 16 && o2 <= 31) return true;
+    if (o1 === 192 && o2 === 168) return true;
+    return false;
+}
+
+function normalizeHostName(raw?: string | null): string {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0];
+    if (!trimmed) return '';
+    if (trimmed.startsWith('[')) {
+        const end = trimmed.indexOf(']');
+        return end > 0 ? trimmed.slice(1, end) : trimmed;
+    }
+    return trimmed.split(':')[0].replace(/\.$/, '');
+}
+
+export async function resolveSiteSelfHosts(
+    db: any,
+    siteId: string,
+    reqHost?: string
+): Promise<string[]> {
+    const hosts = new Set<string>();
+    const addHost = (val?: string | null) => {
+        const h = normalizeHostName(val);
+        if (h && h !== '*') hosts.add(h);
+    };
+    addHost(reqHost);
+    try {
+        const site = await findSiteById(db, siteId);
+        if (site) {
+            addHost(site.primary_domain);
+            const settings = parseJson<Record<string, any>>(site.settings, {});
+            addHost(settings.sitemap_domain);
+            addHost(settings.seo?.sitemap_domain);
+        }
+    } catch {}
+    return Array.from(hosts);
+}
+
+// Block loopback, private-network, IPv6/IPv4-mapped internal ranges, cloud metadata, and same-site hosts to prevent SSRF.
+export function isSafeCoreWebhookUrl(rawUrl: string, selfHosts: string[] = []): boolean {
     try {
         const p = new URL(rawUrl);
         if (p.protocol !== 'https:' && p.protocol !== 'http:') return false;
-        const h = p.hostname.toLowerCase();
-        if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(h)) return false;
-        return !(
-            h === '169.254.169.254' ||
-            h === 'metadata.google.internal' ||
+        const h = p.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+        if (!h) return false;
+
+        if (selfHosts.some((sh) => sh && h === sh)) return false;
+
+        if (
             h === 'localhost' ||
-            h === '[::1]' ||
-            h === '::1' ||
-            h.startsWith('127.') ||
-            h.startsWith('10.') ||
-            h.startsWith('192.168.') ||
-            h.startsWith('0.0.0.0')
-        );
+            h.endsWith('.localhost') ||
+            h === 'metadata.google.internal' ||
+            h === 'metadata.goog' ||
+            /^\d+$/.test(h) ||
+            /^0x[0-9a-f]+$/i.test(h)
+        ) {
+            return false;
+        }
+
+        const v4Match = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+        if (v4Match) {
+            const octs = v4Match.slice(1).map(Number);
+            if (octs.some(o => Number.isNaN(o) || o > 255)) return false;
+            return !isPrivateIpv4Octets(octs[0], octs[1]);
+        }
+
+        if (h.includes(':')) {
+            const cleanV6 = h.split('%')[0];
+            if (
+                cleanV6 === '::' ||
+                cleanV6 === '::1' ||
+                cleanV6 === '0:0:0:0:0:0:0:0' ||
+                cleanV6 === '0:0:0:0:0:0:0:1'
+            ) {
+                return false;
+            }
+            if (/^f[cd][0-9a-f]{0,2}:/i.test(cleanV6) || /^fe[89ab][0-9a-f]?:/i.test(cleanV6)) {
+                return false;
+            }
+            const mappedDot = cleanV6.match(/^(?:::ffff|(?:0{1,4}:){5}ffff):(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/i);
+            if (mappedDot) {
+                return !isPrivateIpv4Octets(Number(mappedDot[1]), Number(mappedDot[2]));
+            }
+            // WHATWG URL serializes [::ffff:127.0.0.1] as ::ffff:7f00:1, so decode both 16-bit hex groups.
+            const mappedHex = cleanV6.match(/^(?:::ffff|(?:0{1,4}:){5}ffff|::(?:0{1,4}:){0,5}):?([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i)
+                || cleanV6.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+            if (mappedHex) {
+                const hi = parseInt(mappedHex[1], 16);
+                const o1 = (hi >> 8) & 0xff;
+                const o2 = hi & 0xff;
+                if (isPrivateIpv4Octets(o1, o2)) return false;
+            }
+        }
+
+        return true;
     } catch {
         return false;
     }
 }
 
+export function sanitizeCoreWebhookFields(rawFields: Record<string, unknown> | undefined): Record<string, unknown> {
+    if (!rawFields || typeof rawFields !== 'object') return {};
+    const sanitized: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rawFields).slice(0, 50)) {
+        if (k === '_honeypot' || k === '_gotcha') continue;
+        const safeKey = String(k).trim().slice(0, 64);
+        if (!safeKey) continue;
+        sanitized[safeKey] = typeof v === 'string'
+            ? v.trim().slice(0, 4000)
+            : (typeof v === 'number' || typeof v === 'boolean')
+                ? v
+                : (v != null ? JSON.stringify(v).slice(0, 4000) : '');
+    }
+    return sanitized;
+}
+
+export async function dispatchCoreWebhookSubmit(ctx: HookContext<any, any>): Promise<any> {
+    const siteId = ctx.siteId || ctx.data?.siteId || 'site_default';
+    const formId = String(ctx.data?.formId || 'default').trim();
+    const rawFields = ctx.data?.fields || {};
+    if (rawFields && typeof rawFields === 'object' && ('_honeypot' in rawFields || '_gotcha' in rawFields) && (rawFields._honeypot || rawFields._gotcha)) {
+        return { submissionId: nanoId('sub'), forwarded: false, spamBlocked: true, success: true };
+    }
+
+    const fields = sanitizeCoreWebhookFields(rawFields);
+    const settings = await findSiteSettings(ctx.dal.db, siteId);
+    const selfHosts = await resolveSiteSelfHosts(ctx.dal.db, siteId, ctx.host);
+    const rules: any[] = Array.isArray(settings.webhooks) ? settings.webhooks : [];
+    const activeRules = rules.filter((r) => r.is_active !== 0 && (!r.form_id || r.form_id === formId || r.form_id === '*'));
+    if (activeRules.length === 0 && settings.form_webhook_url) {
+        activeRules.push({ id: 'whk_default', form_webhook_url: settings.form_webhook_url });
+    }
+
+    const targets = activeRules
+        .map((r) => r.form_webhook_url)
+        .filter((u): u is string => Boolean(u && isSafeCoreWebhookUrl(u, selfHosts)));
+
+    if (targets.length > 0) {
+        ctx.meta.coreWebhookDispatch = {
+            targets,
+            payload: JSON.stringify({
+                event: 'WEBHOOK_SUBMIT',
+                site_id: siteId,
+                form_id: formId,
+                fields,
+                timestamp: new Date().toISOString()
+            })
+        };
+    }
+
+    return { submissionId: nanoId('sub'), forwarded: targets.length > 0, success: true };
+}
+
+function buildWebhookFetchInit(body: string): RequestInit {
+    return {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        redirect: 'manual',
+        signal: typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(8000) : undefined
+    };
+}
+
 // Fire-and-forget community dispatcher; yields to WebhookProPlugin when webhookHandledByPro is set to avoid duplicate sends.
 export const webhookCorePlugin: WalnutPlugin = {
     name: 'webhook:core',
-    version: '1.0.0',
     tier: 'community',
 
     setup(engine: IPluginEngine): void {
@@ -64,9 +209,10 @@ export const webhookCorePlugin: WalnutPlugin = {
             const formId = String(data.form_id || 'default').trim() || 'default';
             const rawUrl = String(data.form_webhook_url || data.url || '').trim();
             const isActive = data.is_active === 0 ? 0 : 1;
+            const selfHosts = await resolveSiteSelfHosts(ctx.dal.db, siteId, ctx.host);
 
             if (!name || !rawUrl) throw new Error('VALIDATION_FAILED');
-            if (!isSafeCoreWebhookUrl(rawUrl)) throw new Error('FORM_INVALID_WEBHOOK_URL: Target URL blocked by SSRF policy');
+            if (!isSafeCoreWebhookUrl(rawUrl, selfHosts)) throw new Error('FORM_INVALID_WEBHOOK_URL: Target URL blocked by SSRF policy');
 
             const id = String(data.id || nanoId('whk')).trim();
             const secret = data.form_webhook_secret || data.secret ? String(data.form_webhook_secret || data.secret).trim() : null;
@@ -121,74 +267,17 @@ export const webhookCorePlugin: WalnutPlugin = {
             return { success: true };
         });
 
-        engine.registerService<{ id: string }, { success: boolean; platform?: string }>('WEBHOOK_TEST_DISPATCH', async (ctx) => {
-            assertAdminUser(ctx);
-            const siteId = (ctx.data as any)?.siteId || ctx.siteId || 'site_default';
-            const id = String(ctx.data?.id || '').trim();
-            const settings = await findSiteSettings(ctx.dal.db, siteId);
-            const rules: any[] = Array.isArray(settings.webhooks) ? settings.webhooks : [];
-            let target = rules.find((r) => r.id === id);
-            if (!target) {
-                const tableRows = await findWebhooksBySite(ctx.dal.db, siteId);
-                const row = tableRows.find((r) => r.id === id);
-                if (row) target = { id: row.id, name: row.name, form_webhook_url: row.url, form_id: 'default' };
-            }
-            if (!target || !isSafeCoreWebhookUrl(target.form_webhook_url)) {
-                throw new Error('WEBHOOK_TARGET_NOT_FOUND');
-            }
-
-            const res = await fetch(target.form_webhook_url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    event: 'WEBHOOK_TEST',
-                    site_id: siteId,
-                    webhook_id: target.id,
-                    timestamp: new Date().toISOString()
-                })
-            });
-            if (!res.ok) {
-                throw new Error(`HTTP_${res.status}`);
-            }
-            return { success: true, platform: 'raw' };
+        engine.registerService<any, any>('WEBHOOK_SUBMIT', async (ctx) => {
+            return await dispatchCoreWebhookSubmit(ctx);
         });
 
-        engine.registerService<any, any>('WEBHOOK_SUBMIT', async (ctx) => {
-            const siteId = ctx.siteId || ctx.data?.siteId || 'site_default';
-            const formId = String(ctx.data?.formId || 'default').trim();
-            const fields = ctx.data?.fields || {};
-            if (fields && typeof fields === 'object' && ('_honeypot' in fields || '_gotcha' in fields) && (fields._honeypot || fields._gotcha)) {
-                return { submissionId: nanoId('sub'), forwarded: false, spamBlocked: true, success: true };
-            }
-
-            const settings = await findSiteSettings(ctx.dal.db, siteId);
-            const rules: any[] = Array.isArray(settings.webhooks) ? settings.webhooks : [];
-            const activeRules = rules.filter((r) => r.is_active !== 0 && (!r.form_id || r.form_id === formId || r.form_id === '*'));
-            if (activeRules.length === 0 && settings.form_webhook_url) {
-                activeRules.push({ id: 'whk_default', form_webhook_url: settings.form_webhook_url });
-            }
-
-            const payload = JSON.stringify({
-                event: 'WEBHOOK_SUBMIT',
-                site_id: siteId,
-                form_id: formId,
-                fields,
-                timestamp: new Date().toISOString()
-            });
-
-            let forwarded = false;
-            for (const rule of activeRules) {
-                if (!rule.form_webhook_url || !isSafeCoreWebhookUrl(rule.form_webhook_url)) continue;
-                forwarded = true;
-                try {
-                    await fetch(rule.form_webhook_url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: payload
-                    });
-                } catch {}
-            }
-            return { submissionId: nanoId('sub'), forwarded, success: true };
+        engine.tapAfter<any, any>('WEBHOOK_SUBMIT', async (ctx) => {
+            if (ctx.meta?.webhookHandledByPro === true) return;
+            const job = ctx.meta?.coreWebhookDispatch as { targets?: string[]; payload?: string } | undefined;
+            if (!job?.targets?.length || !job.payload) return;
+            await Promise.allSettled(
+                job.targets.map((url) => fetch(url, buildWebhookFetchInit(job.payload!)))
+            );
         });
 
         engine.tapAfter('*', async (ctx) => {
@@ -199,14 +288,15 @@ export const webhookCorePlugin: WalnutPlugin = {
             const siteId = (ctx.data as any)?.siteId || ctx.siteId || 'site_default';
             const tableRows = await findWebhooksBySite(ctx.dal.db, siteId);
             const settings = await findSiteSettings(ctx.dal.db, siteId);
+            const selfHosts = await resolveSiteSelfHosts(ctx.dal.db, siteId, ctx.host);
             const settingRules: any[] = Array.isArray(settings.webhooks) ? settings.webhooks : [];
 
             const targets = new Set<string>();
             for (const r of tableRows) {
-                if (r.is_active !== 0 && isSafeCoreWebhookUrl(r.url)) targets.add(r.url);
+                if (r.is_active !== 0 && isSafeCoreWebhookUrl(r.url, selfHosts)) targets.add(r.url);
             }
             for (const r of settingRules) {
-                if (r.is_active !== 0 && isSafeCoreWebhookUrl(r.form_webhook_url)) targets.add(r.form_webhook_url);
+                if (r.is_active !== 0 && isSafeCoreWebhookUrl(r.form_webhook_url, selfHosts)) targets.add(r.form_webhook_url);
             }
             if (targets.size === 0) return;
 
@@ -218,13 +308,7 @@ export const webhookCorePlugin: WalnutPlugin = {
             });
 
             await Promise.allSettled(
-                Array.from(targets).map((url) =>
-                    fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body
-                    })
-                )
+                Array.from(targets).map((url) => fetch(url, buildWebhookFetchInit(body)))
             );
         });
     }

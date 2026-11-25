@@ -85,12 +85,12 @@ quickActionsRouter.get('/state', async (c) => {
     }
 
     const cookieHeader = c.req.header('cookie') || '';
-    const sessionToken = getCookieValue(cookieHeader, 'walnut_session');
+    const sessionToken = getCookieValue(cookieHeader, 'edge_session');
     const hasSession = Boolean(sessionToken && sessionToken.length >= 16);
     const hasCfAccess = Boolean(((c.env as any)?.CF_ACCESS_TEAM_NAME && (c.req.header('cf-access-jwt-assertion') || c.req.header('Cf-Access-Jwt-Assertion'))) || isLocalDevCFAccessBypassEnabled(c));
     const reqHost = (c.get('host') || c.req.header('host') || '').toLowerCase();
     const isLocalDevProbe = (c.env as any)?.ENVIRONMENT !== 'production' && (reqHost.startsWith('localhost') || reqHost.startsWith('127.0.0.1'));
-    const hasDevAuth = isLocalDevProbe && (c.req.header('X-Walnut-Dev-Auth') === 'admin' || c.req.query('__walnut_dev_auth') === 'admin');
+    const hasDevAuth = isLocalDevProbe && (c.req.header('X-Edge-Dev-Auth') === 'admin' || c.req.query('__edge_dev_auth') === 'admin');
     if (!hasSession && !hasCfAccess && !hasDevAuth) {
         return c.json({ authenticated: false });
     }
@@ -100,7 +100,7 @@ quickActionsRouter.get('/state', async (c) => {
     let site: Site | null = (c.get('site' as any) as Site | undefined) || null;
     if (!site && db) {
         try {
-            const rawSiteCookie = getCookieValue(cookieHeader, 'walnut_active_site');
+            const rawSiteCookie = getCookieValue(cookieHeader, 'edge_active_site');
             const activeSiteId = c.get('siteId') || (rawSiteCookie ? decodeURIComponent(rawSiteCookie) : '');
             if (activeSiteId) {
                 site = await findSiteById(db, activeSiteId);
@@ -144,7 +144,8 @@ quickActionsRouter.get('/state', async (c) => {
 
     const siteSettings = parseJson<Record<string, any>>(site?.settings, {});
 
-    const shortcut = siteSettings.quick_action_shortcut || 'alt+k,cmd+k';
+    const userMeta = parseJson<Record<string, any>>(user?.metadata, {});
+    const shortcut = userMeta.quick_action_shortcut || siteSettings.quick_action_shortcut || 'alt+k,cmd+k';
     const pluginEngine = c.get('pluginEngine');
     const isBuildCommunity = typeof __BUILD_EDITION__ !== 'undefined' && __BUILD_EDITION__ === 'community';
     const hasCommercialExt = !isBuildCommunity && Boolean(pluginEngine?.hasCommercialPlugins());
@@ -172,7 +173,7 @@ quickActionsRouter.get('/state', async (c) => {
     };
     if (brandName) {
         try {
-            i18nQuick = JSON.parse(JSON.stringify(i18nQuick).replace(/Walnut CMS|Walnut/g, brandName));
+            i18nQuick = JSON.parse(JSON.stringify(i18nQuick).replace(/Walnut Edge CMS|Walnut CMS|Walnut/g, brandName));
         } catch {}
     }
 

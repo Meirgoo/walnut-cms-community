@@ -7,18 +7,23 @@ import type {
 } from '../types';
 import { createHookContext, nanoId } from '../kernel';
 import { DAL } from '../dal';
+import { assertSiteAdmin } from './common.helper';
 import {
     recompileDirtySiteRoutes,
     rebuildSiteSitemapRoute,
+    calibrateStorageUsage,
     findDueTasks,
     findTaskById,
     buildUpdateTaskRunningStatement,
+    buildResetFinishedTaskToPendingStatement,
     buildUpdateTaskCompletedStatement,
+    buildMarkTaskFailedStatement,
     buildRescheduleTaskStatement,
     buildPublishNodesByIdStatements,
     executePublishDueArticles,
     buildUnpublishNodesByIdStatements,
     executeUnpublishDueContent,
+    findExpiredDeletedMediaAssets,
     buildCleanupSoftDeletedEntitiesStatements,
     buildInsertTaskStatement,
     buildUpdateTaskStatement,
@@ -99,14 +104,25 @@ export class TaskPlugin {
                 executionCtx: ctx,
                 dal,
                 siteId,
-                user: {
-                    id: 'system:cron',
-                    username: 'system:cron',
-                    email: 'cron@system.local',
-                    global_role: 'superadmin',
-                    site_role: 'admin',
-                    auth_provider: 'session'
-                }
+                // Site-scoped tasks must not elevate to global superadmin privileges.
+                user: task.site_id
+                    ? {
+                        id: 'system:cron',
+                        username: 'system:cron',
+                        email: 'cron@system.local',
+                        global_role: 'user',
+                        site_role: 'admin',
+                        auth_provider: 'api_token',
+                        token_site_id: siteId
+                    }
+                    : {
+                        id: 'system:cron',
+                        username: 'system:cron',
+                        email: 'cron@system.local',
+                        global_role: 'superadmin',
+                        site_role: 'admin',
+                        auth_provider: 'session'
+                    }
             });
         };
 
@@ -114,20 +130,38 @@ export class TaskPlugin {
         let taskStatus: 'success' | 'failed' = 'success';
         let executionDetails = '';
         const targetSiteId = task.site_id || 'site_default';
-        const payloadObj = task.payload ? (typeof task.payload === 'string' ? JSON.parse(task.payload) : task.payload) : {};
+        let payloadObj: Record<string, any> = {};
 
+        const claimNowIso = new Date().toISOString();
+        const claimRes = await buildUpdateTaskRunningStatement(db, task.id, claimNowIso).run();
+        if ((claimRes.meta?.changes || 0) !== 1) {
+            return { status: 'failed', details: `Skipped concurrent or non-pending task [${task.id}]` };
+        }
+
+        let isMalformedPayload = false;
         try {
-            await buildUpdateTaskRunningStatement(db, task.id).run();
+            if (task.payload) {
+                try {
+                    payloadObj = typeof task.payload === 'string' ? JSON.parse(task.payload) : task.payload;
+                    if (!payloadObj || typeof payloadObj !== 'object') {
+                        payloadObj = {};
+                    }
+                } catch (parseErr: any) {
+                    isMalformedPayload = true;
+                    throw new Error(`Invalid task payload JSON: ${parseErr?.message || 'parse error'}`);
+                }
+            }
+
             const siteRow = await dal.findSiteById(targetSiteId);
 
             switch (task.task_type) {
                 case 'publish_node': {
                     if (payloadObj.node_id) {
-                        await db.batch(buildPublishNodesByIdStatements(db, payloadObj.node_id));
+                        await db.batch(buildPublishNodesByIdStatements(db, payloadObj.node_id, targetSiteId));
                         await recompileDirtySiteRoutes(db, targetSiteId, 15);
                         executionDetails = `Scheduled publishing and precompilation succeeded for content [${payloadObj.title || payloadObj.node_id}]`;
                     } else {
-                        const changes = await executePublishDueArticles(db, targetSiteId);
+                        const changes = await executePublishDueArticles(db, targetSiteId, new Date().toISOString());
                         if (changes > 0) {
                             await recompileDirtySiteRoutes(db, targetSiteId, 15);
                         }
@@ -137,10 +171,10 @@ export class TaskPlugin {
                 }
                 case 'scheduled_unpublish': {
                     if (payloadObj.node_id) {
-                        await db.batch(buildUnpublishNodesByIdStatements(db, payloadObj.node_id));
+                        await db.batch(buildUnpublishNodesByIdStatements(db, payloadObj.node_id, targetSiteId));
                         executionDetails = `Scheduled unpublish succeeded for content [${payloadObj.title || payloadObj.node_id}]`;
                     } else {
-                        const changes = await executeUnpublishDueContent(db, targetSiteId);
+                        const changes = await executeUnpublishDueContent(db, targetSiteId, new Date().toISOString());
                         executionDetails = `Scheduled unpublish batch check completed (unpublished: ${changes})`;
                     }
                     break;
@@ -167,12 +201,28 @@ export class TaskPlugin {
                 case 'purge_deleted': {
                     const retentionDays = Math.max(1, Number(payloadObj.retention_days ?? 30));
                     const cutoffIso = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
-                    await db.batch(buildCleanupSoftDeletedEntitiesStatements(db, cutoffIso));
-                    executionDetails = `Purged items exceeding ${retentionDays}-day retention in trash`;
+                    const scopedSite = task.site_id || undefined;
+                    const expiredMedia = await findExpiredDeletedMediaAssets(db, cutoffIso, scopedSite);
+                    if (expiredMedia.length > 0 && bindings.BUCKET) {
+                        for (const asset of expiredMedia) {
+                            if (asset.r2_key) {
+                                try {
+                                    await bindings.BUCKET.delete(asset.r2_key);
+                                } catch {}
+                            }
+                        }
+                    }
+                    await db.batch(buildCleanupSoftDeletedEntitiesStatements(db, cutoffIso, scopedSite));
+                    executionDetails = `Purged items exceeding ${retentionDays}-day retention in trash (media: ${expiredMedia.length})`;
                     break;
                 }
                 case 'vacuum_db': {
                     executionDetails = 'D1 defragmentation and optimization finished';
+                    break;
+                }
+                case 'calibrate_storage_usage': {
+                    const summary = await calibrateStorageUsage(db, bindings.BUCKET, bindings.BUCKET_BACKUP);
+                    executionDetails = `Storage calibrated: D1=${summary.d1SizeBytes}B, R2Primary=${summary.r2PrimaryBytes}B, R2Backup=${summary.r2BackupBytes}B`;
                     break;
                 }
                 default: {
@@ -197,22 +247,29 @@ export class TaskPlugin {
                 }
             }
 
+            const finishIso = new Date().toISOString();
             const isOnce = task.schedule_type === 'once' || ((task.cron_interval_minutes || 0) <= 0 && (!task.interval_preset || task.interval_preset === 'custom'));
             if (isOnce) {
-                await buildUpdateTaskCompletedStatement(db, task.id, executionDetails).run();
+                await buildUpdateTaskCompletedStatement(db, task.id, executionDetails, finishIso).run();
             } else {
                 const intervalMins = resolveIntervalMinutes(task.interval_preset, task.cron_interval_minutes || 60);
                 const nextRunDate = new Date(Date.now() + intervalMins * 60 * 1000);
-                await buildRescheduleTaskStatement(db, task.id, nextRunDate.toISOString(), executionDetails).run();
+                await buildRescheduleTaskStatement(db, task.id, nextRunDate.toISOString(), executionDetails, finishIso).run();
             }
         } catch (err: any) {
             taskStatus = 'failed';
             executionDetails = `Task execution error: ${err.message || 'Unknown error'}`;
             console.error(`[TaskPlugin] Task [${task.id}] failed:`, err);
-            const intervalMins = resolveIntervalMinutes(task.interval_preset, task.cron_interval_minutes || 15);
-            const retryMinutes = intervalMins > 0 ? intervalMins : 15;
-            const nextRetryDate = new Date(Date.now() + retryMinutes * 60 * 1000);
-            await buildRescheduleTaskStatement(db, task.id, nextRetryDate.toISOString(), executionDetails).run();
+            const failIso = new Date().toISOString();
+            if (isMalformedPayload) {
+                // Permanently mark malformed-payload tasks as failed so broken JSON does not block subsequent runs.
+                await buildMarkTaskFailedStatement(db, task.id, executionDetails, failIso).run();
+            } else {
+                const intervalMins = resolveIntervalMinutes(task.interval_preset, task.cron_interval_minutes || 15);
+                const retryMinutes = intervalMins > 0 ? intervalMins : 15;
+                const nextRetryDate = new Date(Date.now() + retryMinutes * 60 * 1000);
+                await buildRescheduleTaskStatement(db, task.id, nextRetryDate.toISOString(), executionDetails, failIso).run();
+            }
         }
 
         if (pluginEngine) {
@@ -258,7 +315,11 @@ export class TaskPlugin {
                     console.warn('[TaskPlugin] Cron execution budget (2000ms) reached, deferring remaining tasks to next tick.');
                     break;
                 }
-                await this.executeTaskItem(task, bindings, ctx, pluginEngine);
+                try {
+                    await this.executeTaskItem(task, bindings, ctx, pluginEngine);
+                } catch (taskErr) {
+                    console.error(`[TaskPlugin] Isolated task [${task.id}] exception:`, taskErr);
+                }
             }
         } catch (e) {
             console.error('[TaskPlugin] Task scheduler exception:', e);
@@ -280,7 +341,6 @@ export interface SaveTaskParams {
 
 export const taskPlugin: WalnutPlugin = {
     name: 'task:core',
-    version: '0.9.0',
     tier: 'community',
     setup(engine: IPluginEngine): void {
         for (const action of ['TASK_CREATE', 'TASK_SAVE'] as const) {
@@ -290,7 +350,18 @@ export const taskPlugin: WalnutPlugin = {
                     const params = ctx.data;
                     const isEdit = !!params.id;
                     const taskId = params.id || nanoId('task');
+                    const isSuper = ctx.user?.global_role === 'superadmin';
                     const siteId = params.siteId || ctx.siteId || null;
+                    if (!siteId) {
+                        if (!isSuper) throw new Error('FORBIDDEN_GLOBAL_TASK_REQUIRES_SUPERADMIN');
+                    } else {
+                        await assertSiteAdmin(ctx.dal, siteId, ctx.user);
+                    }
+                    if (isEdit && !isSuper && siteId) {
+                        const existingTask = await findTaskById(ctx.dal.db, taskId, siteId);
+                        if (!existingTask) throw new Error('FORBIDDEN_CROSS_SITE_ACCESS');
+                    }
+
                     const taskType = params.taskType || 'recompile_dirty_routes';
                     const scheduleType = params.scheduleType || 'recurring';
                     const intervalPreset = params.intervalPreset || 'custom';
@@ -317,7 +388,7 @@ export const taskPlugin: WalnutPlugin = {
                         nextRunAt: nextRun
                     };
                     const stmt = isEdit
-                        ? buildUpdateTaskStatement(ctx.dal.db, taskPayload)
+                        ? buildUpdateTaskStatement(ctx.dal.db, taskPayload, isSuper ? undefined : (siteId || undefined))
                         : buildInsertTaskStatement(ctx.dal.db, taskPayload);
                     await ctx.dal.batch([stmt]);
 
@@ -326,16 +397,27 @@ export const taskPlugin: WalnutPlugin = {
             );
         }
 
-        engine.registerService<{ id: string }, { success: boolean }>('TASK_EXECUTE', async (ctx) => {
-            await ctx.dal.batch([buildTriggerTaskNowStatement(ctx.dal.db, ctx.data.id)]);
+        engine.registerService<{ id: string; siteId?: string }, { success: boolean }>('TASK_EXECUTE', async (ctx) => {
+            const isSuper = ctx.user?.global_role === 'superadmin';
+            const scopeSiteId = ctx.data?.siteId || ctx.siteId || 'site_default';
+            await assertSiteAdmin(ctx.dal, scopeSiteId, ctx.user);
+            if (!isSuper) {
+                const task = await findTaskById(ctx.dal.db, ctx.data.id, scopeSiteId);
+                if (!task) throw new Error('FORBIDDEN_CROSS_SITE_ACCESS');
+            }
+            await ctx.dal.batch([buildTriggerTaskNowStatement(ctx.dal.db, ctx.data.id, isSuper ? undefined : scopeSiteId)]);
             return { success: true };
         });
 
-        engine.registerService<{ id: string }, { success: boolean; details: string }>('TASK_RUN_NOW', async (ctx) => {
-            const task = await findTaskById(ctx.dal.db, ctx.data.id);
+        engine.registerService<{ id: string; siteId?: string }, { success: boolean; details: string }>('TASK_RUN_NOW', async (ctx) => {
+            const isSuper = ctx.user?.global_role === 'superadmin';
+            const scopeSiteId = ctx.data?.siteId || ctx.siteId || 'site_default';
+            await assertSiteAdmin(ctx.dal, scopeSiteId, ctx.user);
+            const task = await findTaskById(ctx.dal.db, ctx.data.id, isSuper ? undefined : scopeSiteId);
             if (!task) {
-                throw new Error(`Task not found: ${ctx.data.id}`);
+                throw new Error(`Task not found or forbidden: ${ctx.data.id}`);
             }
+            await buildResetFinishedTaskToPendingStatement(ctx.dal.db, ctx.data.id).run();
             const pluginInstance = new TaskPlugin();
             const res = await pluginInstance.executeTaskItem(
                 task,
@@ -346,8 +428,15 @@ export const taskPlugin: WalnutPlugin = {
             return { success: res.status === 'success', details: res.details };
         });
 
-        engine.registerService<{ id: string }, { success: boolean }>('TASK_DELETE', async (ctx) => {
-            await ctx.dal.batch([buildDeleteTaskStatement(ctx.dal.db, ctx.data.id)]);
+        engine.registerService<{ id: string; siteId?: string }, { success: boolean }>('TASK_DELETE', async (ctx) => {
+            const isSuper = ctx.user?.global_role === 'superadmin';
+            const scopeSiteId = ctx.data?.siteId || ctx.siteId || 'site_default';
+            await assertSiteAdmin(ctx.dal, scopeSiteId, ctx.user);
+            if (!isSuper) {
+                const task = await findTaskById(ctx.dal.db, ctx.data.id, scopeSiteId);
+                if (!task) throw new Error('FORBIDDEN_CROSS_SITE_ACCESS');
+            }
+            await ctx.dal.batch([buildDeleteTaskStatement(ctx.dal.db, ctx.data.id, isSuper ? undefined : scopeSiteId)]);
             return { success: true };
         });
 

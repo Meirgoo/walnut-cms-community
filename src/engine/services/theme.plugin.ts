@@ -18,6 +18,9 @@ import {
     findThemeById,
     findThemeVersions,
     countActiveThemesBySite,
+    isThemeActiveOnAnySite,
+    findSiteIdsUsingTheme,
+    purgeEdgeAndZoneCache,
     buildSoftDeleteThemeStatement,
     buildRestoreThemeStatement,
     buildPurgeThemeStatements,
@@ -39,14 +42,13 @@ import { assertAdminUser } from './common.helper';
 
 import {
     computeCodeHash,
-    clearConflict,
-    resetComp,
     getSiteId,
     makeThemeMeta,
     makeThemeUpsertBatch,
     mergeThemeComponentsThreeWay,
     syncRepoAssetsToR2
 } from "./theme-sync.helper";
+import { markThemeSitesDirty, registerThemeStudioServices } from './theme-studio.plugin';
 
 export {
     computeCodeHash,
@@ -55,8 +57,6 @@ export {
 
 export const themePlugin: WalnutPlugin = {
     name: 'theme',
-    version: '1.0.0',
-
     setup(engine) {
         [
             'THEME_IMPORT', 'THEME_CHUNK_INIT', 'THEME_CHUNK_ASSET', 'THEME_CHUNK_BLOCKS', 'THEME_CHUNK_FINISH',
@@ -131,6 +131,7 @@ export const themePlugin: WalnutPlugin = {
                 }),
                 buildInsertThemeVersionStatement(ctx.dal.db, {
                     id: versionId,
+                    siteId: params.siteId,
                     themeId: themeNodeId,
                     versionNumber: 1,
                     versionTag: '1.0.0',
@@ -193,9 +194,26 @@ export const themePlugin: WalnutPlugin = {
             return { r2Key, success: true };
         });
 
+        engine.tapAfter<
+            { themeSlug: string; relPath: string },
+            { r2Key: string; success: boolean; skipped?: boolean }
+        >('THEME_CHUNK_ASSET', async (ctx) => {
+            if (!ctx.result?.success || ctx.result?.skipped || !ctx.result?.r2Key) return;
+            const slug = ctx.data?.themeSlug;
+            const matchingSites = slug
+                ? await findSiteIdsUsingTheme(ctx.dal.db, `theme_${slug}`, slug)
+                : [];
+            const siteIds = matchingSites.length > 0 ? matchingSites : [ctx.siteId || 'site_default'];
+            const assetPath = ctx.result.r2Key.startsWith('/') ? ctx.result.r2Key : `/${ctx.result.r2Key}`;
+            for (const sId of siteIds) {
+                await purgeEdgeAndZoneCache(ctx.dal.db, sId, [assetPath]);
+            }
+        });
+
         engine.registerService<
             {
                 siteId: string;
+                themeSlug?: string;
                 components?: any[];
                 templates?: any[];
                 schemas?: any[];
@@ -204,7 +222,12 @@ export const themePlugin: WalnutPlugin = {
         >('THEME_CHUNK_BLOCKS', async (ctx) => {
             const params = ctx.data;
             const siteId = params.siteId;
-            const theme = await findLatestThemeBySite(ctx.dal.db, siteId);
+            const targetThemeId = params.themeSlug
+                ? `theme_${params.themeSlug.replace(/[^a-zA-Z0-9_]/g, '_')}`
+                : '';
+            // Target the explicitly initialized theme by slug/id so same-second SQLite timestamps never misroute blocks.
+            const theme = (targetThemeId ? await findThemeById(ctx.dal.db, targetThemeId, siteId) : null)
+                || await findLatestThemeBySite(ctx.dal.db, siteId);
 
             let count = 0;
             if (theme) {
@@ -292,7 +315,7 @@ export const themePlugin: WalnutPlugin = {
         >('THEME_REPO_IMPORT', async (ctx) => {
             const siteId = getSiteId(ctx);
             const authorId = ctx.user?.id || 'admin';
-            const envSecret = ctx.env.SESSION_SECRET || 'walnut_default_session_secret_2026';
+            const envSecret = ctx.env.SESSION_SECRET || 'edge_default_session_secret_2026';
 
             let encryptedToken: string | undefined;
             let tokenIv: string | undefined;
@@ -371,7 +394,7 @@ export const themePlugin: WalnutPlugin = {
         >('THEME_UPDATE', async (ctx) => {
             const siteId = getSiteId(ctx);
             const themeId = ctx.data.themeId;
-            const envSecret = ctx.env.SESSION_SECRET || 'walnut_default_session_secret_2026';
+            const envSecret = ctx.env.SESSION_SECRET || 'edge_default_session_secret_2026';
             const authorId = ctx.user?.id || 'admin';
 
             const theme = await findThemeById(ctx.dal.db, themeId, siteId);
@@ -457,7 +480,7 @@ export const themePlugin: WalnutPlugin = {
                 { id: newVersionId, versionNumber: nextVersionNumber, versionTag: newVersionTag, metadataSnapshot: updatedMetadataJson, commitMessage: `[Repo Update] Updated to version ${newVersionTag}`, authorId }
             ));
 
-            await markSiteRoutesDirty(ctx.dal.db, siteId);
+            await markThemeSitesDirty(ctx.dal.db, theme.id, theme.slug, siteId);
 
             return {
                 success: true,
@@ -502,7 +525,7 @@ export const themePlugin: WalnutPlugin = {
                 )
             ]);
 
-            await markSiteRoutesDirty(ctx.dal.db, siteId);
+            await markThemeSitesDirty(ctx.dal.db, theme.id, theme.slug, siteId);
 
             return {
                 success: true,
@@ -559,11 +582,8 @@ export const themePlugin: WalnutPlugin = {
                     throw new Error('THEME_NOT_FOUND');
                 }
 
-                const site = await findSiteById(ctx.dal.db, siteId);
-
                 const isCurrentlyActive = theme.is_active === 1 ||
-                    site?.theme_id === theme.id ||
-                    site?.theme_id === theme.slug;
+                    await isThemeActiveOnAnySite(ctx.dal.db, theme.id, theme.slug);
 
                 if (isCurrentlyActive) {
                     throw new Error('CANNOT_DELETE_ACTIVE_THEME');
@@ -623,287 +643,13 @@ export const themePlugin: WalnutPlugin = {
                 );
                 meta[primaryKey] = list;
                 await ctx.dal.batch([buildUpdateThemeMetadataStatement(ctx.dal.db, theme.id, JSON.stringify(meta))]);
-                if (siteId) await markSiteRoutesDirty(ctx.dal.db, siteId);
+                await markThemeSitesDirty(ctx.dal.db, theme.id, theme.slug, siteId || undefined);
             }
             return { success: true };
         };
         engine.registerService<{ siteId: string; templateId: string }, { success: boolean }>('TEMPLATE_DELETE', (ctx) => deleteThemeMetaItem(ctx, ['templates', 'templateNodes', 'key'], ctx.data.templateId));
         engine.registerService<{ siteId: string; componentId: string }, { success: boolean }>('COMPONENT_DELETE', (ctx) => deleteThemeMetaItem(ctx, ['components', 'componentNodes', 'type'], ctx.data.componentId));
 
-        async function assertThemeSlugAvailable(db: any, siteId: string, slug: string) {
-            const exists = await checkThemeSlugExists(db, siteId, slug);
-            if (exists) throw new Error('SLUG_EXISTS');
-        }
-
-        async function persistNewTheme(ctx: HookContext<any>, siteId: string, slug: string, name: string, author: string, desc: string, meta: any, commitMsg: string) {
-            const newThemeId = nanoId('theme', 10);
-            const initialVersionId = `ver_${newThemeId}_1`;
-            const metaJson = JSON.stringify(meta);
-            await ctx.dal.batch([
-                buildInsertThemeVersionStatement(ctx.dal.db, {
-                    id: initialVersionId, themeId: newThemeId, versionNumber: 1, versionTag: '1.0.0', metadataSnapshot: metaJson, commitMessage: commitMsg, authorId: ctx.user?.id || 'admin'
-                }),
-                buildCreateThemeStatement(ctx.dal.db, {
-                    id: newThemeId, siteId, slug, name, author, version: '1.0.0', description: desc, metadataJson: metaJson, currentVersionId: initialVersionId
-                })
-            ]);
-            return { id: newThemeId, site_id: siteId, slug, name, version: '1.0.0', metadata: meta };
-        }
-
-        engine.tapBefore('THEME_CREATE', (ctx) => {
-            if (!ctx.data?.name || !ctx.data?.slug) throw new Error('THEME_FIELDS_REQUIRED');
-        });
-        engine.registerService<{
-            siteId?: string; name: string; slug: string; author?: string; description?: string;
-        }, { success: boolean; theme: any }>('THEME_CREATE', async (ctx) => {
-            const siteId = getSiteId(ctx);
-            const cleanSlug = ctx.data.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-            await assertThemeSlugAvailable(ctx.dal.db, siteId, cleanSlug);
-
-            const starterMetadata = {
-                name: ctx.data.name.trim(), slug: cleanSlug, version: '1.0.0',
-                author: ctx.data.author?.trim() || ctx.user?.username || 'Admin',
-                description: ctx.data.description?.trim() || '',
-                templates: [], components: [], tokens: {}, schemas: []
-            };
-
-            const theme = await persistNewTheme(ctx, siteId, cleanSlug, ctx.data.name.trim(), starterMetadata.author, starterMetadata.description, starterMetadata, 'Initial release (1.0.0)');
-            return { success: true, theme };
-        });
-
-        engine.tapBefore('THEME_FORK', (ctx) => {
-            if (!ctx.data?.sourceThemeId || !ctx.data?.name || !ctx.data?.slug) {
-                throw new Error('THEME_FORK_FIELDS_REQUIRED');
-            }
-        });
-        engine.registerService<{
-            siteId?: string; sourceThemeId: string; name: string; slug: string; author?: string; description?: string;
-        }, { success: boolean; theme: any }>('THEME_FORK', async (ctx) => {
-            const siteId = getSiteId(ctx);
-            const cleanSlug = ctx.data.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-
-            const sourceTheme = await findThemeById(ctx.dal.db, ctx.data.sourceThemeId, siteId);
-            if (!sourceTheme) throw new Error('THEME_NOT_FOUND');
-            await assertThemeSlugAvailable(ctx.dal.db, siteId, cleanSlug);
-
-            const forkMetadata = JSON.parse(JSON.stringify(sourceTheme.metadata || {}));
-            forkMetadata.name = ctx.data.name.trim();
-            forkMetadata.slug = cleanSlug;
-            forkMetadata.version = '1.0.0';
-            forkMetadata.author = ctx.data.author?.trim() || ctx.user?.username || sourceTheme.author || 'Admin';
-            forkMetadata.description = ctx.data.description !== undefined ? ctx.data.description : (sourceTheme.description || '');
-            forkMetadata.forked_from = sourceTheme.id;
-            forkMetadata.forked_from_slug = sourceTheme.slug;
-            forkMetadata.forked_at = new Date().toISOString();
-            delete forkMetadata.repo_config;
-
-            const bucket = ctx.dal.bucket;
-            if (bucket && typeof (bucket as any).list === 'function') {
-                try {
-                    const sourcePrefix = `theme/${sourceTheme.slug}/`;
-                    const listed = await (bucket as any).list({ prefix: sourcePrefix });
-                    for (const obj of listed.objects || []) {
-                        const relPath = obj.key.slice(sourcePrefix.length);
-                        const sourceObj = await bucket.get(obj.key);
-                        if (sourceObj) {
-                            await bucket.put(`theme/${cleanSlug}/${relPath}`, await sourceObj.arrayBuffer(), {
-                                httpMetadata: { contentType: sourceObj.httpMetadata?.contentType || 'text/plain' }
-                            });
-                        }
-                    }
-                } catch {}
-            }
-
-            const theme = await persistNewTheme(ctx, siteId, cleanSlug, ctx.data.name.trim(), forkMetadata.author, forkMetadata.description, forkMetadata, `Fork from [${sourceTheme.name}] (${sourceTheme.slug})`);
-            return { success: true, theme };
-        });
-
-        engine.tapBefore('THEME_UPDATE_METADATA', (ctx) => {
-            if (!ctx.data?.themeId) throw new Error('THEME_ID_REQUIRED');
-        });
-        engine.registerService<{
-            siteId?: string;
-            themeId: string;
-            name?: string;
-            slug?: string;
-            author?: string;
-            description?: string;
-        }, { success: boolean; theme: any }>('THEME_UPDATE_METADATA', async (ctx) => {
-            const siteId = getSiteId(ctx);
-            const theme = await findThemeById(ctx.dal.db, ctx.data.themeId, siteId);
-            if (!theme) {
-                throw new Error('THEME_NOT_FOUND');
-            }
-
-            const meta = typeof theme.metadata === 'string' ? JSON.parse(theme.metadata) : (theme.metadata || {});
-            if (ctx.data.name) meta.name = ctx.data.name.trim();
-            if (ctx.data.author) meta.author = ctx.data.author.trim();
-            if (ctx.data.description !== undefined) meta.description = ctx.data.description;
-            if (ctx.data.slug) meta.slug = ctx.data.slug.trim().toLowerCase();
-            if ((ctx.data as any).layout_html !== undefined) meta.layout_html = (ctx.data as any).layout_html;
-
-            const metaJson = JSON.stringify(meta);
-            await ctx.dal.batch([
-                buildUpdateThemeInfoStatement(ctx.dal.db, {
-                    id: theme.id,
-                    siteId,
-                    name: ctx.data.name?.trim(),
-                    slug: ctx.data.slug?.trim().toLowerCase(),
-                    author: ctx.data.author?.trim(),
-                    description: ctx.data.description,
-                    metadataJson: metaJson
-                })
-            ]);
-
-            await markSiteRoutesDirty(ctx.dal.db, siteId);
-
-            return { success: true, theme: { ...theme, ...ctx.data, metadata: meta } };
-        });
-
-        async function mutateThemeComponent(
-            ctx: HookContext<any>,
-            fn: (targetComp: any, comps: any[], meta: any) => any,
-            requireExisting = true
-        ) {
-            const siteId = getSiteId(ctx);
-            const theme = await findThemeById(ctx.dal.db, ctx.data.themeId, siteId);
-            if (!theme) throw new Error('THEME_NOT_FOUND');
-            const meta = typeof theme.metadata === 'string' ? JSON.parse(theme.metadata) : (theme.metadata || {});
-            const comps: any[] = meta.components || meta.componentNodes || [];
-            const key = (ctx.data.slug || '').trim().toLowerCase();
-            const targetComp = comps.find((c: any) => (c.slug || c.type || c.id || c.metadata?.slug || c.metadata?.type || '').toLowerCase() === key);
-            if (requireExisting && !targetComp) throw new Error('COMPONENT_NOT_FOUND');
-            const res = await fn(targetComp, comps, meta);
-            meta.components = comps;
-            await ctx.dal.batch([buildUpdateThemeMetadataStatement(ctx.dal.db, theme.id, JSON.stringify(meta))]);
-            await markSiteRoutesDirty(ctx.dal.db, siteId);
-            return res;
-        }
-
-        engine.tapBefore('THEME_COMPONENT_CREATE', (ctx) => {
-            if (!ctx.data?.themeId || !ctx.data?.slug || !ctx.data?.name) {
-                throw new Error('COMPONENT_FIELDS_REQUIRED');
-            }
-        });
-        engine.registerService<{
-            siteId?: string;
-            themeId: string;
-            slug: string;
-            name: string;
-            summary?: string;
-            templateHtml: string;
-            category?: string;
-            icon?: string;
-        }, { success: boolean; component: any }>('THEME_COMPONENT_CREATE', async (ctx) => {
-            return mutateThemeComponent(ctx, async (_, comps) => {
-                const key = ctx.data.slug.trim().toLowerCase();
-                if (comps.some((c: any) => (c.slug || c.type) === key)) {
-                    throw new Error('COMPONENT_EXISTS');
-                }
-                const code = ctx.data.templateHtml || '';
-                const codeHash = await computeCodeHash(code);
-                const rawSlots = Array.isArray((ctx.data as any).slots) && (ctx.data as any).slots.length > 0
-                    ? (ctx.data as any).slots.map(String)
-                    : ((ctx.data as any).slot ? [String((ctx.data as any).slot)] : ['main']);
-                const allowCustomJs = (ctx.data as any).allow_custom_js === true;
-                const defaultProps = { ...((ctx.data as any).default_props || {}) };
-                if (!allowCustomJs) delete defaultProps.custom_js;
-                const newComp = {
-                    slug: key,
-                    type: key,
-                    name: ctx.data.name.trim(),
-                    summary: ctx.data.summary?.trim() || '',
-                    slots: rawSlots,
-                    allow_custom_js: allowCustomJs,
-                    template_html: code,
-                    template: code,
-                    default_props: defaultProps,
-                    props_schema: (ctx.data as any).props_schema || {},
-                    category: ctx.data.category || 'custom',
-                    icon: ctx.data.icon || 'widgets',
-                    base_hash: codeHash,
-                    local_hash: codeHash,
-                    modified_locally: false,
-                    upstream_conflict: false,
-                    created_at: new Date().toISOString()
-                };
-                comps.push(newComp);
-                return { success: true, component: newComp };
-            }, false);
-        });
-
-        ['THEME_COMPONENT_UPDATE', 'THEME_COMPONENT_ACCEPT_UPSTREAM', 'THEME_COMPONENT_DISMISS_CONFLICT'].forEach(act => {
-            engine.tapBefore(act, (ctx) => {
-                if (!ctx.data?.themeId || !ctx.data?.slug) throw new Error('COMPONENT_FIELDS_REQUIRED');
-            });
-        });
-
-        engine.registerService<{
-            siteId?: string;
-            themeId: string;
-            slug: string;
-            name?: string;
-            summary?: string;
-            templateHtml?: string;
-        }, { success: boolean; component: any }>('THEME_COMPONENT_UPDATE', async (ctx) => {
-            return mutateThemeComponent(ctx, async (targetComp) => {
-                if (ctx.data.templateHtml !== undefined) {
-                    const newCode = ctx.data.templateHtml;
-                    const newHash = await computeCodeHash(newCode);
-                    if (!targetComp.base_hash) {
-                        targetComp.base_hash = targetComp.local_hash || newHash;
-                    }
-                    if (newHash !== targetComp.base_hash) {
-                        targetComp.modified_locally = true;
-                    }
-                    targetComp.template_html = newCode;
-                    targetComp.template = newCode;
-                    targetComp.local_hash = newHash;
-                    if (targetComp.metadata && typeof targetComp.metadata === 'object') {
-                        targetComp.metadata.template_html = newCode;
-                    }
-                }
-                if (ctx.data.name !== undefined) targetComp.name = ctx.data.name.trim();
-                if (ctx.data.summary !== undefined) targetComp.summary = ctx.data.summary.trim();
-                if ((ctx.data as any).category !== undefined) targetComp.category = String((ctx.data as any).category).trim();
-                if ((ctx.data as any).icon !== undefined) targetComp.icon = String((ctx.data as any).icon).trim();
-                if (Array.isArray((ctx.data as any).slots) && (ctx.data as any).slots.length > 0) {
-                    targetComp.slots = (ctx.data as any).slots.map(String);
-                }
-                if ((ctx.data as any).allow_custom_js !== undefined) {
-                    targetComp.allow_custom_js = (ctx.data as any).allow_custom_js === true;
-                }
-                if ((ctx.data as any).default_props && typeof (ctx.data as any).default_props === 'object') {
-                    targetComp.default_props = { ...(ctx.data as any).default_props };
-                }
-                if (targetComp.allow_custom_js !== true) {
-                    delete targetComp.custom_js;
-                    if (targetComp.default_props && typeof targetComp.default_props === 'object') {
-                        delete targetComp.default_props.custom_js;
-                    }
-                }
-                if ((ctx.data as any).props_schema && typeof (ctx.data as any).props_schema === 'object') {
-                    targetComp.props_schema = (ctx.data as any).props_schema;
-                }
-                return { success: true, component: targetComp };
-            });
-        });
-
-        engine.registerService<{ siteId?: string; themeId: string; slug: string }, { success: boolean; component: any }>('THEME_COMPONENT_ACCEPT_UPSTREAM', (ctx) =>
-            mutateThemeComponent(ctx, async (targetComp) => {
-                if (targetComp.upstream_template) {
-                    const uCode = targetComp.upstream_template;
-                    resetComp(targetComp, uCode, await computeCodeHash(uCode), false);
-                } else clearConflict(targetComp);
-                return { success: true, component: targetComp };
-            })
-        );
-
-        engine.registerService<{ siteId?: string; themeId: string; slug: string }, { success: boolean; component: any }>('THEME_COMPONENT_DISMISS_CONFLICT', (ctx) =>
-            mutateThemeComponent(ctx, (targetComp) => {
-                clearConflict(targetComp);
-                return { success: true, component: targetComp };
-            })
-        );
+        registerThemeStudioServices(engine);
     }
 };

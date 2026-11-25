@@ -1,5 +1,7 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
+import { buildLocalizedRoutePath } from '../i18n';
 import { GardenMaturity, parseJson } from './content-common';
+import { loadPublishedPageParentResolver } from './pages.dal';
 
 export async function getNodeBacklinks(
     db: D1Database,
@@ -13,19 +15,22 @@ export async function getNodeBacklinks(
     type: string;
     maturity: GardenMaturity;
 }>> {
+    const nowIso = new Date().toISOString();
     const { results } = await db.prepare(`
         SELECT DISTINCT a.id, a.title, a.slug, 'article' as type, a.maturity
         FROM content_relations r
         JOIN articles a ON a.id = r.source_id
-        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug = ? OR r.target_slug = ?) AND a.deleted_at IS NULL
+        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug = ? OR r.target_slug = ?)
+          AND a.status = 'published' AND (a.visibility = 'public' OR a.visibility IS NULL) AND (a.published_at IS NULL OR REPLACE(a.published_at, ' ', 'T') <= ?) AND a.deleted_at IS NULL
         UNION
         SELECT DISTINCT m.id, m.title, m.slug, 'micro' as type, m.progress as maturity
         FROM content_relations r
         JOIN micros m ON m.id = r.source_id
-        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug = ? OR r.target_slug = ?) AND m.deleted_at IS NULL
+        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug = ? OR r.target_slug = ?)
+          AND m.status = 'published' AND (m.visibility = 'public' OR m.visibility IS NULL) AND (m.published_at IS NULL OR REPLACE(m.published_at, ' ', 'T') <= ?) AND m.deleted_at IS NULL
     `).bind(
-        siteId, targetSlugOrId, targetSlugOrId, targetTitle || targetSlugOrId,
-        siteId, targetSlugOrId, targetSlugOrId, targetTitle || targetSlugOrId
+        siteId, targetSlugOrId, targetSlugOrId, targetTitle || targetSlugOrId, nowIso,
+        siteId, targetSlugOrId, targetSlugOrId, targetTitle || targetSlugOrId, nowIso
     ).all<any>();
 
     return results || [];
@@ -35,13 +40,34 @@ export async function findPeerTranslationNodes(
     db: D1Database,
     siteId: string,
     translationGroupId: string
-): Promise<Array<{ slug: string; locale: string }>> {
+): Promise<Array<{ id: string; slug: string; locale: string }>> {
+    const nowIso = new Date().toISOString();
     const { results } = await db.prepare(
-        `SELECT slug, locale FROM articles WHERE site_id = ? AND (translation_group_id = ? OR json_extract(metadata, '$.translation_group_id') = ?) AND status = 'published' AND deleted_at IS NULL
+        `SELECT id, slug, locale, NULL as parent_id, metadata FROM articles
+         WHERE site_id = ? AND (translation_group_id = ? OR json_extract(metadata, '$.translation_group_id') = ?)
+           AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND (published_at IS NULL OR REPLACE(published_at, ' ', 'T') <= ?) AND deleted_at IS NULL
          UNION ALL
-         SELECT slug, locale FROM pages WHERE site_id = ? AND json_extract(metadata, '$.translation_group_id') = ? AND status = 'published' AND deleted_at IS NULL`
-    ).bind(siteId, translationGroupId, translationGroupId, siteId, translationGroupId).all<{ slug: string; locale: string }>();
-    return results || [];
+         SELECT id, slug, locale, parent_id, metadata FROM pages
+         WHERE site_id = ? AND (translation_group_id = ? OR json_extract(metadata, '$.translation_group_id') = ?)
+           AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND (published_at IS NULL OR REPLACE(published_at, ' ', 'T') <= ?) AND deleted_at IS NULL`
+    ).bind(siteId, translationGroupId, translationGroupId, nowIso, siteId, translationGroupId, translationGroupId, nowIso).all<{ id: string; slug: string; locale: string; parent_id?: string | null; metadata?: string | null }>();
+    const rows = results || [];
+    const resolveParent = await loadPublishedPageParentResolver(db, siteId, rows.some(r => Boolean(r.parent_id)));
+    const resolved: Array<{ id: string; slug: string; locale: string }> = [];
+    for (const r of rows) {
+        const meta = parseJson<Record<string, any>>(r.metadata, {});
+        if (meta?.page_type === 'template' || meta?.page_type === 'redirect') continue;
+        let fullSlug = r.slug;
+        if (r.parent_id) {
+            const parentPath = resolveParent(r.parent_id);
+            if (parentPath) {
+                const cleanSelf = String(r.slug || '').replace(/^\/+|\/+$/g, '');
+                fullSlug = cleanSelf && cleanSelf !== 'index' ? `${parentPath}/${cleanSelf}` : parentPath;
+            }
+        }
+        resolved.push({ id: r.id, slug: fullSlug, locale: r.locale });
+    }
+    return resolved;
 }
 
 export async function findNodeTranslationInfo(
@@ -49,9 +75,9 @@ export async function findNodeTranslationInfo(
     nodeIdOrSlug: string
 ): Promise<{ id: string; translation_group_id: string | null; slug: string; locale: string } | null> {
     return await db.prepare(
-        `SELECT id, COALESCE(translation_group_id, json_extract(metadata, '$.translation_group_id')) as translation_group_id, slug, locale FROM articles WHERE (id = ? OR slug = ?)
+        `SELECT id, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as translation_group_id, slug, locale FROM articles WHERE (id = ? OR slug = ?)
          UNION ALL
-         SELECT id, json_extract(metadata, '$.translation_group_id') as translation_group_id, slug, locale FROM pages WHERE (id = ? OR slug = ?) LIMIT 1`
+         SELECT id, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as translation_group_id, slug, locale FROM pages WHERE (id = ? OR slug = ?) LIMIT 1`
     ).bind(nodeIdOrSlug, nodeIdOrSlug, nodeIdOrSlug, nodeIdOrSlug).first<any>();
 }
 
@@ -59,23 +85,20 @@ export async function getPeerTranslationLinks(
     db: D1Database,
     siteId: string,
     targetNodeIdOrSlug: string,
-    _primaryDomain?: string
+    _primaryDomain?: string,
+    siteDefaultLocale: string = 'zh-CN'
 ): Promise<Array<{ slug: string; locale: string; url: string; isCurrent: boolean }>> {
     const node = await findNodeTranslationInfo(db, targetNodeIdOrSlug);
     if (!node || !node.translation_group_id) return [];
 
     const peers = await findPeerTranslationNodes(db, siteId, node.translation_group_id);
     return peers.map((p) => {
-        const isEn = p.locale === 'en-US' || p.locale === 'en';
-        const cleanSlug = p.slug.replace(/^\/+/, '');
-        const url = isEn
-            ? (cleanSlug === '' ? '/en' : `/en/${cleanSlug}`)
-            : (cleanSlug === '' ? '/' : `/${cleanSlug}`);
+        const url = buildLocalizedRoutePath(p.slug, p.locale, siteDefaultLocale);
         return {
             slug: p.slug,
             locale: p.locale,
             url,
-            isCurrent: p.slug === node.slug
+            isCurrent: p.id === node.id || (p.slug === node.slug && p.locale === node.locale)
         };
     });
 }
@@ -84,22 +107,24 @@ export async function findTranslationGroups(
     db: D1Database,
     siteId: string
 ): Promise<Array<{ id: string; name: string }>> {
-    const { results } = await db.prepare(
-        `SELECT id, name FROM translation_groups WHERE site_id = ? ORDER BY created_at DESC`
-    ).bind(siteId).all<{ id: string; name: string }>();
+    const { results } = await db.prepare(`
+        SELECT tg_id as id, COALESCE(MAX(CASE WHEN LOWER(locale) = LOWER(s.default_locale) THEN title END), MAX(title), tg_id) as name
+        FROM (
+            SELECT site_id, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as tg_id, locale, title
+            FROM articles WHERE site_id = ? AND deleted_at IS NULL
+            UNION ALL
+            SELECT site_id, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as tg_id, locale, title
+            FROM pages WHERE site_id = ? AND deleted_at IS NULL
+        ) g
+        LEFT JOIN sites s ON s.id = g.site_id
+        WHERE g.tg_id IS NOT NULL AND g.tg_id != ''
+        GROUP BY g.tg_id
+        ORDER BY name ASC
+    `).bind(siteId, siteId).all<{ id: string; name: string }>();
     return results || [];
 }
 
 export const getTranslationGroupsData = (db: D1Database, siteId: string) => findTranslationGroups(db, siteId);
-
-export function buildCreateTranslationGroupStatement(
-    db: D1Database,
-    id: string,
-    siteId: string,
-    name: string
-): D1PreparedStatement {
-    return db.prepare(`INSERT INTO translation_groups (id, site_id, name) VALUES (?, ?, ?)`).bind(id, siteId, name);
-}
 
 export function buildDeleteTranslationGroupStatements(
     db: D1Database,
@@ -107,39 +132,147 @@ export function buildDeleteTranslationGroupStatements(
     siteId: string
 ): D1PreparedStatement[] {
     return [
-        db.prepare(`DELETE FROM translation_groups WHERE id = ? AND site_id = ?`).bind(groupId, siteId),
-        db.prepare(`UPDATE articles SET translation_group_id = NULL WHERE translation_group_id = ? AND site_id = ?`).bind(groupId, siteId)
+        db.prepare(`UPDATE articles SET translation_group_id = NULL WHERE translation_group_id = ? AND site_id = ?`).bind(groupId, siteId),
+        db.prepare(`UPDATE pages SET translation_group_id = NULL WHERE (translation_group_id = ? OR json_extract(metadata, '$.translation_group_id') = ?) AND site_id = ?`).bind(groupId, groupId, siteId)
     ];
 }
 
 export function buildJoinTranslationGroupStatement(
     db: D1Database,
     nodeId: string,
-    groupId: string
+    groupId: string,
+    siteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`UPDATE articles SET translation_group_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(groupId, nodeId);
+    return siteId
+        ? db.prepare(`UPDATE articles SET translation_group_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(groupId, nodeId, siteId)
+        : db.prepare(`UPDATE articles SET translation_group_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(groupId, nodeId);
 }
 
 export function buildLeaveTranslationGroupStatement(
     db: D1Database,
-    nodeId: string
+    nodeId: string,
+    siteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`UPDATE articles SET translation_group_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(nodeId);
+    return siteId
+        ? db.prepare(`UPDATE articles SET translation_group_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(nodeId, siteId)
+        : db.prepare(`UPDATE articles SET translation_group_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(nodeId);
 }
 
 export function buildClearWikiRelationsStatement(db: D1Database, sourceId: string): D1PreparedStatement {
     return db.prepare(`DELETE FROM content_relations WHERE source_id = ? AND relation_type = 'wiki_link'`).bind(sourceId);
 }
 
-const findWikiTarget = (db: D1Database, table: string, siteId: string, targetSlug: string, cleanSlug: string) =>
-    db.prepare(`SELECT id FROM ${table} WHERE site_id = ? AND (slug = ? OR title = ? OR slug = ?) AND deleted_at IS NULL LIMIT 1`)
-      .bind(siteId, targetSlug, targetSlug, cleanSlug).first<{ id: string }>().then(r => r?.id ?? null);
+const findWikiTarget = (
+    db: D1Database,
+    table: string,
+    siteId: string,
+    targetSlug: string,
+    cleanSlug: string,
+    preferredLocale?: string
+) => {
+    const whereClause = `WHERE site_id = ? AND (slug = ? OR title = ? OR slug = ?) AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND deleted_at IS NULL`;
+    if (preferredLocale) {
+        return db.prepare(`SELECT id FROM ${table} ${whereClause} ORDER BY CASE WHEN LOWER(locale) = LOWER(?) THEN 0 ELSE 1 END ASC LIMIT 1`)
+            .bind(siteId, targetSlug, targetSlug, cleanSlug, preferredLocale).first<{ id: string }>().then(r => r?.id ?? null);
+    }
+    return db.prepare(`SELECT id FROM ${table} ${whereClause} LIMIT 1`)
+        .bind(siteId, targetSlug, targetSlug, cleanSlug).first<{ id: string }>().then(r => r?.id ?? null);
+};
 
-export const findWikiTargetArticleId = (db: D1Database, siteId: string, targetSlug: string, cleanSlug: string) =>
-    findWikiTarget(db, 'articles', siteId, targetSlug, cleanSlug);
+export const findWikiTargetArticleId = (
+    db: D1Database,
+    siteId: string,
+    targetSlug: string,
+    cleanSlug: string,
+    preferredLocale?: string
+) => findWikiTarget(db, 'articles', siteId, targetSlug, cleanSlug, preferredLocale);
 
-export const findWikiTargetMicroId = (db: D1Database, siteId: string, targetSlug: string, cleanSlug: string) =>
-    findWikiTarget(db, 'micros', siteId, targetSlug, cleanSlug);
+export const findWikiTargetMicroId = (
+    db: D1Database,
+    siteId: string,
+    targetSlug: string,
+    cleanSlug: string,
+    preferredLocale?: string
+) => findWikiTarget(db, 'micros', siteId, targetSlug, cleanSlug, preferredLocale);
+
+export async function resolveWikiLinkTargetsMap(
+    db: D1Database,
+    siteId: string,
+    rawTargets: string[],
+    currentLocale: string,
+    defaultLocale: string
+): Promise<Record<string, string>> {
+    const out: Record<string, string> = {};
+    const targets = Array.from(new Set(rawTargets.map(t => String(t || '').trim()).filter(Boolean)));
+    if (targets.length === 0) return out;
+
+    const nowIso = new Date().toISOString();
+    const { results } = await db.prepare(`
+        SELECT slug, title, locale
+        FROM articles
+        WHERE site_id = ? AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND (published_at IS NULL OR REPLACE(published_at, ' ', 'T') <= ?) AND deleted_at IS NULL
+        ORDER BY CASE WHEN LOWER(locale) = LOWER(?) THEN 0 ELSE 1 END ASC
+    `).bind(siteId, nowIso, currentLocale || defaultLocale).all<{ slug: string; title: string; locale: string }>();
+
+    const rows = results || [];
+    for (const rawTarget of targets) {
+        const cleanCand = rawTarget.replace(/^\/+/, '');
+        const lowerCand = cleanCand.toLowerCase();
+        const hit = rows.find((r) => {
+            const s = String(r.slug || '').replace(/^\/+/, '').toLowerCase();
+            const t = String(r.title || '').trim().toLowerCase();
+            return s === lowerCand || t === rawTarget.toLowerCase();
+        });
+        if (hit) {
+            out[rawTarget] = buildLocalizedRoutePath(hit.slug, hit.locale || currentLocale || defaultLocale, defaultLocale);
+        } else {
+            out[rawTarget] = buildLocalizedRoutePath(cleanCand, currentLocale || defaultLocale, defaultLocale);
+        }
+    }
+    return out;
+}
+
+export async function findInboundRelationSourcePaths(
+    db: D1Database,
+    siteId: string,
+    entityId: string,
+    slugCandidates: string[],
+    defaultLocale: string
+): Promise<string[]> {
+    const cleanCands = Array.from(new Set(slugCandidates.map(s => String(s || '').trim()).filter(Boolean)));
+    const ph = cleanCands.length > 0 ? cleanCands.map(() => '?').join(', ') : `'__none__'`;
+    const { results } = await db.prepare(`
+        SELECT DISTINCT a.slug, a.locale, 'article' as type, NULL as parent_id
+        FROM content_relations r
+        JOIN articles a ON a.id = r.source_id
+        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug IN (${ph})) AND a.deleted_at IS NULL
+        UNION
+        SELECT DISTINCT p.slug, p.locale, 'page' as type, p.parent_id
+        FROM content_relations r
+        JOIN pages p ON p.id = r.source_id
+        WHERE r.site_id = ? AND (r.target_id = ? OR r.target_slug IN (${ph})) AND p.deleted_at IS NULL
+    `).bind(
+        siteId, entityId, ...(cleanCands.length > 0 ? cleanCands : []),
+        siteId, entityId, ...(cleanCands.length > 0 ? cleanCands : [])
+    ).all<{ slug: string; locale: string; type: string; parent_id?: string | null }>();
+
+    const rows = results || [];
+    const resolveParent = await loadPublishedPageParentResolver(
+        db,
+        siteId,
+        rows.some(r => r.type === 'page' && Boolean(r.parent_id))
+    );
+    const paths: string[] = [];
+    for (const r of rows) {
+        let fullSlug = String(r.slug || '').replace(/^\/+|\/+$/g, '');
+        if (r.type === 'page' && r.parent_id) {
+            const parentPath = resolveParent(r.parent_id);
+            if (parentPath) fullSlug = fullSlug && fullSlug !== 'index' ? `${parentPath}/${fullSlug}` : parentPath;
+        }
+        paths.push(buildLocalizedRoutePath(fullSlug || '/', r.locale || defaultLocale, defaultLocale));
+    }
+    return Array.from(new Set(paths));
+}
 
 export function buildInsertContentRelationStatement(
     db: D1Database,
@@ -208,7 +341,7 @@ export async function findSiteImpactAnalysisGraph(
 ): Promise<{ nodes: ImpactGraphNode[]; relations: ImpactGraphRelation[] }> {
     const [routesBatch, entityBatch, relBatch] = await db.batch([
         db.prepare(`SELECT id, path, entity_type, entity_id, title, status_code, is_dirty, created_at FROM site_routes WHERE site_id = ? AND entity_type != 'sitemap' ORDER BY priority DESC, path ASC`).bind(siteId),
-        db.prepare(`SELECT id, slug, title, 'page' as type, 'page' as layer, 1 as level, parent_id, status, metadata, NULL as maturity, NULL as translation_group_id, NULL as schema_slug, created_at FROM pages WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'article', 'article', 1, NULL, status, metadata, maturity, translation_group_id, NULL as schema_slug, created_at FROM articles WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'micro', 'micro', 2, NULL, status, metadata, progress as maturity, NULL as translation_group_id, NULL as schema_slug, created_at FROM micros WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'dataset', 'dataset', 2, NULL, status, metadata, NULL, NULL as translation_group_id, schema_slug, created_at FROM datasets WHERE site_id = ? AND deleted_at IS NULL`).bind(siteId, siteId, siteId, siteId),
+        db.prepare(`SELECT id, slug, title, 'page' as type, 'page' as layer, 1 as level, parent_id, status, metadata, NULL as maturity, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as translation_group_id, NULL as schema_slug, created_at FROM pages WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'article', 'article', 1, NULL, status, metadata, maturity, translation_group_id, NULL as schema_slug, created_at FROM articles WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'micro', 'micro', 2, NULL, status, metadata, progress as maturity, NULL as translation_group_id, NULL as schema_slug, created_at FROM micros WHERE site_id = ? AND deleted_at IS NULL UNION ALL SELECT id, slug, title, 'dataset', 'dataset', 2, NULL, status, metadata, NULL, NULL as translation_group_id, schema_slug, created_at FROM datasets WHERE site_id = ? AND deleted_at IS NULL`).bind(siteId, siteId, siteId, siteId),
         db.prepare(`SELECT source_id, source_type, target_id, target_type, target_slug, relation_type FROM content_relations WHERE site_id = ? ORDER BY created_at DESC`).bind(siteId)
     ]);
     const routesRes = { results: (routesBatch.results || []) as any[] };

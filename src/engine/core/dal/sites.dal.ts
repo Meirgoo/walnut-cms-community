@@ -306,21 +306,19 @@ export function buildCreateSiteStatement(
         name: string;
         primaryDomain: string;
         defaultLocale: string;
-        isMediaBedOnly: number;
         settingsJson: string;
         createdAt?: string;
     }
 ): D1PreparedStatement {
     const nowIso = site.createdAt || new Date().toISOString();
     return db.prepare(`
-        INSERT INTO sites (id, tenant_id, name, primary_domain, default_locale, is_media_bed_only, settings, status, created_at, updated_at)
-        VALUES (?, 'tenant_default', ?, ?, ?, ?, ?, 'active', ?, ?)
+        INSERT INTO sites (id, name, primary_domain, default_locale, settings, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
     `).bind(
         site.id,
         site.name,
         site.primaryDomain,
         site.defaultLocale,
-        site.isMediaBedOnly,
         site.settingsJson,
         nowIso,
         nowIso
@@ -334,7 +332,6 @@ export function buildUpdateSiteSettingsStatement(
         name: string;
         primaryDomain: string;
         defaultLocale: string;
-        isMediaBedOnly: number;
         licenseKey?: string;
         settingsJson: string;
         robotsTxt?: string | null;
@@ -342,7 +339,7 @@ export function buildUpdateSiteSettingsStatement(
 ): D1PreparedStatement {
     return db.prepare(`
         UPDATE sites 
-        SET name = ?, primary_domain = ?, default_locale = ?, is_media_bed_only = ?,
+        SET name = ?, primary_domain = ?, default_locale = ?,
             license_key = COALESCE(?, license_key),
             settings = ?, robots_txt = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -350,7 +347,6 @@ export function buildUpdateSiteSettingsStatement(
         params.name,
         params.primaryDomain,
         params.defaultLocale,
-        params.isMediaBedOnly,
         params.licenseKey !== undefined ? params.licenseKey : null,
         params.settingsJson,
         params.robotsTxt ?? null,
@@ -375,6 +371,48 @@ export function buildDeleteSiteStatement(
     siteId: string
 ): D1PreparedStatement {
     return db.prepare(`DELETE FROM sites WHERE id = ?`).bind(siteId);
+}
+
+export async function countAllSites(db: D1Database): Promise<number> {
+    const row = await db.prepare(`SELECT COUNT(*) as total FROM sites`).first<{ total: number }>();
+    return Number(row?.total || 0);
+}
+
+export function buildCascadeDeleteSiteStatements(
+    db: D1Database,
+    siteId: string
+): D1PreparedStatement[] {
+    // Delete child version rows before parent tables and the root site row.
+    return [
+        db.prepare(`DELETE FROM entity_versions WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM site_routes WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM content_relations WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM site_members WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM media_assets WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM scheduled_tasks WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM webhooks WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM api_tokens WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM dataset_collections WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM datasets WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM themes WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM pages WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM micros WHERE site_id = ?`).bind(siteId),
+        db.prepare(`DELETE FROM articles WHERE site_id = ?`).bind(siteId),
+        buildDeleteSiteStatement(db, siteId)
+    ];
+}
+
+export async function deleteOptionalSiteScopedRows(
+    db: D1Database,
+    siteId: string
+): Promise<void> {
+    // Commercial tables may not be provisioned in community databases.
+    const optionalTables = ['audit_logs', 'traffic_metrics', 'webhook_logs', 'ip_blocklist'] as const;
+    for (const table of optionalTables) {
+        try {
+            await db.prepare(`DELETE FROM ${table} WHERE site_id = ?`).bind(siteId).run();
+        } catch {}
+    }
 }
 
 export function buildUpdateSiteSettingsOnlyStatement(

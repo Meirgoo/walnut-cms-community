@@ -20,7 +20,7 @@ export const SiteWizardPage = async (props: {
     const siteWizardTemplate = await fetchAsset('/admin/pages/site-wizard.html');
 
     const wizardLocaleOptionsHtml = Object.entries(SUPPORTED_LOCALES).map(([val, label]) =>
-        `<div data-value="${val}" data-label="${label}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">${label}</div>`
+        `<div data-value="${val}" data-label="${label}" class="px-3 py-2 hover:bg-stone-50 dark:hover:bg-stone-700 cursor-pointer text-stone-800 dark:text-stone-200">${label}</div>`
     ).join('');
 
     let slotWizardCloneOptions = '';

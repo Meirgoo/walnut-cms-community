@@ -1,8 +1,8 @@
 import { raw } from 'hono/html';
 import { AdminLayout } from '../layout';
 import type { Site, AuthenticatedUser } from '../../engine';
-import { renderTemplate, fetchAsset, getAdminI18nSlice, formatSiteDateTime, getUserTimezone, DEFAULT_DEV_HOST } from '../../engine';
-import { escapeHtmlAttr, formatTagsHtml, formatMaturityBadgeHtml, formatStatusBadgeInfo, renderEmptyTableRow, renderFolderChips } from '../routes/common';
+import { renderTemplate, fetchAsset, getAdminI18nSlice, formatRelativeOrShortTime, getUserTimezone, DEFAULT_DEV_HOST } from '../../engine';
+import { escapeHtmlAttr, formatTagsHtml, formatProgressBadgeHtml, formatStatusBadgeInfo, renderEmptyTableRow, renderFolderChips } from '../routes/common';
 
 export interface ArticleRow {
     id: string;
@@ -84,21 +84,23 @@ export const ArtifactListPage = async (props: {
         const safeTitle = escapeHtmlAttr(item.title || '').replace(/'/g, "\\'");
         const displayTitle = escapeHtmlAttr(item.title || '');
         const safeSlug = escapeHtmlAttr(item.slug || '');
-        const titleHtml = `<div class="flex items-center space-x-2 min-w-0"><a href="/admin/articles/edit/${item.id}" class="font-bold text-slate-900 dark:text-white hover:text-emerald-700 dark:hover:text-emerald-400 truncate">${displayTitle}</a><button type="button" onclick="window.openSandboxedPreview('/${safeSlug}', '${safeTitle}')" class="text-[11px] text-slate-400 hover:text-emerald-600 font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded truncate max-w-[180px] shrink-0 cursor-pointer">/${safeSlug}</button></div>`;
+        const titleHtml = `<div class="flex items-center space-x-2 min-w-0"><a href="/admin/articles/edit/${item.id}" class="font-bold text-stone-900 dark:text-white hover:text-amber-700 dark:hover:text-amber-400 truncate">${displayTitle}</a><button type="button" onclick="window.openSandboxedPreview('/${safeSlug}', '${safeTitle}')" class="text-[11px] text-stone-400 hover:text-amber-600 font-mono bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded truncate max-w-[180px] shrink-0 cursor-pointer">/${safeSlug}</button></div>`;
 
         const tagsHtml = formatTagsHtml(item.tags);
-        const maturityHtml = formatMaturityBadgeHtml(item.progress || item.maturity, i18n);
+        const maturityHtml = formatProgressBadgeHtml(item.progress || item.maturity, i18n);
         const { badgeClass: statusBadgeClass, badgeText: statusBadgeText } = formatStatusBadgeInfo(item.status, i18n);
 
         const transGroupBadgeHtml = item.translation_group_name
             ? `<span class="text-xs font-mono text-indigo-600 dark:text-indigo-400 max-w-[160px] truncate inline-block align-middle" title="${item.translation_group_name}">${item.translation_group_name}</span>`
-            : `<span class="text-slate-300 dark:text-slate-600 text-xs">-</span>`;
+            : `<span class="text-stone-300 dark:text-stone-600 text-xs">-</span>`;
 
         const variants = groupItems && groupItems.length > 1 ? groupItems : [item];
         const localeBadgesHtml = `<div class="inline-flex items-center gap-1 whitespace-nowrap justify-center">${variants.map(v => {
             const isCurrent = v.id === item.id;
-            return `<a href="/admin/articles/edit/${v.id}" class="px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors duration-75 ${isCurrent ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30' : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900'}" title="${v.title}">${v.locale}</a>`;
+            return `<a href="/admin/articles/edit/${v.id}" class="list-pill ${isCurrent ? 'list-pill-locale-active' : 'list-pill-locale'}" title="${v.title}">${v.locale}</a>`;
         }).join('')}</div>`;
+
+        const ts = formatRelativeOrShortTime(item.updated_at, locale, timezone);
 
         return renderTemplate(articleRowTemplate, {
             id: item.id,
@@ -113,7 +115,8 @@ export const ArtifactListPage = async (props: {
             status_badge_class: statusBadgeClass,
             status_badge_text: statusBadgeText,
             updated_at: item.updated_at,
-            updated_at_formatted: formatSiteDateTime(item.updated_at, locale, timezone),
+            updated_at_formatted: ts.short,
+            updated_at_full: ts.full,
             domain,
             preview: i18n.preview,
             edit: i18n.edit,
@@ -135,11 +138,15 @@ export const ArtifactListPage = async (props: {
     const porterTpl = await fetchAsset('/admin/snippets/article-batch-porter.html');
     const batchPorterButtonsHtml = porterTpl ? renderTemplate(porterTpl, {}, i18n) : '';
 
+    const totalRecordsText = groupedEntries.length !== props.nodes.length
+        ? i18n.format(i18n.total_grouped_records, { groups: groupedEntries.length, count: props.nodes.length })
+        : i18n.format(i18n.total_records, { count: props.nodes.length });
+
     const pageHtml = renderTemplate(artifactListTemplate, {
         slot_batch_porter_buttons: batchPorterButtonsHtml,
         trash_badge_html: trashBadgeHtml,
         folder_chips_html: folderChipsHtml,
-        total_records_text: i18n.format(i18n.total_records, { count: props.nodes.length }),
+        total_records_text: totalRecordsText,
         selected_count_zero: i18n.format(i18n.selected_count, { count: 0 }),
         articles_table_body: articlesTableBodyHtml,
     }, i18n);

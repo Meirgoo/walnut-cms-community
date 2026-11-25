@@ -1,14 +1,5 @@
-<button
-    type="button"
-    onclick="window.handleBatchExportArticlesJson && window.handleBatchExportArticlesJson()"
-    class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
->
-    <span class="material-symbols-outlined text-[16px]">file_download</span>
-    <span>{{export_selected_json}}</span>
-</button>
-
-<label class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-2xs transition flex items-center space-x-1.5 cursor-pointer">
-    <span class="material-symbols-outlined text-[16px]">upload_file</span>
+<label class="w-full px-3 py-2 text-left text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] rounded-lg flex items-center space-x-2 cursor-pointer transition">
+    <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)]">upload_file</span>
     <span>{{btn_batch_import}}</span>
     <input type="file" accept=".json,.md" onchange="window.handleArticleFileImport && window.handleArticleFileImport(this)" class="hidden" />
 </label>

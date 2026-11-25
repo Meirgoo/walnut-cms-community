@@ -1,6 +1,6 @@
 import type { WalnutPlugin, IPluginEngine, HookContext } from '../types';
 import { findNodesByIdsForExport, findActiveNodeIdBySlugInTable } from '../core/dal';
-import { resolveActiveSiteId, assertAdminUser } from './common.helper';
+import { resolveActiveSiteId, assertAdminUser, assertSiteAdmin } from './common.helper';
 
 export interface ContentBatchExportInput {
     siteId?: string;
@@ -43,12 +43,13 @@ export interface ContentBatchImportResult {
 
 export const ContentPorterPlugin: WalnutPlugin = {
     name: 'content-porter:core',
-    version: '1.0.0',
     tier: 'community',
 
     setup(engine: IPluginEngine): void {
         engine.tapBefore<ContentBatchExportInput>('CONTENT_BATCH_EXPORT', async (ctx) => {
             assertAdminUser(ctx);
+            const targetSiteId = await resolveActiveSiteId(ctx.dal, ctx.data?.siteId || ctx.siteId);
+            await assertSiteAdmin(ctx.dal, targetSiteId, ctx.user);
 
             if (!ctx.data?.ids || !Array.isArray(ctx.data.ids) || ctx.data.ids.length === 0) {
                 throw new Error('EXPORT_IDS_EMPTY');
@@ -103,6 +104,8 @@ export const ContentPorterPlugin: WalnutPlugin = {
 
         const checkImportLicense = async (ctx: HookContext<any>) => {
             assertAdminUser(ctx);
+            const targetSiteId = await resolveActiveSiteId(ctx.dal, ctx.data?.siteId || ctx.siteId);
+            await assertSiteAdmin(ctx.dal, targetSiteId, ctx.user);
 
             if (!Array.isArray(ctx.data?.items) || ctx.data.items.length === 0) {
                 throw new Error('IMPORT_ITEMS_EMPTY');
@@ -136,7 +139,7 @@ export const ContentPorterPlugin: WalnutPlugin = {
                     continue;
                 }
 
-                const contentRaw = String(item.content ?? item.body ?? item.markdown ?? item.content_raw ?? '');
+                const contentRaw = String(item.content ?? item.contentRaw ?? item.body ?? item.markdown ?? item.content_raw ?? '');
                 const summary = String(item.summary || '');
                 const locale = String(item.locale || 'zh-CN');
                 const status = item.status === 'draft' ? 'draft' : 'published';
@@ -165,6 +168,7 @@ export const ContentPorterPlugin: WalnutPlugin = {
                                 summary,
                                 locale,
                                 status,
+                                publishedAt: item.published_at ?? item.publishedAt,
                                 pageType: item.page_type || meta.page_type || 'single',
                                 metadata: meta,
                                 commitMessage: 'Bulk imported page'
@@ -184,6 +188,7 @@ export const ContentPorterPlugin: WalnutPlugin = {
                                 summary,
                                 locale,
                                 status,
+                                publishedAt: item.published_at ?? item.publishedAt,
                                 maturity: item.maturity || 'draft',
                                 metadata: meta,
                                 commitMessage: 'Bulk imported micro content'
@@ -205,6 +210,7 @@ export const ContentPorterPlugin: WalnutPlugin = {
                                 locale,
                                 maturity: item.maturity || 'none',
                                 status,
+                                publishedAt: item.published_at ?? item.publishedAt,
                                 metadata: meta,
                                 commitMessage: 'Bulk imported article'
                             }

@@ -1,22 +1,22 @@
-<tr id="task-row-{{id}}" data-folder="{{folder}}" class="hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition">
+<tr id="task-row-{{id}}" data-folder="{{folder}}" class="hover:bg-stone-50/60 dark:hover:bg-stone-700/30 transition">
     <td class="px-6 py-3.5 text-left" data-col="type" data-sort-val="{{task_type}}">
-        <div class="font-bold text-slate-900 dark:text-white">{{task_type}}</div>
-        <div class="text-[10px] text-slate-400 font-mono">ID: {{id}}</div>
+        <div class="font-bold text-stone-900 dark:text-white">{{task_type}}</div>
+        <div class="text-[10px] text-stone-400 font-mono">ID: {{id}}</div>
         {{last_result_html}}
     </td>
     <td class="px-6 py-3.5 text-center" data-col="folder">
-        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+        <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-medium bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300">
             <span class="material-symbols-outlined text-[13px] text-amber-500">folder</span>
             <span>{{folder}}</span>
         </span>
     </td>
     <td class="px-6 py-3.5 text-center font-mono text-xs" data-col="interval" data-sort-val="{{cron_interval_minutes}}">
-        <span class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 py-0.5 rounded font-bold">{{cron_interval_minutes}} {{minutes}}</span>
+        <span class="bg-stone-100 dark:bg-stone-700 text-stone-700 dark:text-stone-200 px-2 py-0.5 rounded font-bold">{{cron_interval_minutes}} {{minutes}}</span>
     </td>
     <td class="px-6 py-3.5 text-center text-xs font-mono" data-col="next_run" data-sort-val="{{next_run_at}}">
         {{next_run_at_formatted}}
     </td>
-    <td class="px-6 py-3.5 text-center text-xs font-mono text-slate-400" data-col="last_run" data-sort-val="{{last_run_at}}">
+    <td class="px-6 py-3.5 text-center text-xs font-mono text-stone-400" data-col="last_run" data-sort-val="{{last_run_at}}">
         {{last_run_at_formatted}}
     </td>
     <td class="px-6 py-3.5 text-center" data-col="status" data-sort-val="{{status}}">
@@ -30,7 +30,7 @@
             hx-post="/admin/tasks/{{id}}/run"
             hx-swap="none"
             onclick="window.showToast('{{trigger_success}}', 'success')"
-            class="text-emerald-700 dark:text-emerald-400 hover:underline text-xs font-bold cursor-pointer"
+            class="text-amber-700 dark:text-amber-400 hover:underline text-xs font-bold cursor-pointer"
         >
             {{btn_trigger_now}}
         </button>

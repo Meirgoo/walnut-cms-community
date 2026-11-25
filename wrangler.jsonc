@@ -11,10 +11,7 @@
     "nodejs_compat"
   ],
   "vars": {
-    "ENVIRONMENT": "production",
-    "AUTHER_KEY_PUBLIC": "MCowBQYDK2VwAyEAeT3w83P165k/L4hFv2yB9zK0mN3rP7sT8vW1xY4zD2o=",
-    "AGENCY_KEY_PUBLIC": "MCowBQYDK2VwAyEAfU4x94Q276l/M5iGw3zC0aL1nO4sQ8tU9wX2yZ5aE3p=",
-    "CF_ACCOUNT_ID": "e3b0c44298fc1c149afbf4c8996fb924"
+    "ENVIRONMENT": "production"
   },
   "r2_buckets": [
     {

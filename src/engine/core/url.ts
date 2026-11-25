@@ -160,6 +160,16 @@ export function isSecureContext(c?: { req?: { url?: string; header?: (name: stri
 
   const cfVisitor = c.req?.header?.('cf-visitor');
   return !!(cfVisitor && cfVisitor.includes('https'));
+}
 
+export function applyPublicAssetDomain(url: string, publicAssetsDomain?: string | null): string {
+  const cleanDomain = String(publicAssetsDomain || '').trim().replace(/\/+$/, '');
+  if (!cleanDomain || !url || !url.startsWith('/content/')) return url;
+  return `${cleanDomain}${url}`;
+}
 
+export function applyPublicAssetDomainToHtml(html: string, publicAssetsDomain?: string | null): string {
+  const cleanDomain = String(publicAssetsDomain || '').trim().replace(/\/+$/, '');
+  if (!cleanDomain || !html || !html.includes('/content/')) return html;
+  return html.replace(/((?:src|href|poster|content|data-src)\s*=\s*["']|url\(\s*["']?)(\/content\/)/gi, `$1${cleanDomain}$2`);
 }

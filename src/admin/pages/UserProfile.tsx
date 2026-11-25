@@ -1,7 +1,7 @@
 import { raw } from 'hono/html';
 import { AdminLayout } from '../layout';
 import type { Site, AuthenticatedUser } from '../../engine';
-import { renderTemplate, fetchAsset, getAdminI18nSlice, formatSiteDateTime, getUserTimezone, t } from '../../engine';
+import { renderTemplate, fetchAsset, getAdminI18nSlice, formatSiteDateTime, getUserTimezone, SUPPORTED_TIMEZONES, normalizeTimezoneOptionValue, parseJson, t } from '../../engine';
 
 export const UserProfilePage = async (props: {
     user?: AuthenticatedUser;
@@ -16,42 +16,46 @@ export const UserProfilePage = async (props: {
 }) => {
     const locale = props.locale || 'zh-CN';
     const isCommercial = props.canUseFeature ? props.canUseFeature('cms:*') : false;
-    const i18n = getAdminI18nSlice(locale, ['profile', 'users', 'common', 'logs']);
+    const i18n = getAdminI18nSlice(locale, ['profile', 'users', 'common', 'logs', 'settings']);
 
     const userProfileTemplate = await fetchAsset('/admin/pages/user-profile.html');
     const user = props.user || ({} as AuthenticatedUser);
     const isSuperAdmin = props.isSuperAdmin || user.global_role === 'superadmin';
     const cfAccessEmail = props.cfAccessEmail || '';
     const userMeta = props.userMeta || {};
-    const prefTz = userMeta.timezone || 'auto';
+    const prefTz = userMeta.timezone && userMeta.timezone !== 'auto'
+        ? normalizeTimezoneOptionValue(userMeta.timezone)
+        : 'auto';
     const prefSplit = userMeta.editor_split_mode || 'split';
     const prefPageSize = String(userMeta.list_page_size || 20);
     const activeSite = (props.sites || []).find(s => s.id === props.currentSiteId) || (props.sites || [])[0];
+    const activeSiteSettings = parseJson<Record<string, any>>(activeSite?.settings, {});
+    const quickActionShortcut = userMeta.quick_action_shortcut || activeSiteSettings.quick_action_shortcut || 'alt+k,cmd+k';
     const displayTz = getUserTimezone({ ...user, metadata: userMeta } as any, activeSite);
 
     const recentLogs = props.recentLogs || [];
     const recentLogsHtml = recentLogs.length === 0
-        ? `<div class="h-11 px-3 flex items-center justify-center text-xs text-slate-400 italic">${i18n.profile.recent_activity_empty}</div>`
+        ? `<div class="h-11 px-3 flex items-center justify-center text-xs text-stone-400 italic">${i18n.profile.recent_activity_empty}</div>`
         : recentLogs.map(l => {
             const actionKey = 'logs.action_' + (l.action || '').toLowerCase().replace(/[^a-z0-9_]/g, '_');
             const locAct = t(locale, actionKey);
             const label = locAct !== actionKey ? locAct : l.action;
-            const dotCls = l.status === 'success' ? 'bg-emerald-500' : 'bg-red-500';
-            return `<div class="h-11 px-3 flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/60 last:border-b-0 text-xs">
+            const dotCls = l.status === 'success' ? 'bg-amber-500' : 'bg-red-500';
+            return `<div class="h-11 px-3 flex items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-700/60 last:border-b-0 text-xs">
                 <div class="flex items-center space-x-2.5 min-w-0">
                     <span class="w-2 h-2 rounded-full ${dotCls} shrink-0"></span>
-                    <span class="font-semibold text-slate-800 dark:text-slate-200 truncate">${label}</span>
-                    <span class="text-[11px] font-mono text-slate-400 shrink-0 hidden sm:inline">${l.ip_address || '-'}</span>
+                    <span class="font-semibold text-stone-800 dark:text-stone-200 truncate">${label}</span>
+                    <span class="text-[11px] font-mono text-stone-400 shrink-0 hidden sm:inline">${l.ip_address || '-'}</span>
                 </div>
-                <span class="text-[11px] font-mono text-slate-400 shrink-0">${formatSiteDateTime(l.created_at, locale, displayTz)}</span>
+                <span class="text-[11px] font-mono text-stone-400 shrink-0">${formatSiteDateTime(l.created_at, locale, displayTz)}</span>
             </div>`;
         }).join('');
 
     const roleBadgeClass = isSuperAdmin
-        ? 'bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800 font-black'
-        : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+        ? 'list-pill list-pill-locale-active'
+        : 'list-pill list-pill-draft';
     const roleBadgeText = isSuperAdmin
-        ? (i18n.role_superadmin || '👑 Super Admin')
+        ? (i18n.role_superadmin || 'Super Admin')
         : (user.site_role === 'admin' ? (i18n.role_admin || 'Site Admin') : (i18n.role_visitor || 'Visitor'));
 
     const pageHtml = renderTemplate(userProfileTemplate, {
@@ -63,7 +67,7 @@ export const UserProfilePage = async (props: {
         role_badge_class: roleBadgeClass,
         role_badge_text: roleBadgeText,
         email: user.email || '',
-        account_profile_title: i18n.title,
+        account_profile_title: i18n.profile.account_title,
         field_global_role: i18n.field_user_role,
         global_role: user.global_role || 'user',
         field_site_role: i18n.field_user_site_role,
@@ -74,11 +78,7 @@ export const UserProfilePage = async (props: {
         auth_mode_selector_class: (isSuperAdmin && Boolean(cfAccessEmail) && user.auth_provider === 'cf_access') ? '' : 'hidden',
         pref_tz_options_html: [
             ['auto', i18n.profile.pref_tz_auto],
-            ['Asia/Shanghai', 'Asia/Shanghai (UTC+8)'],
-            ['Asia/Tokyo', 'Asia/Tokyo (UTC+9)'],
-            ['UTC', 'UTC (UTC+0)'],
-            ['America/New_York', 'America/New_York (EST/EDT)'],
-            ['Europe/London', 'Europe/London (GMT/BST)']
+            ...SUPPORTED_TIMEZONES.map(tz => [tz.value, locale === 'en-US' ? tz.labelEn : tz.labelZh] as [string, string])
         ].map(([v, l]) => `<option value="${v}"${prefTz === v ? ' selected' : ''}>${l}</option>`).join(''),
         pref_split_options_html: [
             ['split', i18n.profile.pref_editor_split],
@@ -87,6 +87,12 @@ export const UserProfilePage = async (props: {
         ].map(([v, l]) => `<option value="${v}"${prefSplit === v ? ' selected' : ''}>${l}</option>`).join(''),
         pref_size_options_html: ['20', '50', '100']
             .map(v => `<option value="${v}"${prefPageSize === v ? ' selected' : ''}>${v}</option>`).join(''),
+        pref_palette_options_html: [
+            ['walnut', i18n.profile.palette_walnut],
+            ['monochrome', i18n.profile.palette_monochrome],
+            ['cosmic', i18n.profile.palette_cosmic]
+        ].map(([v, l]) => `<option value="${v}">${l}</option>`).join(''),
+        quick_action_shortcut: quickActionShortcut,
         recent_activity_card_class: isCommercial ? '' : 'hidden',
         recent_logs_html: recentLogsHtml
     }, i18n);
@@ -98,6 +104,7 @@ export const UserProfilePage = async (props: {
             currentUser={user}
             isSuperAdmin={isSuperAdmin}
             locale={locale}
+            clientI18nSections={['profile', 'common', 'settings']}
         >
             {raw(pageHtml)}
         </AdminLayout>

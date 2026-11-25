@@ -1,7 +1,7 @@
 import { raw } from 'hono/html';
 import { AdminLayout } from '../layout';
 import type { Site, AuthenticatedUser } from '../../engine';
-import { renderTemplate, fetchAsset, getAdminI18nSlice, SUPPORTED_TIMEZONES, SUPPORTED_LOCALES, DEFAULT_DEV_HOST, buildAbsoluteUrl, resolveSiteBrandInfo, parseJson, getCommercialSnippet, getCommercialManifest, isFeatureEnabled, sanitizeHexColor } from '../../engine';
+import { renderTemplate, fetchAsset, getAdminI18nSlice, SUPPORTED_TIMEZONES, SUPPORTED_LOCALES, normalizeTimezoneOptionValue, DEFAULT_DEV_HOST, buildAbsoluteUrl, resolveSiteBrandInfo, parseJson, getCommercialSnippet, getCommercialManifest, isFeatureEnabled, sanitizeHexColor } from '../../engine';
 
 export const SettingsPage = async (props: {
     site: Site;
@@ -27,14 +27,23 @@ export const SettingsPage = async (props: {
     const currentPrimaryColor = sanitizeHexColor(settings.primary_color ?? appearance.primary_color);
     const currentPrimaryColorDark = sanitizeHexColor(settings.primary_color_dark ?? appearance.primary_color_dark);
 
-    const currentSiteMode = settings.site_mode || (site.is_media_bed_only === 1 ? 'media_bed' : (routing.maintenance_mode === 1 ? 'maintenance' : 'standard'));
+    const currentSiteMode = (settings.site_mode === 'internal' || settings.site_mode === 'maintenance' || routing.maintenance_mode === 1)
+        ? 'internal'
+        : 'standard';
+    const internalCfg = settings.internal || {};
+    const currentInternalStatus = Number(internalCfg.status_code || 503);
     const currentThemeMode = appearance.theme_mode || 'system';
     const currentRobots = seo.robots || 'index, follow';
 
     const siteModeLabels: Record<string, string> = {
         standard: i18n.mode_standard,
-        media_bed: i18n.mode_media_bed,
-        maintenance: i18n.mode_maintenance
+        internal: i18n.mode_internal
+    };
+    const internalStatusLabels: Record<string, string> = {
+        '503': i18n.internal_status_503,
+        '404': i18n.internal_status_404,
+        '301': i18n.internal_status_301,
+        '302': i18n.internal_status_302
     };
 
     const robotsLabels: Record<string, string> = {
@@ -61,8 +70,8 @@ export const SettingsPage = async (props: {
     const showWhitelabelSection = canWhitelabel || brandInfo.hasStickyWhitelabel;
 
     const licenseBadgeClass = hasLicense
-        ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+        ? 'bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)]'
+        : 'bg-[var(--admin-chrome)] text-[var(--admin-text-muted)] border border-[var(--admin-border)]';
     const licenseStatusText = hideLicenseDetail
         ? (i18n.settings?.agency_notice || '✨ Managed by Agency')
         : (hasLicense ? i18n.license_status_active : i18n.license_status_community);
@@ -71,12 +80,12 @@ export const SettingsPage = async (props: {
         brand_color: currentBrandColor,
     }, i18n);
 
-    const currentTimezone = settings.timezone || 'Asia/Shanghai';
-    const activeTz = SUPPORTED_TIMEZONES.find(t => t.value === currentTimezone) || SUPPORTED_TIMEZONES[0];
+    const currentTimezone = normalizeTimezoneOptionValue(settings.timezone || '+08:00');
+    const activeTz = SUPPORTED_TIMEZONES.find(t => t.value === currentTimezone) || SUPPORTED_TIMEZONES.find(t => t.value === '+08:00') || SUPPORTED_TIMEZONES[0];
     const tzDisplayLabel = locale === 'en-US' ? activeTz.labelEn : activeTz.labelZh;
     const timezoneOptionsHtml = SUPPORTED_TIMEZONES.map(tz => {
         const label = locale === 'en-US' ? tz.labelEn : tz.labelZh;
-        return `<div data-value="${tz.value}" data-label="${label}" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-slate-800 dark:text-slate-200">${label}</div>`;
+        return `<div data-value="${tz.value}" data-label="${label}" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer text-[var(--admin-text)]">${label}</div>`;
     }).join('');
 
     let commercialEdgeServicesHtml = '';
@@ -115,6 +124,7 @@ export const SettingsPage = async (props: {
         slot_commercial_edge_services: commercialEdgeServicesHtml,
         slot_commercial_snapshot_clone_card: commercialSnapshotCloneHtml,
         slot_commercial_api_tokens_card: commercialApiTokensHtml,
+        backup_tab_class: commercialSnapshotCloneHtml ? '' : 'hidden',
         primary_domain: site.primary_domain || DEFAULT_DEV_HOST,
         site_id: site.id || '',
         license_key: hideLicenseDetail ? '' : licenseKey,
@@ -147,14 +157,24 @@ export const SettingsPage = async (props: {
         copyright: settings.copyright || '',
         site_mode: currentSiteMode,
         site_mode_label: siteModeLabels[currentSiteMode] || siteModeLabels.standard,
+        internal_panel_class: currentSiteMode === 'internal' ? '' : 'hidden',
+        internal_status: String(currentInternalStatus),
+        internal_status_label: internalStatusLabels[String(currentInternalStatus)] || internalStatusLabels['503'],
+        internal_redirect_class: (currentInternalStatus === 301 || currentInternalStatus === 302) ? '' : 'hidden',
+        internal_page_class: (currentInternalStatus === 503 || currentInternalStatus === 404) ? '' : 'hidden',
+        internal_redirect_url: internalCfg.redirect_url || '',
+        internal_page_title: internalCfg.title || '',
+        internal_page_message: internalCfg.message || '',
         sitemap_domain: settings.sitemap_domain || seo.sitemap_domain || site.primary_domain || '',
         title_template: settings.title_template || `%s - ${site.name || 'Site'}`,
         current_robots: currentRobots,
         robots_label: robotsLabels[currentRobots] || currentRobots,
-        robots_txt: site.robots_txt || `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${buildAbsoluteUrl('/sitemap.xml', site.primary_domain || DEFAULT_DEV_HOST)}`,
-        quick_action_shortcut: settings.quick_action_shortcut || 'alt+k,cmd+k',
+        robots_txt: site.robots_txt
+            ? String(site.robots_txt).replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n')
+            : `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: ${buildAbsoluteUrl('/sitemap.xml', site.primary_domain || DEFAULT_DEV_HOST)}`,
         description: settings.description || '',
         og_image: seo.og_image || '',
+        og_use_first_image_checked: seo.og_use_first_image ? 'checked' : '',
         current_theme_mode: currentThemeMode,
         theme_mode_label: themeModeLabels[currentThemeMode] || themeModeLabels.system,
         current_brand_color: currentBrandColor,

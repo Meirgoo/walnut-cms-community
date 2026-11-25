@@ -4,6 +4,7 @@ import type { AppHonoEnv } from '../../engine';
 import {
     ThemeManifestZod,
     getThemesManagementData,
+    findBrokenPageBlocksBySite,
     getAdminLocale,
     findThemeById,
     findThemeVersions,
@@ -26,8 +27,11 @@ export const themesRouter = new Hono<AppHonoEnv>();
 themesRouter.get('/', async (c) => {
     const ctx = await getAdminRouteContext(c);
 
-    const { allThemes, deletedThemes, templateNodes, componentNodes, schemaNodes } = await getThemesManagementData(ctx.db, ctx.activeSiteId);
-    const themeNode = (ctx.activeSite?.theme_id ? allThemes.find(th => th.id === ctx.activeSite.theme_id) : undefined) || allThemes[0] || undefined;
+    const [{ allThemes, deletedThemes, templateNodes, componentNodes, schemaNodes }, brokenDiagnostic] = await Promise.all([
+        getThemesManagementData(ctx.db, ctx.activeSiteId),
+        findBrokenPageBlocksBySite(ctx.db, ctx.activeSiteId)
+    ]);
+    const themeNode = (ctx.activeSite?.theme_id ? allThemes.find(th => th.id === ctx.activeSite.theme_id || th.slug === ctx.activeSite.theme_id) : undefined) || allThemes[0] || undefined;
 
     return c.html(
         <ThemesListPage
@@ -37,9 +41,16 @@ themesRouter.get('/', async (c) => {
             templateNodes={templateNodes}
             componentNodes={componentNodes}
             schemaNodes={schemaNodes}
+            brokenDiagnostic={brokenDiagnostic}
             {...ctx}
         />
     );
+});
+
+themesRouter.get('/api/broken-blocks', async (c) => {
+    const ctx = await getAdminRouteContext(c);
+    const diag = await findBrokenPageBlocksBySite(ctx.db, ctx.activeSiteId);
+    return c.json({ success: true, ...diag });
 });
 
 themesRouter.post('/api/import', async (c) => {
@@ -71,7 +82,7 @@ themesRouter.post('/api/import', async (c) => {
         >(c, 'THEME_IMPORT', { pkg }, siteId);
 
         c.header('HX-Refresh', 'true');
-        return c.html(await renderStatusBadge(t(locale, 'themes.import_success'), 'text-emerald-700'));
+        return c.html(await renderStatusBadge(t(locale, 'themes.import_success'), 'text-amber-700'));
     } catch (e: any) {
         return c.html(await renderStatusBadge(t(locale, 'themes.import_failed', { reason: e.message || 'Error' }), 'text-red-600'), 400);
     }
@@ -88,14 +99,19 @@ themesRouter.post('/api/chunk/init', (c) => handleChunkApi(c, async () => {
     const scanName = scanThemeSecurityCode(manifest.name + (manifest.description || ''));
     if (!scanName.safe) throw { message: 'UNSAFE_THEME_CODE', status: 403 };
 
+    const themeSlug = manifest.slug || manifest.id;
+    const mergedTokens = (body.tokens && Object.keys(body.tokens).length > 0)
+        ? body.tokens
+        : (manifest.tokens || {});
+
     const { themeNodeId } = await runAdminPipeline<
         { siteId: string; themeSlug: string; themeTitle: string; themeSummary: string; metadataJson: string },
         { themeNodeId: string; success: boolean }
     >(c, 'THEME_CHUNK_INIT', {
-        siteId, themeSlug: manifest.id, themeTitle: manifest.name, themeSummary: manifest.description || '',
-        metadataJson: JSON.stringify({ ...manifest, tokens: body.tokens || {} })
+        siteId, themeSlug, themeTitle: manifest.name, themeSummary: manifest.description || '',
+        metadataJson: JSON.stringify({ ...manifest, tokens: mergedTokens })
     }, siteId);
-    return { success: true, themeId: manifest.id, themeNodeId };
+    return { success: true, themeId: themeSlug, themeNodeId };
 }));
 
 themesRouter.post('/api/chunk/asset', (c) => handleChunkApi(c, async () => {
@@ -122,9 +138,9 @@ themesRouter.post('/api/chunk/blocks', (c) => handleChunkApi(c, async () => {
     const siteId = c.get('siteId') || '';
     const body = await c.req.json<any>();
     const { count } = await runAdminPipeline<
-        { siteId: string; components?: any[]; templates?: any[]; schemas?: any[] },
+        { siteId: string; themeSlug?: string; components?: any[]; templates?: any[]; schemas?: any[] },
         { count: number; success: boolean }
-    >(c, 'THEME_CHUNK_BLOCKS', { siteId, components: body.components, templates: body.templates, schemas: body.schemas }, siteId);
+    >(c, 'THEME_CHUNK_BLOCKS', { siteId, themeSlug: body.theme_id, components: body.components, templates: body.templates, schemas: body.schemas }, siteId);
     return { success: true, count };
 }));
 
@@ -161,7 +177,7 @@ async function handleThemeAction(
             return c.body(null, 200);
         }
         c.header('HX-Refresh', 'true');
-        return c.html(await renderStatusBadge(msg, 'text-emerald-700'));
+        return c.html(await renderStatusBadge(msg, 'text-amber-700'));
     } catch (e: any) {
         const failKey = (opts.isKey ?? true) ? successMsgOrKey.replace(/_success$/, '_failed') : '';
         const errMsg = failKey ? t(locale, failKey, { reason: e.message }) : (e.message || t(locale, 'common.error'));
@@ -173,9 +189,33 @@ async function handleThemeAction(
     }
 }
 
-themesRouter.post('/api/activate/:id', (c) =>
-    handleThemeAction(c, 'THEME_ACTIVATE', { themeId: c.req.param('id') }, 'themes.activate_success')
-);
+themesRouter.post('/api/activate/:id', async (c) => {
+    const siteId = c.get('siteId') || '';
+    const locale = getAdminLocale(c);
+    try {
+        await runAdminPipeline(c, 'THEME_ACTIVATE', { themeId: c.req.param('id') }, siteId);
+        const diag = await findBrokenPageBlocksBySite(c.env.DB, siteId);
+        c.header('X-Broken-Pages-Count', String(diag.broken_pages_count));
+        c.header('X-Broken-Blocks-Count', String(diag.broken_blocks_count));
+        if (diag.broken_pages_count > 0) {
+            c.header('HX-Trigger', asciiSafeJson({
+                themeBrokenBlocks: diag,
+                showToast: {
+                    message: t(locale, 'themes.broken_blocks_detected_toast', {
+                        pages: diag.broken_pages_count,
+                        blocks: diag.broken_blocks_count
+                    }),
+                    type: 'warning'
+                }
+            }));
+        }
+        c.header('HX-Refresh', 'true');
+        return c.html(await renderStatusBadge(t(locale, 'themes.activate_success'), 'text-amber-700'));
+    } catch (e: any) {
+        const errMsg = t(locale, 'themes.activate_failed', { reason: e.message });
+        return c.html(await renderStatusBadge(errMsg, 'text-red-600 text-xs'), 400);
+    }
+});
 
 themesRouter.delete('/api/template/:id', (c) =>
     handleThemeAction(c, 'TEMPLATE_DELETE', (siteId) => ({ siteId, templateId: c.req.param('id') }), 'themes.delete_failed', { emptyOnSuccess: true })
@@ -222,7 +262,7 @@ themesRouter.post('/api/update/:id', async (c) => {
         const msg = result.alreadyLatest
             ? t(locale, 'themes.already_latest', { version: result.version })
             : t(locale, 'themes.update_success', { version: result.version });
-        return c.html(await renderStatusBadge(msg, 'text-emerald-700'));
+        return c.html(await renderStatusBadge(msg, 'text-amber-700'));
     } catch (e: any) {
         return c.html(await renderStatusBadge(t(locale, 'themes.update_failed', { reason: e.message }), 'text-red-600'), 400);
     }

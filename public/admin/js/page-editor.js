@@ -1,28 +1,9 @@
 (function() {
     'use strict';
 
-    const CSRF_TOKEN = 'walnut-admin-csrf-valid-token';
-    const originalFetch = window.fetch;
-    window.fetch = function(url, options) {
-        options = options || {};
-        options.headers = options.headers || {};
-        if (options.method && options.method.toUpperCase() !== 'GET' && options.method.toUpperCase() !== 'HEAD') {
-            if (options.headers instanceof Headers) {
-                if (!options.headers.has('X-Admin-CSRF-Token')) {
-                    options.headers.set('X-Admin-CSRF-Token', CSRF_TOKEN);
-                }
-            } else if (Array.isArray(options.headers)) {
-                options.headers.push(['X-Admin-CSRF-Token', CSRF_TOKEN]);
-            } else {
-                options.headers['X-Admin-CSRF-Token'] = CSRF_TOKEN;
-            }
-        }
-        return originalFetch.call(this, url, options);
-    };
-
     const t = (k, params) => {
         if (!k) return '';
-        const fn = window.__WALNUT_I18N__ && window.__WALNUT_I18N__.t;
+        const fn = window.__EDGE_I18N__ && window.__EDGE_I18N__.t;
         if (typeof fn === 'function') {
             const res = fn(k, params);
             if (res) return res;
@@ -32,6 +13,7 @@
 
     const THEME_COMPONENTS_MAP = {};
     const THEME_TEMPLATES_MAP = {};
+    let PAGE_DATASETS_DATA = { collections: [], schemas: [], externalExtensions: [], extIslandEnabled: false, slotQuotas: {} };
     let currentBlocks = [];
 
     function mergeComponentFields(comp, meta) {
@@ -148,6 +130,14 @@
                         const isContainer = !!(comp.isContainer || meta.isContainer);
                         const rawSlots = comp.slots || meta.slots || (comp.slot ? [comp.slot] : (meta.slot ? [meta.slot] : ['main']));
                         const slots = Array.isArray(rawSlots) && rawSlots.length > 0 ? rawSlots : ['main'];
+                        const rawDataSlots = Array.isArray(comp.data_slots)
+                            ? comp.data_slots
+                            : (Array.isArray(meta.data_slots)
+                                ? meta.data_slots
+                                : (comp.schema && Array.isArray(comp.schema.data_slots)
+                                    ? comp.schema.data_slots
+                                    : (meta.schema && Array.isArray(meta.schema.data_slots) ? meta.schema.data_slots : [])));
+                        const dataSlots = rawDataSlots.filter(function(ds) { return ds && typeof ds.key === 'string' && ds.key.trim(); });
                         const allowCustomJs = comp.allow_custom_js === true || meta.allow_custom_js === true;
 
                         const schemaObj = {
@@ -161,6 +151,7 @@
                             allow_custom_js: allowCustomJs,
                             fields: fields,
                             slots: slots,
+                            data_slots: dataSlots,
                             preview_srcdoc: comp.preview_srcdoc || ''
                         };
 
@@ -197,12 +188,76 @@
                 console.warn('[PageEditor] Failed to parse theme templates:', e);
             }
         }
+
+        const rawDatasets = document.getElementById('page-datasets-data')?.textContent;
+        if (rawDatasets) {
+            try {
+                const parsed = JSON.parse(rawDatasets);
+                PAGE_DATASETS_DATA = {
+                    collections: Array.isArray(parsed.collections) ? parsed.collections : [],
+                    schemas: Array.isArray(parsed.schemas) ? parsed.schemas : [],
+                    externalExtensions: Array.isArray(parsed.externalExtensions) ? parsed.externalExtensions : [],
+                    extIslandEnabled: Boolean(parsed.extIslandEnabled),
+                    slotQuotas: (parsed.slotQuotas && typeof parsed.slotQuotas === 'object') ? parsed.slotQuotas : {}
+                };
+            } catch (e) {
+                console.warn('[PageEditor] Failed to parse page datasets metadata:', e);
+            }
+        }
     }
 
     function getComponentSchema(compName) {
         if (!compName) return { name: '', slug: '', title: '', icon: 'widgets', summary: '', category: 'General', isContainer: false, fields: [] };
-        if (THEME_COMPONENTS_MAP[compName]) return THEME_COMPONENTS_MAP[compName];
         const lower = String(compName).toLowerCase();
+        if (lower === '@ext:island' || lower === 'ext:island') {
+            if (PAGE_DATASETS_DATA.extIslandEnabled) {
+                const extList = PAGE_DATASETS_DATA.externalExtensions || [];
+                const slugField = extList.length > 0
+                    ? {
+                        key: 'slug',
+                        label: t('pages.ext_island_slug'),
+                        widget: 'select',
+                        type: 'select',
+                        options: extList.map(function(ext) {
+                            return { value: ext.slug, label: (ext.name || ext.slug) + ' (' + ext.slug + ')' };
+                        }),
+                        default: extList[0].slug
+                    }
+                    : {
+                        key: 'slug',
+                        label: t('pages.ext_island_slug'),
+                        type: 'text',
+                        placeholder: 'tag-worker',
+                        default: ''
+                    };
+                return {
+                    name: '@ext:island',
+                    slug: '@ext:island',
+                    title: t('pages.ext_island_title'),
+                    icon: 'extension',
+                    summary: t('pages.ext_island_desc'),
+                    category: 'System',
+                    isContainer: false,
+                    slots: ['main', 'sidebar', 'footer', 'header', 'subnav'],
+                    fields: [
+                        slugField,
+                        { key: 'path', label: t('pages.ext_island_path'), type: 'text', placeholder: '/widget', default: '/widget' },
+                        { key: 'params', label: t('pages.ext_island_params'), type: 'text', placeholder: '{"limit":5}', default: '' }
+                    ]
+                };
+            }
+            return {
+                name: compName,
+                slug: compName,
+                title: compName,
+                icon: 'extension',
+                summary: '',
+                category: 'System',
+                isContainer: false,
+                fields: []
+            };
+        }
+        if (THEME_COMPONENTS_MAP[compName]) return THEME_COMPONENTS_MAP[compName];
         if (THEME_COMPONENTS_MAP[lower]) return THEME_COMPONENTS_MAP[lower];
 
         for (const k in THEME_COMPONENTS_MAP) {
@@ -214,10 +269,11 @@
             name: compName,
             slug: compName,
             title: compName,
-            icon: 'widgets',
+            icon: 'error',
             summary: '',
             category: 'Theme',
             isContainer: false,
+            isMissing: true,
             fields: []
         };
     }
@@ -242,32 +298,6 @@
         if (textarea) {
             textarea.value = JSON.stringify(currentBlocks, null, 2);
         }
-    }
-
-    function ensureBlockDefaultProps(block, schema) {
-        if (!block.props || typeof block.props !== 'object') {
-            block.props = block.data && typeof block.data === 'object' ? { ...block.data } : {};
-        }
-        const fields = schema.fields || [];
-        fields.forEach(function(f) {
-            const key = f.key || f.name || f.id;
-            if (!key) return;
-            if (block.props[key] === undefined && f.default !== undefined) {
-                block.props[key] = f.default;
-            }
-        });
-        return block.props;
-    }
-
-    function getApiProtocolSuggestions() {
-        return [
-            { value: '@api:feed:types=article,micro&limit=10', label: t('pages.api_preset_feed') },
-            { value: '@api:dataset:schema=projects&limit=6', label: t('pages.api_preset_showcase') },
-            { value: '@api:dataset:id=', label: t('pages.api_preset_by_id') },
-            { value: '@api:micro:limit=10', label: t('pages.api_preset_latest_micros') },
-            { value: '@api:micro:maturity=evergreen&limit=6', label: t('pages.api_preset_evergreen_micros') },
-            { value: '@api:article:limit=6', label: t('pages.api_preset_latest_articles') }
-        ];
     }
 
     const DEFAULT_SLOT_QUOTAS = {
@@ -300,435 +330,26 @@
         return 'main';
     }
 
-    function attachApiProtocolSuggest(inputEl, onSelectVal) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'relative w-full';
-        const menu = document.createElement('div');
-        menu.className = 'hidden absolute left-0 right-0 top-full mt-1 z-30 bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded-xl shadow-lg py-1 max-h-48 overflow-y-auto';
-
-        function renderSuggestions(val) {
-            const trimmed = (val || '').trim();
-            if (!trimmed.startsWith('@api:')) {
-                menu.classList.add('hidden');
-                return;
-            }
-            menu.innerHTML = '';
-            getApiProtocolSuggestions().forEach(function(sug) {
-                const row = document.createElement('div');
-                row.className = 'px-3 py-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer flex items-center justify-between text-xs';
-                row.innerHTML = `<span class="font-mono font-bold text-emerald-700 dark:text-emerald-300">${sug.value}</span><span class="text-[10px] text-slate-400 ml-2">${sug.label}</span>`;
-                row.onmousedown = function(ev) {
-                    ev.preventDefault();
-                    inputEl.value = sug.value;
-                    menu.classList.add('hidden');
-                    onSelectVal(sug.value);
-                };
-                menu.appendChild(row);
-            });
-            menu.classList.remove('hidden');
-        }
-
-        inputEl.addEventListener('input', function() { renderSuggestions(inputEl.value); });
-        inputEl.addEventListener('focus', function() { renderSuggestions(inputEl.value); });
-        inputEl.addEventListener('blur', function() { setTimeout(function() { menu.classList.add('hidden'); }, 150); });
-        wrapper.appendChild(inputEl);
-        wrapper.appendChild(menu);
-        return wrapper;
-    }
-
-    function createBlockFieldsBody(block, schema, onUpdate, _compName) {
-        const body = document.createElement('div');
-        body.className = 'grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1';
-        const blockProps = ensureBlockDefaultProps(block, schema);
-
-        const fields = schema.fields || [];
-        if (fields.length === 0) {
-            const tip = document.createElement('div');
-            tip.className = 'col-span-full text-[11px] text-slate-400 italic py-1';
-            tip.textContent = t('pages.comp_no_props_tip');
-            body.appendChild(tip);
-            return body;
-        }
-
-        fields.forEach(function(field) {
-            const fieldKey = field.key || field.name || field.id;
-            if (!fieldKey) return;
-            const fieldLabel = field.label || field.title || field.name || fieldKey;
-            const fieldVal = blockProps[fieldKey] !== undefined ? blockProps[fieldKey] : (field.default !== undefined ? field.default : '');
-            const widget = field.widget || field.type || 'text';
-
-            const fieldBox = document.createElement('div');
-            fieldBox.className = (widget === 'textarea' ? 'col-span-full ' : '') + 'space-y-1.5';
-
-            const labelBox = document.createElement('div');
-            labelBox.className = 'flex items-center justify-between';
-            const label = document.createElement('label');
-            label.className = 'block text-xs font-bold text-slate-700 dark:text-slate-300';
-            label.textContent = fieldLabel;
-            labelBox.appendChild(label);
-
-            fieldBox.appendChild(labelBox);
-
-            if (widget === 'textarea') {
-                const textarea = document.createElement('textarea');
-                textarea.rows = 2;
-                textarea.className = 'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500 resize-y leading-relaxed';
-                textarea.placeholder = field.placeholder || 'Enter text or @api:dataset:... / @api:micro:...';
-                textarea.value = typeof fieldVal === 'object' ? JSON.stringify(fieldVal) : String(fieldVal ?? '');
-                textarea.oninput = function(e) {
-                    blockProps[fieldKey] = e.target.value;
-                    block.props = blockProps;
-                    onUpdate();
-                };
-                fieldBox.appendChild(attachApiProtocolSuggest(textarea, function(v) {
-                    blockProps[fieldKey] = v;
-                    block.props = blockProps;
-                    onUpdate();
-                }));
-            } else if (widget === 'switch' || widget === 'boolean') {
-                const switchWrapper = document.createElement('div');
-                switchWrapper.className = 'flex items-center space-x-2.5 h-9 px-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl';
-                const isChecked = fieldVal === true || fieldVal === 'true' || fieldVal === 1;
-
-                const switchBtn = document.createElement('button');
-                switchBtn.type = 'button';
-                switchBtn.className = 'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ' + (isChecked ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700');
-                const switchDot = document.createElement('span');
-                switchDot.className = 'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ' + (isChecked ? 'translate-x-4' : 'translate-x-0');
-                switchBtn.appendChild(switchDot);
-
-                const switchStatus = document.createElement('span');
-                switchStatus.className = 'text-xs text-slate-700 dark:text-slate-300 font-semibold';
-                switchStatus.textContent = isChecked ? t('pages.switch_enabled') : t('pages.switch_disabled');
-
-                switchBtn.onclick = function() {
-                    const current = blockProps[fieldKey] === true || blockProps[fieldKey] === 'true' || blockProps[fieldKey] === 1;
-                    const next = !current;
-                    blockProps[fieldKey] = next;
-                    block.props = blockProps;
-                    switchBtn.className = 'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ' + (next ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700');
-                    switchDot.className = 'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ' + (next ? 'translate-x-4' : 'translate-x-0');
-                    switchStatus.textContent = next ? t('pages.switch_enabled') : t('pages.switch_disabled');
-                    onUpdate();
-                };
-
-                switchWrapper.appendChild(switchBtn);
-                switchWrapper.appendChild(switchStatus);
-                fieldBox.appendChild(switchWrapper);
-            } else if (widget === 'number') {
-                const numInput = document.createElement('input');
-                numInput.type = 'number';
-                numInput.className = 'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500';
-                numInput.value = String(fieldVal !== undefined && fieldVal !== '' ? fieldVal : 0);
-                numInput.oninput = function(e) {
-                    blockProps[fieldKey] = Number(e.target.value);
-                    block.props = blockProps;
-                    onUpdate();
-                };
-                fieldBox.appendChild(numInput);
-            } else if ((widget === 'select' || Array.isArray(field.options)) && Array.isArray(field.options) && field.options.length > 0) {
-                const select = document.createElement('walnut-select');
-                select.className = 'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 block';
-                field.options.forEach(function(opt) {
-                    const optEl = document.createElement('option');
-                    const val = opt && typeof opt === 'object' ? (opt.value !== undefined ? opt.value : opt.label) : opt;
-                    const text = opt && typeof opt === 'object' ? (opt.label || opt.name || String(val)) : String(opt);
-                    optEl.setAttribute('value', String(val));
-                    optEl.textContent = text;
-                    if (String(fieldVal) === String(val)) {
-                        optEl.setAttribute('selected', 'selected');
-                    }
-                    select.appendChild(optEl);
-                });
-                select.addEventListener('change', function() {
-                    blockProps[fieldKey] = select.value;
-                    block.props = blockProps;
-                    onUpdate();
-                });
-                fieldBox.appendChild(select);
-            } else if (widget === 'list' || widget === 'array' || field.type === 'array' || Array.isArray(fieldVal)) {
-                fieldBox.className = 'col-span-full space-y-2';
-                const isApiString = typeof blockProps[fieldKey] === 'string' && blockProps[fieldKey].trim().startsWith('@api:');
-
-                if (!isApiString && !Array.isArray(blockProps[fieldKey])) {
-                    blockProps[fieldKey] = Array.isArray(fieldVal) ? [...fieldVal] : [];
-                }
-
-                const arrayHead = document.createElement('div');
-                arrayHead.className = 'flex items-center justify-between pb-1 flex-wrap gap-2';
-                const currentCount = Array.isArray(blockProps[fieldKey]) ? blockProps[fieldKey].length : 0;
-                arrayHead.innerHTML = `
-                    <div class="flex items-center space-x-2">
-                        <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">${fieldLabel}</label>
-                        <span class="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded items-count-badge">${isApiString ? t('pages.api_dynamic_source') : (currentCount + ' ' + t('pages.items_unit'))}</span>
-                    </div>
-                `;
-
-                const rightControls = document.createElement('div');
-                rightControls.className = 'flex items-center space-x-1.5';
-
-                const apiModeBtn = document.createElement('button');
-                apiModeBtn.type = 'button';
-                apiModeBtn.className = 'inline-flex items-center space-x-1 px-2 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/70 hover:bg-blue-100 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-[11px] font-mono font-bold transition cursor-pointer';
-                apiModeBtn.textContent = isApiString ? t('pages.switch_static_list') : t('pages.switch_to_api');
-
-                const addBtn = document.createElement('button');
-                addBtn.type = 'button';
-                addBtn.className = 'inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 text-xs font-bold transition cursor-pointer shadow-xs ' + (isApiString ? 'hidden' : '');
-                addBtn.innerHTML = '<span class="material-symbols-outlined text-[14px]">add</span><span>' + t('pages.add_item') + '</span>';
-
-                rightControls.appendChild(apiModeBtn);
-                rightControls.appendChild(addBtn);
-                arrayHead.appendChild(rightControls);
-                fieldBox.innerHTML = '';
-                fieldBox.appendChild(arrayHead);
-
-                const itemsContainer = document.createElement('div');
-                itemsContainer.className = 'space-y-2';
-
-                const subFields = field.item_fields || (field.item_schema?.fields) || [
-                    { key: 'text', label: t('pages.link_text'), placeholder: t('pages.link_text') },
-                    { key: 'url', label: t('pages.link_url'), placeholder: '/' }
-                ];
-
-                function renderListItems() {
-                    itemsContainer.innerHTML = '';
-                    const countBadge = fieldBox.querySelector('.items-count-badge');
-                    const curVal = blockProps[fieldKey];
-
-                    if (typeof curVal === 'string' && curVal.trim().startsWith('@api:')) {
-                        if (countBadge) countBadge.textContent = t('pages.api_binding_active');
-                        addBtn.classList.add('hidden');
-                        apiModeBtn.textContent = t('pages.switch_static_list');
-                        const apiInput = document.createElement('input');
-                        apiInput.type = 'text';
-                        apiInput.className = 'w-full bg-blue-50/40 dark:bg-slate-950 border border-blue-300 dark:border-blue-800 rounded-xl px-3 py-2 text-xs font-mono text-blue-700 dark:text-blue-300 outline-none focus:border-emerald-500';
-                        apiInput.placeholder = t('pages.api_placeholder');
-                        apiInput.value = curVal;
-                        apiInput.oninput = function(e) {
-                            blockProps[fieldKey] = e.target.value;
-                            block.props = blockProps;
-                            onUpdate();
-                        };
-                        itemsContainer.appendChild(attachApiProtocolSuggest(apiInput, function(v) {
-                            blockProps[fieldKey] = v;
-                            block.props = blockProps;
-                            onUpdate();
-                        }));
-                        return;
-                    }
-
-                    addBtn.classList.remove('hidden');
-                    apiModeBtn.textContent = t('pages.switch_to_api');
-                    const itemsList = Array.isArray(curVal) ? curVal : [];
-                    if (countBadge) countBadge.textContent = `${itemsList.length} ` + t('pages.items_unit');
-
-                    if (itemsList.length === 0) {
-                        const emptyTip = document.createElement('div');
-                        emptyTip.className = 'text-center py-3 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-[11px] text-slate-400';
-                        emptyTip.textContent = t('pages.empty_items_tip', 'No items yet. Click "+ Add Item" to extend, or bind dynamic data with @api:');
-                        itemsContainer.appendChild(emptyTip);
-                        return;
-                    }
-
-                    itemsList.forEach(function(item, idx) {
-                        const row = document.createElement('div');
-                        row.className = 'h-9 flex items-center space-x-2 px-1 border-b border-slate-100 dark:border-slate-800/80 last:border-b-0';
-
-                        const idxBadge = document.createElement('span');
-                        idxBadge.className = 'w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-mono font-bold flex items-center justify-center shrink-0';
-                        idxBadge.textContent = String(idx + 1);
-                        row.appendChild(idxBadge);
-
-                        if (typeof item === 'object' && item !== null) {
-                            subFields.forEach(function(sf) {
-                                const sfKey = sf.key || sf.name;
-                                const sfVal = item[sfKey] !== undefined ? item[sfKey] : '';
-                                const subInput = document.createElement('input');
-                                subInput.type = 'text';
-                                subInput.placeholder = sf.placeholder || sf.label || sfKey;
-                                subInput.title = sf.label || sfKey;
-                                subInput.className = 'flex-1 min-w-[90px] h-7 bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-700/80 rounded-lg px-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500 font-medium';
-                                subInput.value = String(sfVal);
-                                subInput.oninput = function(e) {
-                                    item[sfKey] = e.target.value;
-                                    block.props = blockProps;
-                                    onUpdate();
-                                };
-                                row.appendChild(subInput);
-                            });
-                        } else {
-                            const valInput = document.createElement('input');
-                            valInput.type = 'text';
-                            valInput.placeholder = field.placeholder || t('pages.input_content_ph');
-                            valInput.className = 'flex-1 h-7 bg-slate-50/70 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-700/80 rounded-lg px-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-emerald-500';
-                            valInput.value = String(item ?? '');
-                            valInput.oninput = function(e) {
-                                itemsList[idx] = e.target.value;
-                                block.props = blockProps;
-                                onUpdate();
-                            };
-                            row.appendChild(valInput);
-                        }
-
-                        const delBtn = document.createElement('button');
-                        delBtn.type = 'button';
-                        delBtn.className = 'p-1 text-slate-400 hover:text-rose-500 rounded hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer shrink-0';
-                        delBtn.title = t('pages.delete_item');
-                        delBtn.innerHTML = '<span class="material-symbols-outlined text-[15px]">delete</span>';
-                        delBtn.onclick = function() {
-                            itemsList.splice(idx, 1);
-                            block.props = blockProps;
-                            renderListItems();
-                            onUpdate();
-                        };
-                        row.appendChild(delBtn);
-
-                        itemsContainer.appendChild(row);
-                    });
-                }
-
-                apiModeBtn.onclick = function() {
-                    if (typeof blockProps[fieldKey] === 'string' && blockProps[fieldKey].trim().startsWith('@api:')) {
-                        blockProps[fieldKey] = [];
-                    } else {
-                        blockProps[fieldKey] = '@api:dataset:schema=showcase&limit=6';
-                    }
-                    block.props = blockProps;
-                    renderListItems();
-                    onUpdate();
-                };
-
-                addBtn.onclick = function() {
-                    if (!Array.isArray(blockProps[fieldKey])) blockProps[fieldKey] = [];
-                    const itemsList = blockProps[fieldKey];
-                    let newItem = {};
-                    if (subFields && subFields.length > 0) {
-                        subFields.forEach(function(sf) {
-                            const sfKey = sf.key || sf.name;
-                            newItem[sfKey] = sf.default !== undefined ? sf.default : '';
-                        });
-                    } else {
-                        newItem = { text: t('pages.new_link'), url: '/' };
-                    }
-                    itemsList.push(newItem);
-                    block.props = blockProps;
-                    renderListItems();
-                    onUpdate();
-                };
-
-                renderListItems();
-                fieldBox.appendChild(itemsContainer);
-            } else if (widget === 'image' || (widget === 'url' && /image|logo|cover|icon|avatar|banner/i.test(fieldKey))) {
-                const imgWrap = document.createElement('div');
-                imgWrap.className = 'flex items-center space-x-2';
-                const inputId = 'prop-input-' + Math.random().toString(36).slice(2, 8);
-                const textInput = document.createElement('input');
-                textInput.id = inputId;
-                textInput.type = 'text';
-                textInput.placeholder = field.placeholder || t('pages.logo_asset_ph');
-                textInput.className = 'flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500 font-mono';
-                textInput.value = String(fieldVal ?? '');
-
-                const previewImg = document.createElement('img');
-                previewImg.className = 'w-7 h-7 rounded-lg object-contain bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shrink-0 ' + (textInput.value ? '' : 'hidden');
-                previewImg.src = textInput.value || '';
-                previewImg.onerror = function() { previewImg.classList.add('hidden'); };
-
-                function syncImgPreview(val) {
-                    if (val && val.trim()) {
-                        previewImg.src = val.trim();
-                        previewImg.classList.remove('hidden');
-                    } else {
-                        previewImg.classList.add('hidden');
-                        previewImg.src = '';
-                    }
-                }
-
-                textInput.oninput = function(e) {
-                    blockProps[fieldKey] = e.target.value;
-                    block.props = blockProps;
-                    syncImgPreview(e.target.value);
-                    onUpdate();
-                };
-                const pickBtn = document.createElement('button');
-                pickBtn.type = 'button';
-                pickBtn.className = 'px-2.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl text-slate-600 dark:text-slate-200 text-xs font-bold flex items-center space-x-1 shrink-0 cursor-pointer transition';
-                pickBtn.innerHTML = '<span class="material-symbols-outlined text-[15px]">perm_media</span>';
-                pickBtn.title = t('pages.pick_from_media');
-                pickBtn.onclick = function() {
-                    if (window.openMediaPickerForInput) {
-                        window.openMediaPickerForInput(inputId);
-                        textInput.addEventListener('change', function() {
-                            blockProps[fieldKey] = textInput.value;
-                            block.props = blockProps;
-                            syncImgPreview(textInput.value);
-                            onUpdate();
-                        }, { once: true });
-                    }
-                };
-                imgWrap.appendChild(previewImg);
-                imgWrap.appendChild(textInput);
-                imgWrap.appendChild(pickBtn);
-                fieldBox.appendChild(imgWrap);
-            } else {
-                const textInput = document.createElement('input');
-                textInput.type = 'text';
-                textInput.placeholder = field.placeholder || '';
-                textInput.className = 'w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500 ' + (widget === 'url' ? 'font-mono' : '');
-                textInput.value = String(fieldVal ?? '');
-                textInput.oninput = function(e) {
-                    blockProps[fieldKey] = e.target.value;
-                    block.props = blockProps;
-                    onUpdate();
-                };
-                fieldBox.appendChild(attachApiProtocolSuggest(textInput, function(v) {
-                    blockProps[fieldKey] = v;
-                    block.props = blockProps;
-                    onUpdate();
-                }));
-            }
-
-            body.appendChild(fieldBox);
-        });
-
-        return body;
-    }
-
-    function createBlockCustomJsPane(block, onUpdate) {
-        if (!block.props || typeof block.props !== 'object') {
-            block.props = block.data && typeof block.data === 'object' ? { ...block.data } : {};
-        }
-        const wrap = document.createElement('div');
-        wrap.className = 'space-y-2 pt-1';
-
-        const hint = document.createElement('p');
-        hint.className = 'text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed';
-        hint.textContent = t('pages.comp_custom_js_hint');
-        wrap.appendChild(hint);
-
-        const textarea = document.createElement('textarea');
-        textarea.rows = 6;
-        textarea.spellcheck = false;
-        textarea.className = 'w-full bg-slate-950 text-emerald-300 border border-slate-700 rounded-xl p-3 text-xs font-mono outline-none focus:border-emerald-500 resize-y leading-relaxed';
-        textarea.placeholder = t('pages.comp_custom_js_ph');
-        textarea.value = typeof block.props.custom_js === 'string' ? block.props.custom_js : '';
-        textarea.oninput = function(e) {
-            block.props.custom_js = e.target.value;
-            onUpdate();
-        };
-        wrap.appendChild(textarea);
-        return wrap;
-    }
+    const getFieldsMod = () => (window.__EDGE_RUNTIME__ && window.__EDGE_RUNTIME__.pageEditorFields) || {};
 
     const expandedBlockIds = new Set();
     const blockActiveTabMap = new Map();
     let draggingBlockIndex = -1;
-    let activeGalleryCategory = 'all';
 
     function escapeHtmlText(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
+
+    window.__EDGE_RUNTIME__ = window.__EDGE_RUNTIME__ || {};
+    window.__EDGE_RUNTIME__.pageEditorHost = {
+        THEME_COMPONENTS_MAP,
+        DEFAULT_SLOT_QUOTAS,
+        getPageDatasetsData: () => PAGE_DATASETS_DATA,
+        getCurrentBlocks: () => currentBlocks,
+        getActiveTemplateObj,
+        resolveEditorBlockSlot,
+        escapeHtmlText
+    };
 
     function getBlockSnippet(block, schema) {
         const props = block.props || {};
@@ -769,11 +390,11 @@
 
         if (tplBlocks.length > 0) {
             const tplBanner = document.createElement('div');
-            tplBanner.className = 'p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 space-y-2';
+            tplBanner.className = 'p-3.5 rounded-2xl bg-stone-100 dark:bg-stone-900/90 border border-stone-300 dark:border-stone-700 space-y-2';
             tplBanner.innerHTML = `
                 <div class="flex items-center justify-between text-xs">
-                    <div class="flex items-center space-x-2 font-black text-slate-700 dark:text-slate-200">
-                        <span class="material-symbols-outlined text-[16px] text-slate-500">lock</span>
+                    <div class="flex items-center space-x-2 font-black text-stone-700 dark:text-stone-200">
+                        <span class="material-symbols-outlined text-[16px] text-stone-500">lock</span>
                         <span>${t('pages.inherited_from_template')}: ${activeTpl.title} (${t('pages.readonly_skeleton')})</span>
                     </div>
                 </div>
@@ -781,11 +402,11 @@
                     ${tplBlocks.map(function(tb) {
                         const cSlug = String(tb.component || tb.type || tb.id || '');
                         if (cSlug === '@slot:page_content' || cSlug === 'slot:page_content') {
-                            return `<span class="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[11px] font-mono font-bold border border-emerald-300 dark:border-emerald-700">${t('pages.slot_page_content_badge')}</span>`;
+                            return `<span class="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 text-[11px] font-mono font-bold border border-amber-300 dark:border-amber-700">${t('pages.slot_page_content_badge')}</span>`;
                         }
                         const tSlot = resolveEditorBlockSlot(tb);
                         const sch = getComponentSchema(cSlug);
-                        return `<span class="px-2.5 py-1 rounded-lg bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-mono border border-slate-300 dark:border-slate-700">🔒 ${sch.title || cSlug} [${tSlot}]</span>`;
+                        return `<span class="px-2.5 py-1 rounded-lg bg-stone-200/80 dark:bg-stone-800 text-stone-600 dark:text-stone-300 text-[11px] font-mono border border-stone-300 dark:border-stone-700">🔒 ${sch.title || cSlug} [${tSlot}]</span>`;
                     }).join('')}
                 </div>
             `;
@@ -811,19 +432,19 @@
 
             if (compName === '@slot:page_content' || compName === 'slot:page_content') {
                 const slotCard = document.createElement('div');
-                slotCard.className = 'p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border-2 border-dashed border-emerald-400 dark:border-emerald-700 flex items-center justify-between';
+                slotCard.className = 'p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border-2 border-dashed border-amber-400 dark:border-amber-700 flex items-center justify-between';
                 slotCard.innerHTML = `
                     <div class="flex items-center space-x-3">
-                        <span class="material-symbols-outlined text-emerald-600">dynamic_feed</span>
+                        <span class="material-symbols-outlined text-amber-600">dynamic_feed</span>
                         <div>
-                            <div class="text-xs font-black text-emerald-900 dark:text-emerald-200">${t('pages.slot_page_content_title')}</div>
-                            <div class="text-[11px] text-emerald-700 dark:text-emerald-400">${t('pages.slot_page_content_desc')}</div>
+                            <div class="text-xs font-black text-amber-900 dark:text-amber-200">${t('pages.slot_page_content_title')}</div>
+                            <div class="text-[11px] text-amber-700 dark:text-amber-400">${t('pages.slot_page_content_desc')}</div>
                         </div>
                     </div>
                 `;
                 const delSlotBtn = document.createElement('button');
                 delSlotBtn.type = 'button';
-                delSlotBtn.className = 'p-1.5 rounded-lg text-slate-400 hover:text-red-600 cursor-pointer';
+                delSlotBtn.className = 'p-1.5 rounded-lg text-stone-400 hover:text-red-600 cursor-pointer';
                 delSlotBtn.onclick = function() { window.deleteBlock(index); };
                 delSlotBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">delete</span>';
                 slotCard.appendChild(delSlotBtn);
@@ -846,13 +467,17 @@
 
             const isExpanded = expandedBlockIds.has(block.id);
             const snippetText = getBlockSnippet(block, schema);
+            const isMissingComponent = Boolean(schema.isMissing);
 
             const card = document.createElement('div');
             card.draggable = true;
             card.dataset.blockIndex = String(index);
-            card.className = isSuspended
-                ? 'relative bg-amber-50/40 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-500/80 shadow-xs opacity-75 transition-colors duration-75'
-                : 'relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-xs transition-colors duration-75 hover:border-emerald-500/40';
+            if (isMissingComponent) card.setAttribute('data-invalid-component', compName);
+            card.className = isMissingComponent
+                ? 'relative bg-red-50/40 dark:bg-red-950/20 rounded-xl border-2 border-red-400 dark:border-red-500/80 shadow-xs transition-colors duration-75'
+                : (isSuspended
+                    ? 'relative bg-amber-50/40 dark:bg-stone-800/50 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-500/80 shadow-xs opacity-75 transition-colors duration-75'
+                    : 'relative bg-white dark:bg-stone-800 rounded-xl border border-stone-200/80 dark:border-stone-700 shadow-xs transition-colors duration-75 hover:border-amber-500/40');
 
             card.addEventListener('dragstart', function(e) {
                 draggingBlockIndex = index;
@@ -877,7 +502,12 @@
                 window.renderVisualBlocks();
             });
 
-            if (isSuspended) {
+            if (isMissingComponent) {
+                const missingBanner = document.createElement('div');
+                missingBanner.className = 'rounded-t-xl px-3 py-1.5 bg-red-100/90 dark:bg-red-950/80 border-b border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 text-[11px] font-bold flex items-center space-x-2';
+                missingBanner.textContent = t('pages.comp_invalid_hint', { component: compName });
+                card.appendChild(missingBanner);
+            } else if (isSuspended) {
                 const warnBanner = document.createElement('div');
                 warnBanner.className = 'rounded-t-xl px-3 py-1.5 bg-amber-100/90 dark:bg-amber-950/80 border-b border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-[11px] font-bold flex items-center space-x-2';
                 warnBanner.textContent = t('pages.slot_quota_suspended');
@@ -885,23 +515,27 @@
             }
 
             const header = document.createElement('div');
-            header.className = 'h-11 px-3 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition-colors duration-75' + (isExpanded ? ' border-b border-slate-100 dark:border-slate-700/80' : '');
+            header.className = 'h-11 px-3 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-stone-50/80 dark:hover:bg-stone-700/40 transition-colors duration-75' + (isExpanded ? ' border-b border-stone-100 dark:border-stone-700/80' : '');
 
             const headerLeft = document.createElement('div');
             headerLeft.className = 'flex items-center space-x-2.5 min-w-0 flex-1';
             const slotBadgeHtml = allowedSlots.length === 1
-                ? `<span class="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded shrink-0">${targetSlot}</span>`
+                ? `<span class="text-[10px] font-mono text-stone-400 bg-stone-100 dark:bg-stone-900 px-1.5 py-0.5 rounded shrink-0">${targetSlot}</span>`
+                : '';
+            const missingPillHtml = isMissingComponent
+                ? `<span class="px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/60 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700 text-[10px] font-bold shrink-0">${escapeHtmlText(t('pages.comp_invalid_badge'))}</span>`
                 : '';
 
             headerLeft.innerHTML = `
-                <span class="material-symbols-outlined text-[16px] text-slate-300 dark:text-slate-600 cursor-grab shrink-0">drag_indicator</span>
-                <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/70 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[16px] text-stone-300 dark:text-stone-600 cursor-grab shrink-0">drag_indicator</span>
+                <div class="w-7 h-7 rounded-lg ${isMissingComponent ? 'bg-red-100 text-red-600 border-red-300 dark:bg-red-950/60 dark:text-red-400 dark:border-red-800' : 'bg-[var(--admin-chrome)] text-[var(--admin-text-muted)] border-[var(--admin-border)]'} border flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-[16px]">${schema.icon || 'widgets'}</span>
                 </div>
                 <div class="flex items-center space-x-2 min-w-0 flex-1">
-                    <span class="font-bold text-xs text-slate-900 dark:text-white shrink-0">${schema.title || compName}</span>
-                    <span class="text-[11px] font-mono text-slate-400 shrink-0">(${compName})</span>
-                    ${snippetText ? `<span class="text-xs text-slate-400 dark:text-slate-500 truncate min-w-0">· ${escapeHtmlText(snippetText)}</span>` : ''}
+                    <span class="font-bold text-xs ${isMissingComponent ? 'text-red-700 dark:text-red-300' : 'text-stone-900 dark:text-white'} shrink-0">${escapeHtmlText(schema.title || compName)}</span>
+                    <span class="text-[11px] font-mono text-stone-400 shrink-0">(${escapeHtmlText(compName)})</span>
+                    ${missingPillHtml}
+                    ${snippetText ? `<span class="text-xs text-stone-400 dark:text-stone-500 truncate min-w-0">· ${escapeHtmlText(snippetText)}</span>` : ''}
                 </div>
                 ${slotBadgeHtml}
             `;
@@ -912,8 +546,8 @@
             headerRight.addEventListener('click', function(e) { e.stopPropagation(); });
 
             if (allowedSlots.length > 1) {
-                const slotCapsule = document.createElement('walnut-select');
-                slotCapsule.className = 'walnut-select-compact bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 rounded-full px-2 py-0.5 text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-300 cursor-pointer';
+                const slotCapsule = document.createElement('edge-select');
+                slotCapsule.className = 'edge-select-compact bg-amber-50 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700 rounded-full px-2 py-0.5 text-[11px] font-mono font-bold text-amber-700 dark:text-amber-300 cursor-pointer';
                 allowedSlots.forEach(function(sOpt) {
                     const optEl = document.createElement('option');
                     optEl.setAttribute('value', sOpt);
@@ -931,7 +565,7 @@
 
             const upBtn = document.createElement('button');
             upBtn.type = 'button';
-            upBtn.className = 'p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-75 cursor-pointer ' + (index === 0 ? 'opacity-30 cursor-not-allowed' : '');
+            upBtn.className = 'p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors duration-75 cursor-pointer ' + (index === 0 ? 'opacity-30 cursor-not-allowed' : '');
             upBtn.disabled = index === 0;
             upBtn.onclick = function() { window.moveBlock(index, -1); };
             upBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">arrow_upward</span>';
@@ -939,7 +573,7 @@
 
             const downBtn = document.createElement('button');
             downBtn.type = 'button';
-            downBtn.className = 'p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors duration-75 cursor-pointer ' + (index === currentBlocks.length - 1 ? 'opacity-30 cursor-not-allowed' : '');
+            downBtn.className = 'p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors duration-75 cursor-pointer ' + (index === currentBlocks.length - 1 ? 'opacity-30 cursor-not-allowed' : '');
             downBtn.disabled = index === currentBlocks.length - 1;
             downBtn.onclick = function() { window.moveBlock(index, 1); };
             downBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">arrow_downward</span>';
@@ -947,13 +581,13 @@
 
             const delBtn = document.createElement('button');
             delBtn.type = 'button';
-            delBtn.className = 'p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-75 cursor-pointer';
+            delBtn.className = 'p-1 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors duration-75 cursor-pointer';
             delBtn.onclick = function() { window.deleteBlock(index); };
             delBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">delete</span>';
             headerRight.appendChild(delBtn);
 
             const chevronIcon = document.createElement('span');
-            chevronIcon.className = 'material-symbols-outlined text-[16px] text-slate-400 transition-transform duration-150 ml-0.5 ' + (isExpanded ? 'rotate-180' : '');
+            chevronIcon.className = 'material-symbols-outlined text-[16px] text-stone-400 transition-transform duration-150 ml-0.5 ' + (isExpanded ? 'rotate-180' : '');
             chevronIcon.textContent = 'expand_more';
             headerRight.appendChild(chevronIcon);
 
@@ -965,14 +599,14 @@
             if (schema.allow_custom_js === true) {
                 const activeTab = blockActiveTabMap.get(block.id) || 'props';
                 const tabBar = document.createElement('div');
-                tabBar.className = 'flex items-center space-x-1.5 pb-3 mb-3 border-b border-slate-100 dark:border-slate-700/80';
+                tabBar.className = 'flex items-center space-x-1.5 pb-3 mb-3 border-b border-stone-100 dark:border-stone-700/80';
 
-                const propsPane = createBlockFieldsBody(block, schema, function() {
-                    syncBlocksToTextarea();
-                }, compName);
-                const jsPane = createBlockCustomJsPane(block, function() {
-                    syncBlocksToTextarea();
-                });
+                const propsPane = typeof getFieldsMod().createBlockFieldsBody === 'function'
+                    ? getFieldsMod().createBlockFieldsBody(block, schema, function() { syncBlocksToTextarea(); }, compName)
+                    : document.createElement('div');
+                const jsPane = typeof getFieldsMod().createBlockCustomJsPane === 'function'
+                    ? getFieldsMod().createBlockCustomJsPane(block, function() { syncBlocksToTextarea(); })
+                    : document.createElement('div');
 
                 const btnProps = document.createElement('button');
                 btnProps.type = 'button';
@@ -984,8 +618,8 @@
 
                 const syncSubTabs = function(nextTab) {
                     blockActiveTabMap.set(block.id, nextTab);
-                    const activeCls = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 text-white shadow-xs cursor-pointer transition-colors duration-75';
-                    const idleCls = 'px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors duration-75';
+                    const activeCls = 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#B45309] text-white shadow-xs cursor-pointer transition-colors duration-75';
+                    const idleCls = 'px-2.5 py-1 rounded-lg text-[11px] font-semibold text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-900 hover:bg-stone-200 dark:hover:bg-stone-700 cursor-pointer transition-colors duration-75';
                     btnProps.className = nextTab === 'props' ? activeCls : idleCls;
                     btnJs.className = nextTab === 'custom_js' ? activeCls : idleCls;
                     if (nextTab === 'props') {
@@ -1009,9 +643,9 @@
                 if (block.custom_js !== undefined) delete block.custom_js;
                 if (block.props && block.props.custom_js !== undefined) delete block.props.custom_js;
                 if (block.data && block.data.custom_js !== undefined) delete block.data.custom_js;
-                const body = createBlockFieldsBody(block, schema, function() {
-                    syncBlocksToTextarea();
-                }, compName);
+                const body = typeof getFieldsMod().createBlockFieldsBody === 'function'
+                    ? getFieldsMod().createBlockFieldsBody(block, schema, function() { syncBlocksToTextarea(); }, compName)
+                    : document.createElement('div');
                 bodyWrap.appendChild(body);
             }
             card.appendChild(bodyWrap);
@@ -1021,12 +655,12 @@
                 if (nowOpen) {
                     expandedBlockIds.delete(block.id);
                     bodyWrap.classList.add('hidden');
-                    header.classList.remove('border-b', 'border-slate-100', 'dark:border-slate-700/80');
+                    header.classList.remove('border-b', 'border-stone-100', 'dark:border-stone-700/80');
                     chevronIcon.classList.remove('rotate-180');
                 } else {
                     expandedBlockIds.add(block.id);
                     bodyWrap.classList.remove('hidden');
-                    header.classList.add('border-b', 'border-slate-100', 'dark:border-slate-700/80');
+                    header.classList.add('border-b', 'border-stone-100', 'dark:border-stone-700/80');
                     chevronIcon.classList.add('rotate-180');
                 }
             });
@@ -1046,7 +680,7 @@
             });
             syncBlocksToTextarea();
             window.renderVisualBlocks();
-            window.closeAddComponentGallery();
+            if (window.closeAddComponentGallery) window.closeAddComponentGallery();
             return;
         }
 
@@ -1070,7 +704,7 @@
         syncBlocksToTextarea();
         window.renderVisualBlocks();
 
-        window.closeAddComponentGallery();
+        if (window.closeAddComponentGallery) window.closeAddComponentGallery();
         if (window.showToast) {
             window.showToast((t('pages.comp_added_title') || '').replace('{{name}}', (schema.title || compSlug)), 'success');
         }
@@ -1095,229 +729,27 @@
         }
     };
 
-    function classifyGalleryComp(comp) {
-        const s = ((comp.slug || '') + ' ' + (comp.category || '') + ' ' + (comp.title || '')).toLowerCase();
-        if (/nav|header|menu|breadcrumb|sidebar/.test(s)) return 'nav';
-        if (/hero|banner|intro|cta|cover/.test(s)) return 'hero';
-        if (/footer|form|lead|contact|subscribe|pricing|testimonial/.test(s)) return 'footer';
-        if (/dataset|media|gallery|feed|stream|viewer|table|chart/.test(s)) return 'data';
-        return 'grid';
-    }
-
-    let galleryCardsInitialized = false;
-
-    function buildGalleryCardDom(gridEl) {
-        const slotCard = document.createElement('div');
-        slotCard.id = 'comp-gallery-slot-card';
-        slotCard.className = 'col-span-full shrink-0 p-4 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/70 cursor-pointer flex items-center space-x-3 transition-colors duration-75 rounded-2xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 hidden';
-        slotCard.onclick = function() { window.addBlock('@slot:page_content'); };
-        slotCard.innerHTML = `
-            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[20px]">dynamic_feed</span>
-            </div>
-            <div class="min-w-0 flex-1">
-                <div class="font-black text-xs text-emerald-900 dark:text-emerald-200">${t('pages.slot_comp_title')}</div>
-                <div class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">${t('pages.slot_comp_desc')}</div>
-            </div>
-        `;
-        gridEl.appendChild(slotCard);
-
-        const seenSlugs = new Set();
-        Object.values(THEME_COMPONENTS_MAP).forEach(function(comp) {
-            if (!comp || !comp.slug || seenSlugs.has(comp.slug)) return;
-            seenSlugs.add(comp.slug);
-            const cSlots = (Array.isArray(comp.slots) && comp.slots.length > 0) ? comp.slots : ['main'];
-            const cat = classifyGalleryComp(comp);
-
-            const card = document.createElement('div');
-            card.setAttribute('data-gallery-card', '1');
-            card.setAttribute('data-gallery-slug', comp.slug);
-            card.setAttribute('data-gallery-category', cat);
-            card.setAttribute('data-gallery-slots', cSlots.join(','));
-
-            const previewWrap = document.createElement('div');
-            previewWrap.className = 'shrink-0 bg-slate-100 dark:bg-slate-950/80 p-2.5 border-b border-slate-200/80 dark:border-slate-700/80';
-            const viewport = document.createElement('div');
-            viewport.className = 'w-full h-32 rounded-lg overflow-hidden relative bg-white dark:bg-slate-900 ring-1 ring-black/5 dark:ring-white/10';
-            if (comp.preview_srcdoc) {
-                const iframe = document.createElement('iframe');
-                iframe.className = 'pointer-events-none select-none border-0 origin-top-left absolute top-0 left-0';
-                iframe.style.width = '960px';
-                iframe.style.height = '480px';
-                iframe.style.transformOrigin = '0 0';
-                iframe.setAttribute('data-srcdoc', comp.preview_srcdoc);
-                iframe.setAttribute('tabindex', '-1');
-                viewport.appendChild(iframe);
-            } else {
-                viewport.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-400"><span class="material-symbols-outlined text-[32px]">${comp.icon || 'widgets'}</span></div>`;
-            }
-            previewWrap.appendChild(viewport);
-            card.appendChild(previewWrap);
-
-            const info = document.createElement('div');
-            info.className = 'p-4 flex-1 flex flex-col justify-between space-y-2.5';
-            const slotsBadges = cSlots.map(function(s) {
-                return `<span class="bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 px-2 py-0.5 rounded-md font-mono text-[10px] font-semibold">${s}</span>`;
-            }).join(' ');
-            info.innerHTML = `
-                <div>
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="flex items-center space-x-2 min-w-0">
-                            <span class="material-symbols-outlined text-[16px] text-emerald-600 dark:text-emerald-400 shrink-0">${comp.icon || 'widgets'}</span>
-                            <span class="font-black text-xs text-slate-900 dark:text-white truncate">${escapeHtmlText(comp.title)}</span>
-                        </div>
-                        <span class="text-[10px] font-mono text-slate-400 shrink-0">${escapeHtmlText(comp.slug)}</span>
-                    </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${escapeHtmlText(comp.summary || comp.slug)}</p>
-                </div>
-                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-700/60">
-                    <div class="flex items-center flex-wrap gap-1">${slotsBadges}</div>
-                    <span data-gallery-quota-msg class="text-[10px] text-amber-600 font-bold hidden">${t('pages.slot_not_open_by_template')}</span>
-                </div>
-            `;
-            card.appendChild(info);
-            gridEl.appendChild(card);
-        });
-
-        const emptyEl = document.createElement('div');
-        emptyEl.id = 'comp-gallery-empty';
-        emptyEl.className = 'col-span-full py-12 text-center text-slate-400 text-xs italic hidden';
-        emptyEl.textContent = t('pages.no_theme_comps');
-        gridEl.appendChild(emptyEl);
-    }
-
-    function scaleVisibleGalleryIframes(gridEl) {
-        requestAnimationFrame(function() {
-            gridEl.querySelectorAll('[data-gallery-card]:not(.hidden) iframe').forEach(function(ifr) {
-                const w = ifr.parentElement ? ifr.parentElement.clientWidth : 400;
-                if (w > 0) {
-                    const scale = Math.min(1, Math.max(0.25, w / 960));
-                    ifr.style.transform = 'scale(' + scale.toFixed(4) + ')';
-                }
-                const pendingSrcdoc = ifr.getAttribute('data-srcdoc');
-                if (pendingSrcdoc !== null) {
-                    ifr.srcdoc = pendingSrcdoc;
-                    ifr.removeAttribute('data-srcdoc');
-                }
-            });
-        });
-    }
-
-    window.renderComponentGallery = function(category) {
-        if (category) activeGalleryCategory = category;
-        const filtersEl = document.getElementById('comp-gallery-filters');
-        const gridEl = document.getElementById('comp-gallery-grid');
-        if (!filtersEl || !gridEl) return;
-
-        const cats = [
-            { id: 'all', label: t('pages.gallery_cat_all') },
-            { id: 'nav', label: t('pages.gallery_cat_nav') },
-            { id: 'hero', label: t('pages.gallery_cat_hero') },
-            { id: 'grid', label: t('pages.gallery_cat_grid') },
-            { id: 'data', label: t('pages.gallery_cat_data') },
-            { id: 'footer', label: t('pages.gallery_cat_footer') }
-        ];
-        if (!filtersEl.hasChildNodes()) {
-            cats.forEach(function(cat) {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.setAttribute('data-gallery-filter', cat.id);
-                btn.textContent = cat.label;
-                btn.onclick = function() { window.renderComponentGallery(cat.id); };
-                filtersEl.appendChild(btn);
-            });
-        }
-        filtersEl.querySelectorAll('button[data-gallery-filter]').forEach(function(btn) {
-            const isActive = activeGalleryCategory === btn.getAttribute('data-gallery-filter');
-            btn.className = isActive
-                ? 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs transition-colors duration-75 cursor-pointer'
-                : 'px-3 py-1 rounded-full text-xs font-semibold bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-400 transition-colors duration-75 cursor-pointer';
-        });
-
-        // Keep mounted card iframes alive in DOM across category switches to eliminate srcdoc reload flashes.
-        if (!galleryCardsInitialized) {
-            gridEl.innerHTML = '';
-            buildGalleryCardDom(gridEl);
-            galleryCardsInitialized = true;
-        }
-
-        const pageTypeInput = document.getElementById('form-page-type');
-        const currentPageType = pageTypeInput ? pageTypeInput.value : 'single';
-        const hasPageContentSlotAlready = currentBlocks.some(function(b) {
-            const c = b.component || b.id || '';
-            return c === '@slot:page_content' || c === 'slot:page_content';
-        });
-        const slotCard = document.getElementById('comp-gallery-slot-card');
-        const showSlotCard = currentPageType === 'template' && !hasPageContentSlotAlready && (activeGalleryCategory === 'all' || activeGalleryCategory === 'grid');
-        if (slotCard) slotCard.classList.toggle('hidden', !showSlotCard);
-
-        const activeTpl = getActiveTemplateObj();
-        const tplSlotUsed = {};
-        if (activeTpl && Array.isArray(activeTpl.blocks)) {
-            activeTpl.blocks.forEach(function(tb) {
-                const s = resolveEditorBlockSlot(tb);
-                tplSlotUsed[s] = (tplSlotUsed[s] || 0) + 1;
-            });
-        }
-
-        let visibleCount = 0;
-        gridEl.querySelectorAll('[data-gallery-card]').forEach(function(card) {
-            const slug = card.getAttribute('data-gallery-slug') || '';
-            const cat = card.getAttribute('data-gallery-category') || 'grid';
-            const cSlots = (card.getAttribute('data-gallery-slots') || 'main').split(',').filter(Boolean);
-            const matchesCat = activeGalleryCategory === 'all' || cat === activeGalleryCategory;
-            const allSlotsFull = cSlots.every(function(s) {
-                const max = DEFAULT_SLOT_QUOTAS[s] !== undefined ? DEFAULT_SLOT_QUOTAS[s] : Infinity;
-                return (tplSlotUsed[s] || 0) >= max;
-            });
-
-            card.className = (allSlotsFull
-                ? 'shrink-0 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 opacity-50 cursor-not-allowed overflow-hidden flex flex-col'
-                : 'group shrink-0 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-emerald-500 hover:shadow-lg transition-colors duration-75 cursor-pointer overflow-hidden flex flex-col')
-                + (matchesCat ? '' : ' hidden');
-            card.onclick = allSlotsFull ? null : function() { window.addBlock(slug); };
-            const quotaMsg = card.querySelector('[data-gallery-quota-msg]');
-            if (quotaMsg) quotaMsg.classList.toggle('hidden', !allSlotsFull);
-            if (matchesCat) visibleCount++;
-        });
-
-        const emptyEl = document.getElementById('comp-gallery-empty');
-        if (emptyEl) emptyEl.classList.toggle('hidden', visibleCount > 0 || showSlotCard);
-
-        scaleVisibleGalleryIframes(gridEl);
-    };
-
-    window.openAddComponentGallery = function() {
-        const modal = document.getElementById('add-component-gallery-modal');
-        if (!modal) return;
-        modal.classList.remove('hidden');
-        window.renderComponentGallery(activeGalleryCategory);
-    };
-
-    window.closeAddComponentGallery = function() {
-        const modal = document.getElementById('add-component-gallery-modal');
-        if (modal) modal.classList.add('hidden');
-    };
-
     window.switchPageEditorTab = function(tabName) {
         const visualPane = document.getElementById('pane-visual-editor');
         const codePane = document.getElementById('pane-code-editor');
         const tabVisualBtn = document.getElementById('tab-btn-visual');
         const tabCodeBtn = document.getElementById('tab-btn-code');
+        const activeCls = 'h-full px-2.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] flex items-center space-x-1.5';
+        const idleCls = 'h-full px-2.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] flex items-center space-x-1.5';
 
         if (tabName === 'visual') {
             currentBlocks = parseBlocksFromTextarea();
             window.renderVisualBlocks();
             if (visualPane) visualPane.classList.remove('hidden');
             if (codePane) codePane.classList.add('hidden');
-            if (tabVisualBtn) tabVisualBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer';
-            if (tabCodeBtn) tabCodeBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center space-x-1 cursor-pointer';
+            if (tabVisualBtn) tabVisualBtn.className = activeCls;
+            if (tabCodeBtn) tabCodeBtn.className = idleCls;
         } else {
             syncBlocksToTextarea();
             if (visualPane) visualPane.classList.add('hidden');
             if (codePane) codePane.classList.remove('hidden');
-            if (tabVisualBtn) tabVisualBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center space-x-1 cursor-pointer';
-            if (tabCodeBtn) tabCodeBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer';
+            if (tabVisualBtn) tabVisualBtn.className = idleCls;
+            if (tabCodeBtn) tabCodeBtn.className = activeCls;
         }
     };
 
@@ -1338,25 +770,47 @@
         }
     };
 
-    const PAGE_ACCORDION_SECTIONS = ['page-meta', 'page-seo', 'page-vcs', 'page-i18n'];
-    window.openPageSingleAccordion = function(targetKey) {
-        const targetContent = document.getElementById('accordion-content-' + targetKey);
-        const targetArrow = document.getElementById('accordion-arrow-' + targetKey);
-        const isCurrentlyOpen = targetContent && !targetContent.classList.contains('hidden');
+    const PAGE_TAB_MAP = {
+        'page-meta': 'props',
+        'page-seo': 'seo',
+        'page-i18n': 'i18n',
+        'page-vcs': 'vcs',
+        props: 'props',
+        seo: 'seo',
+        i18n: 'i18n',
+        vcs: 'vcs'
+    };
+    const ALL_PAGE_TABS = ['props', 'seo', 'i18n', 'vcs'];
 
-        PAGE_ACCORDION_SECTIONS.forEach(function(k) {
-            const c = document.getElementById('accordion-content-' + k);
-            const a = document.getElementById('accordion-arrow-' + k);
-            if (c) c.classList.add('hidden');
-            if (a) a.classList.add('-rotate-90');
-        });
-
-        if (!isCurrentlyOpen && targetContent) {
-            targetContent.classList.remove('hidden');
-            if (targetArrow) targetArrow.classList.remove('-rotate-90');
+    window.switchPageInspectorTab = function(targetKey) {
+        const tabKey = PAGE_TAB_MAP[targetKey] || 'props';
+        for (let i = 0; i < ALL_PAGE_TABS.length; i++) {
+            const k = ALL_PAGE_TABS[i];
+            const panel = document.getElementById('page-inspector-panel-' + k);
+            const btn = document.getElementById('page-inspector-tab-' + k);
+            const isActive = k === tabKey;
+            if (panel) panel.classList.toggle('hidden', !isActive);
+            if (btn) {
+                btn.classList.toggle('bg-[var(--admin-surface)]', isActive);
+                btn.classList.toggle('text-[var(--admin-text)]', isActive);
+                btn.classList.toggle('shadow-sm', isActive);
+                btn.classList.toggle('border-[var(--admin-border)]', isActive);
+                btn.classList.toggle('text-[var(--admin-text-muted)]', !isActive);
+                btn.classList.toggle('border-transparent', !isActive);
+            }
         }
     };
-    window.toggleAccordion = window.openPageSingleAccordion;
+
+    window.copyPagePreviewUrl = function() {
+        const box = document.getElementById('page-preview-url-box');
+        if (!box) return;
+        const text = (box.textContent || '').trim();
+        if (text && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                if (window.showToast) window.showToast(t('editor.copied_url') || 'URL copied', 'success');
+            }).catch(function() {});
+        }
+    };
 
     window.selectPageTypeOption = function(val, label) {
         const input = document.getElementById('form-page-type');
@@ -1376,7 +830,7 @@
         const parentBox = document.getElementById('dropdown-box-parent');
         const localeBox = document.getElementById('dropdown-box-locale');
         const redirectBox = document.getElementById('field-box-page-redirect');
-        const seoSection = document.getElementById('accordion-section-page-seo');
+        const seoSection = document.getElementById('page-inspector-tab-seo');
 
         if (val === 'single') {
             templateBox?.classList.remove('hidden');
@@ -1392,6 +846,9 @@
             localeBox?.classList.remove('hidden');
             redirectBox?.classList.add('hidden');
             seoSection?.classList.add('hidden');
+            if (!document.getElementById('page-inspector-panel-seo')?.classList.contains('hidden')) {
+                window.switchPageInspectorTab('props');
+            }
         } else if (val === 'redirect') {
             templateBox?.classList.add('hidden');
             slugBox?.classList.remove('hidden');
@@ -1399,6 +856,9 @@
             localeBox?.classList.add('hidden');
             redirectBox?.classList.remove('hidden');
             seoSection?.classList.add('hidden');
+            if (!document.getElementById('page-inspector-panel-seo')?.classList.contains('hidden')) {
+                window.switchPageInspectorTab('props');
+            }
         }
 
         document.getElementById('dropdown-menu-page-type')?.classList.add('hidden');
@@ -1466,7 +926,6 @@
         }
         document.getElementById('dropdown-menu-page-status')?.classList.add('hidden');
     };
-    window.selectStatusOption = window.selectPageStatusOption;
 
     window.selectPagePermissionOption = function(val, label) {
         const input = document.getElementById('form-permission-input');
@@ -1475,104 +934,16 @@
         if (labelElem) labelElem.textContent = label;
         document.getElementById('dropdown-menu-page-permission')?.classList.add('hidden');
     };
-    window.selectPermissionOption = window.selectPagePermissionOption;
-
-    const FORBIDDEN_ROUTE_PREFIX_KEYS = {
-        'admin': 'common.route_forbidden_admin',
-        'api': 'common.route_forbidden_api',
-        'desk': 'common.route_forbidden_desk',
-        'shared': 'common.route_forbidden_shared',
-        'assets': 'common.route_forbidden_assets',
-        'content': 'common.route_forbidden_content',
-        'theme': 'common.route_forbidden_theme',
-        'commercial': 'common.route_forbidden_commercial',
-        'cdn-cgi': 'common.route_forbidden_cdncgi',
-        '.well-known': 'common.route_forbidden_wellknown'
-    };
-
-    const FORBIDDEN_EXACT_PATH_KEYS = {
-        '/sitemap.xml': { key: 'common.route_forbidden_sitemap' },
-        '/robots.txt': { key: 'common.route_forbidden_robots' },
-        '/favicon.ico': { key: 'common.route_forbidden_favicon' },
-        '/app.css': { key: 'common.route_forbidden_appcss' },
-        '/zh-cn': { key: 'common.route_forbidden_locale', params: { path: '/zh-CN' } },
-        '/en-us': { key: 'common.route_forbidden_locale', params: { path: '/en-US' } }
-    };
-
-    function trRouteMsg(key, params) {
-        const fn = window.__WALNUT_I18N__ && window.__WALNUT_I18N__.t;
-        if (typeof fn === 'function') {
-            return fn(key, params);
-        }
-        return key;
-    }
 
     function inspectSpecialRouteSlug(rawVal, fullPath) {
-        const rawTrimmed = (rawVal || '').trim();
-        const lowerPath = (fullPath || '/').toLowerCase();
-        const firstSeg = lowerPath.replace(/^\/+/, '').split('/')[0] || '';
-
-        if (FORBIDDEN_EXACT_PATH_KEYS[lowerPath]) {
-            const rule = FORBIDDEN_EXACT_PATH_KEYS[lowerPath];
-            return { level: 'forbidden', message: trRouteMsg(rule.key, rule.params) };
-        }
-        if (firstSeg && FORBIDDEN_ROUTE_PREFIX_KEYS[firstSeg]) {
-            return { level: 'forbidden', message: trRouteMsg(FORBIDDEN_ROUTE_PREFIX_KEYS[firstSeg]) };
-        }
-        if (lowerPath === '/') {
-            const isRawIndex = rawTrimmed.replace(/^\/+|\/+$/g, '').toLowerCase() === 'index';
-            return {
-                level: 'warning',
-                message: isRawIndex
-                    ? trRouteMsg('common.route_warn_home_index')
-                    : trRouteMsg('common.route_warn_home_root')
-            };
-        }
-        if (lowerPath === '/404') {
-            return {
-                level: 'warning',
-                message: trRouteMsg('common.route_warn_404')
-            };
-        }
-        if (lowerPath === '/500') {
-            return {
-                level: 'warning',
-                message: trRouteMsg('common.route_warn_500')
-            };
-        }
-        if (lowerPath === '/503' || lowerPath === '/maintenance') {
-            return {
-                level: 'warning',
-                message: trRouteMsg('common.route_warn_503', { path: fullPath })
-            };
-        }
-        return { level: 'none', message: '' };
+        return typeof window.inspectEdgeSpecialRouteSlug === 'function'
+            ? window.inspectEdgeSpecialRouteSlug(rawVal, fullPath)
+            : { level: 'none', message: '' };
     }
 
     function renderSpecialRouteHint(hintEl, inputEl, checkResult) {
-        if (!hintEl) return;
-        if (!checkResult || checkResult.level === 'none') {
-            hintEl.className = 'hidden text-[11px] px-2.5 py-2 rounded-lg border font-medium leading-relaxed';
-            hintEl.textContent = '';
-            if (inputEl) {
-                inputEl.classList.remove('border-red-500', 'dark:border-red-500', 'border-amber-400', 'dark:border-amber-500');
-            }
-            return;
-        }
-        if (checkResult.level === 'forbidden') {
-            hintEl.className = 'text-[11px] px-2.5 py-2 rounded-lg border font-bold leading-relaxed bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/80';
-            hintEl.textContent = checkResult.message;
-            if (inputEl) {
-                inputEl.classList.remove('border-amber-400', 'dark:border-amber-500');
-                inputEl.classList.add('border-red-500', 'dark:border-red-500');
-            }
-        } else if (checkResult.level === 'warning') {
-            hintEl.className = 'text-[11px] px-2.5 py-2 rounded-lg border font-semibold leading-relaxed bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/80';
-            hintEl.textContent = checkResult.message;
-            if (inputEl) {
-                inputEl.classList.remove('border-red-500', 'dark:border-red-500');
-                inputEl.classList.add('border-amber-400', 'dark:border-amber-500');
-            }
+        if (typeof window.renderEdgeSpecialRouteHint === 'function') {
+            window.renderEdgeSpecialRouteHint(hintEl, inputEl, checkResult);
         }
     }
 
@@ -1734,31 +1105,26 @@
         }
     };
 
-    window.selectPageTransGroupOption = function(tgId, tgName) {
+    function syncPageTransGroupUi(tgId, tgName) {
         const input = document.getElementById('form-page-trans-group-id');
         const label = document.getElementById('page-trans-group-label');
         const leaveBtn = document.getElementById('btn-leave-page-trans-group');
         const addLink = document.getElementById('btn-add-page-translation');
-        const pageId = document.getElementById('form-page-id')?.value || '';
-        if (input) input.value = tgId;
-        if (label) label.textContent = tgName;
-        if (leaveBtn) leaveBtn.classList.remove('hidden');
+        const joined = Boolean(tgId);
+        if (input) input.value = tgId || '';
+        if (label) label.textContent = joined ? tgName : t('editor.trans_group_not_joined');
+        if (leaveBtn) leaveBtn.classList.toggle('hidden', !joined);
         if (addLink) {
-            addLink.href = '/admin/pages/new?translation_group_id=' + encodeURIComponent(tgId) + '&source_id=' + encodeURIComponent(pageId);
-            addLink.classList.remove('hidden');
+            if (joined) {
+                const pageId = document.getElementById('form-page-id')?.value || '';
+                addLink.href = '/admin/pages/new?translation_group_id=' + encodeURIComponent(tgId) + '&source_id=' + encodeURIComponent(pageId);
+            }
+            addLink.classList.toggle('hidden', !joined);
         }
-    };
+    }
 
-    window.unlinkPageTransGroup = function() {
-        const input = document.getElementById('form-page-trans-group-id');
-        const label = document.getElementById('page-trans-group-label');
-        const leaveBtn = document.getElementById('btn-leave-page-trans-group');
-        const addLink = document.getElementById('btn-add-page-translation');
-        if (input) input.value = '';
-        if (label) label.textContent = t('editor.trans_group_not_joined');
-        if (leaveBtn) leaveBtn.classList.add('hidden');
-        if (addLink) addLink.classList.add('hidden');
-    };
+    window.selectPageTransGroupOption = function(tgId, tgName) { syncPageTransGroupUi(tgId, tgName); };
+    window.unlinkPageTransGroup = function() { syncPageTransGroupUi('', ''); };
 
     function initPageEditor() {
         initThemeMetadata();
@@ -1813,6 +1179,90 @@
             window.addEventListener('walnut:i18n-loaded', updatePageSlugPreview);
         }
     }
+
+    window.__walnutSetPageEditorBlocks = function(nextBlocks) {
+        currentBlocks = Array.isArray(nextBlocks) ? nextBlocks : [];
+        syncBlocksToTextarea();
+        window.renderVisualBlocks && window.renderVisualBlocks();
+    };
+
+    window.inspectVersionById = function(versionId, vNum) {
+        let map = {};
+        try {
+            const el = document.getElementById('vcs-versions-data');
+            map = el ? JSON.parse(el.textContent || '{}') : {};
+        } catch (e) {}
+        const raw = map[versionId] || '[]';
+        let formatted = raw;
+        try { formatted = JSON.stringify(JSON.parse(raw), null, 2); } catch (e) {}
+        window.switchPageEditorTab && window.switchPageEditorTab('code');
+        const textarea = document.getElementById('page-content-core');
+        if (textarea) {
+            window.showConfirmDialog && window.showConfirmDialog({
+                title: t('editor.viewing_snapshot', { version: vNum }),
+                message: formatted.slice(0, 1800) + (formatted.length > 1800 ? '\n...' : ''),
+                icon: 'history',
+                onConfirm: function() {}
+            });
+        }
+    };
+
+    window.rollbackToVersionById = function(versionId, vNum) {
+        let map = {};
+        try {
+            const el = document.getElementById('vcs-versions-data');
+            map = el ? JSON.parse(el.textContent || '{}') : {};
+        } catch (e) {}
+        const raw = map[versionId] || '[]';
+        window.showConfirmDialog({
+            title: t('editor.btn_rollback_snapshot'),
+            message: t('editor.confirm_rollback', { version: vNum }),
+            icon: 'history',
+            onConfirm: function() {
+                try {
+                    const parsed = JSON.parse(raw);
+                    currentBlocks = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.blocks) ? parsed.blocks : []);
+                } catch (e) {
+                    currentBlocks = [];
+                }
+                syncBlocksToTextarea();
+                window.renderVisualBlocks && window.renderVisualBlocks();
+                const commitInput = document.querySelector('#page-edit-form input[name="commit_message"]');
+                if (commitInput) commitInput.value = t('editor.rollback_commit_prefix', { version: vNum });
+                if (window.showToast) window.showToast('✔️ ' + t('editor.rollback_success', { version: vNum }), 'success');
+            }
+        });
+    };
+
+    window.deletePastVersion = function(vId, vNum) {
+        window.showConfirmDialog({
+            title: t('common.delete'),
+            message: 'v' + vNum,
+            icon: 'delete',
+            onConfirm: async function() {
+                const pageId = document.getElementById('form-page-id')?.value || '';
+                const res = await fetch('/admin/articles/api/version/' + encodeURIComponent(vId) + '?node_id=' + encodeURIComponent(pageId), { method: 'DELETE' });
+                if (res.ok) {
+                    document.getElementById('version-card-' + vId)?.remove();
+                    if (window.showToast) window.showToast('✔️ ' + t('common.success'), 'success');
+                }
+            }
+        });
+    };
+
+    window.confirmSoftDeletePage = function() {
+        const title = document.getElementById('page-title-input')?.value || '';
+        window.showConfirmDialog({
+            title: t('common.btn_move_to_trash'),
+            message: t('pages.confirm_delete', { title: title }),
+            icon: 'delete',
+            onConfirm: async function() {
+                const pageId = document.getElementById('form-page-id')?.value || '';
+                const res = await fetch('/admin/pages/api/delete/' + encodeURIComponent(pageId), { method: 'DELETE' });
+                if (res.ok) window.location.href = '/admin/pages';
+            }
+        });
+    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initPageEditor);

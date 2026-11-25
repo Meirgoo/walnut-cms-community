@@ -1,3 +1,5 @@
+import { formatSafeLocaleDate, buildLocalizedRoutePath } from '../core/i18n';
+
 let globalLocaleResolver: ((locale: string, key: string) => any) | null = null;
 export function setGlobalLocaleResolver(fn: ((locale: string, key: string) => any) | null): void {
     globalLocaleResolver = fn;
@@ -40,15 +42,17 @@ function expandLoopItemScope(parentValues: Record<string, any>, item: any, idx: 
             metaObj = item.metadata;
         }
         const fieldsObj = (metaObj.fields && typeof metaObj.fields === 'object') ? metaObj.fields : {};
-        const itemSlug = item.slug || '';
+        const itemSlug = String(item.slug || '');
+        const siteDefaultLocale = String(parentValues.site?.default_locale || parentValues.default_locale || 'zh-CN');
+        const targetLocale = String(item.locale || parentValues.locale || parentValues.page?.locale || siteDefaultLocale);
         const itemUrl = item.url !== undefined
             ? item.url
             : (item.href !== undefined
                 ? item.href
-                : (item.type === 'micro' || item.kind === 'micro' ? '' : (itemSlug ? (itemSlug.startsWith('/') ? itemSlug : `/${itemSlug}`) : '')));
+                : (item.type === 'micro' || item.kind === 'micro' ? '' : (itemSlug ? (itemSlug.startsWith('/') ? itemSlug : buildLocalizedRoutePath(itemSlug, targetLocale, siteDefaultLocale)) : '')));
         const itemText = item.text || item.label || item.title || item.name || itemSlug || '';
         const itemLocale = String(parentValues.locale || 'zh-CN');
-        const publishedDate = item.published_date || (item.published_at ? new Date(item.published_at).toLocaleDateString(itemLocale) : '');
+        const publishedDate = item.published_date || (item.published_at ? formatSafeLocaleDate(item.published_at, itemLocale) : '');
         const rawProg = item.progress !== undefined ? item.progress : (metaObj.progress !== undefined ? metaObj.progress : (item.maturity || metaObj.maturity || ''));
         const itemProgress = (rawProg && rawProg !== 'none') ? String(rawProg).trim() : '';
         const itemFolder = item.folder || metaObj.folder || fieldsObj.folder || '';

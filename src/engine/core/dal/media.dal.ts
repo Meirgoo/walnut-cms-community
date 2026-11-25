@@ -1,5 +1,6 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
 import type { MediaAsset } from '../../types';
+import { applyPublicAssetDomain } from '../url';
 
 export function buildInsertMediaAssetStatement(
     db: D1Database,
@@ -35,39 +36,87 @@ export function buildInsertMediaAssetStatement(
 
 export function buildSoftDeleteMediaAssetStatement(
     db: D1Database,
-    mediaId: string
+    mediaId: string,
+    siteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`UPDATE media_assets SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(mediaId);
+    return siteId
+        ? db.prepare(`UPDATE media_assets SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(mediaId, siteId)
+        : db.prepare(`UPDATE media_assets SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(mediaId);
+}
+
+export function buildRestoreMediaAssetStatement(
+    db: D1Database,
+    mediaId: string,
+    siteId?: string
+): D1PreparedStatement {
+    return siteId
+        ? db.prepare(`UPDATE media_assets SET deleted_at = NULL WHERE id = ? AND site_id = ?`).bind(mediaId, siteId)
+        : db.prepare(`UPDATE media_assets SET deleted_at = NULL WHERE id = ?`).bind(mediaId);
+}
+
+export function buildHardDeleteMediaAssetStatement(
+    db: D1Database,
+    mediaId: string,
+    siteId?: string
+): D1PreparedStatement {
+    return siteId
+        ? db.prepare(`DELETE FROM media_assets WHERE id = ? AND site_id = ?`).bind(mediaId, siteId)
+        : db.prepare(`DELETE FROM media_assets WHERE id = ?`).bind(mediaId);
 }
 
 export function buildRenameMediaAssetStatement(
     db: D1Database,
     mediaId: string,
-    newName: string
+    newName: string,
+    siteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`UPDATE media_assets SET file_name = ? WHERE id = ?`).bind(newName, mediaId);
+    return siteId
+        ? db.prepare(`UPDATE media_assets SET file_name = ? WHERE id = ? AND site_id = ?`).bind(newName, mediaId, siteId)
+        : db.prepare(`UPDATE media_assets SET file_name = ? WHERE id = ?`).bind(newName, mediaId);
 }
 
 export function buildUpdateMediaAssetMetadataStatement(
     db: D1Database,
     params: {
         id: string;
+        siteId?: string;
         fileName: string;
         metadataStr: string;
         isPublic: number;
     }
 ): D1PreparedStatement {
-    return db.prepare(`
-        UPDATE media_assets SET file_name = ?, metadata = ?, is_public = ? WHERE id = ? AND deleted_at IS NULL
-    `).bind(params.fileName, params.metadataStr, params.isPublic, params.id);
+    return params.siteId
+        ? db.prepare(`UPDATE media_assets SET file_name = ?, metadata = ?, is_public = ? WHERE id = ? AND site_id = ? AND deleted_at IS NULL`).bind(params.fileName, params.metadataStr, params.isPublic, params.id, params.siteId)
+        : db.prepare(`UPDATE media_assets SET file_name = ?, metadata = ?, is_public = ? WHERE id = ? AND deleted_at IS NULL`).bind(params.fileName, params.metadataStr, params.isPublic, params.id);
 }
 
 export async function findMediaAssetById(
     db: D1Database,
-    mediaId: string
+    mediaId: string,
+    siteId?: string
 ): Promise<MediaAsset | null> {
+    if (siteId) {
+        return (await db.prepare(
+            `SELECT * FROM media_assets WHERE id = ? AND site_id = ? AND deleted_at IS NULL LIMIT 1`
+        ).bind(mediaId, siteId).first<MediaAsset>()) || null;
+    }
     return (await db.prepare(
         `SELECT * FROM media_assets WHERE id = ? AND deleted_at IS NULL LIMIT 1`
+    ).bind(mediaId).first<MediaAsset>()) || null;
+}
+
+export async function findMediaAssetByIdAnyState(
+    db: D1Database,
+    mediaId: string,
+    siteId?: string
+): Promise<MediaAsset | null> {
+    if (siteId) {
+        return (await db.prepare(
+            `SELECT * FROM media_assets WHERE id = ? AND site_id = ? LIMIT 1`
+        ).bind(mediaId, siteId).first<MediaAsset>()) || null;
+    }
+    return (await db.prepare(
+        `SELECT * FROM media_assets WHERE id = ? LIMIT 1`
     ).bind(mediaId).first<MediaAsset>()) || null;
 }
 
@@ -112,6 +161,7 @@ export async function queryPublicMediaAssets(
         folder?: string;
         limit?: number;
         offset?: number;
+        publicAssetsDomain?: string;
     } = {}
 ): Promise<Array<Record<string, any>>> {
     const whereParts = ['site_id = ?', 'is_public = 1', 'deleted_at IS NULL'];
@@ -148,6 +198,7 @@ export async function queryPublicMediaAssets(
         } else if (r.metadata && typeof r.metadata === 'object') {
             metaObj = r.metadata;
         }
+        const assetUrl = applyPublicAssetDomain(r.public_url, params.publicAssetsDomain);
         return {
             ...metaObj,
             id: r.id,
@@ -156,9 +207,9 @@ export async function queryPublicMediaAssets(
             summary: metaObj.summary || metaObj.alt || r.file_name,
             file_size: r.file_size,
             mime_type: r.mime_type,
-            public_url: r.public_url,
-            url: r.public_url,
-            image_url: r.public_url,
+            public_url: assetUrl,
+            url: assetUrl,
+            image_url: assetUrl,
             folder: metaObj.folder || '',
             metadata: metaObj,
             created_at: r.created_at

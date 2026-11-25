@@ -1,54 +1,37 @@
 <div align="center">
 
-# Walnut CMS
+# walnut-edge-cms-community
 
 **A lightweight, edge-native CMS built for Cloudflare Workers, D1, and R2.**
 
 [English](./README.md) · [简体中文](./README.zh-CN.md)
 
-[![Version](https://img.shields.io/badge/version-v0.9.0--beta.1-orange.svg)](#status)
+[![Version](https://img.shields.io/badge/version-v0.9.0--beta.2-orange.svg)](https://github.com/Meirgoo/walnut-edge-cms-community/releases)
 [![Runtime](https://img.shields.io/badge/Cloudflare-Workers%20%2B%20D1%20%2B%20R2-F38020.svg)](https://workers.cloudflare.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 
-[Website](https://walnut.meirgoo.com) · [Live Demo](https://walnut-demo.meirgoo.com) · [Report Bug](https://github.com/meirgoo/walnut-cms/issues)
+[Website](https://walnut.meirgoo.com) · [Live Demo](https://walnut-demo.meirgoo.com) · [Issues](https://github.com/Meirgoo/walnut-edge-cms-community/issues)
 
 </div>
 
-> **Beta Notice (`v0.9.0-beta.1`)**: Walnut CMS Community Edition is currently in public beta. The core architecture, multi-site engine, and official `Univers` theme are live in production, while documentation and minor UX rough edges are still being polished. Feedback and issue reports are warmly welcome.
+> **Beta Notice (`v0.9.0-beta.2`)**: Walnut CMS Community Edition is currently in public beta. The core engine, multi-site architecture, and official `Univers` theme are running stably in production, while documentation and UX details continue to be refined. Feedback and issue reports are welcome.
 
-<!-- Replace with actual screenshots after deploying your demo site -->
-<!-- ![Walnut CMS Preview](./docs/screenshots/preview-light.png) -->
-
----
-
-## Why Walnut CMS?
-
-Most self-hosted CMS platforms force you to maintain a VPS, a database server, and a fragile plugin stack—or settle for a static site generator that turns every quick edit into a Git CI pipeline.
-
-**Walnut CMS** is built from the ground up for Cloudflare's edge platform with a **low-maintenance, finished-software** philosophy:
-
-- **Edge-Native & Ultra-Light**: Runs entirely on Cloudflare Workers + D1 + R2 with zero VPS maintenance. Typical runtime stays under **4 MB memory** and **< 10 ms P99 CPU**, with a full uncached public page transferring **~58 KB** in total—friendly to Cloudflare's free tier.
-- **Hybrid Content Model**: First-class support for three complementary content types in one workspace:
-  - **Articles**: Long-form Markdown with custom callout containers, auto-generated TOC, version snapshots, multi-locale translation groups, and bidirectional `[[Wiki]]` backlinks.
-  - **Micros**: Untitled, zero-friction short notes and status streams with optional `progress` badges.
-  - **Datasets**: Custom JSON1 schemas for portfolios, project directories, reading lists, or structured catalogs.
-- **Decoupled Themes & Slot Assembly**: Themes define layout skeletons (`header`, `subnav`, `main`, `sidebar`, `footer`) and component contracts, while pages bind data independently via `@api:` protocols and master templates (`@slot:page_content`). Switch themes via ZIP or Git (including private repo tokens) without migrating your data.
-- **Unlimited Multi-Site (Free in Community)**: Host your personal homepage, project documentation, and demo sites from a single Worker instance with isolated domains, routes, media, and themes.
-- **Security by Default**: Admin initialization and console access integrate natively with **Cloudflare Access (Zero Trust)**, alongside built-in RBAC, CSRF protection, and tenant isolation.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./repo_static/exmaple_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./repo_static/exmaple.png">
+  <img alt="Walnut CMS Preview" src="./repo_static/exmaple.png">
+</picture>
 
 ---
 
-## Built-in `@api:` Data Protocols
+## What is Walnut CMS?
 
-Bind live content directly to any theme component without writing custom backend glue code:
+`walnut-edge-cms-community` is an edge site-building tool deployed on Cloudflare Workers. Designed from the ground up for the Cloudflare edge ecosystem, it offers:
 
-| Protocol | Description |
-| :--- | :--- |
-| `@api:articles:limit=6` | Fetch latest published articles (supports `locale`, `folder`, etc.) |
-| `@api:micro:limit=6` | Fetch latest untitled micro posts |
-| `@api:dataset:schema=projects&limit=12` | Query structured entries by custom dataset schema |
-| `@api:feed:types=article,micro&limit=20` | Merge multiple content types into a unified chronological timeline |
-| `@api:media:limit=3` | Query public media assets from R2 |
+- **Edge-native, zero VPS maintenance**: Runs directly on Cloudflare Workers + D1 + R2 with a minimal memory footprint and millisecond-level responses, fitting comfortably within Cloudflare's free tier.
+- **Multi-format content management**: Native support for long-form articles (Markdown, bidirectional links, multi-language), lightweight micro-content streams, and custom structured datasets (projects, reading lists, curated links, etc.).
+- **Decoupled themes and data**: One-click theme switching via ZIP or Git import without losing content; built-in AI contracts allow external AI tools to generate compatible themes and pages directly.
+- **Multi-site & Zero Trust security**: Host unlimited sites on a single Worker instance with native Cloudflare Access protection for the admin console.
 
 ---
 
@@ -56,86 +39,58 @@ Bind live content directly to any theme component without writing custom backend
 
 ### Prerequisites
 
-- A [Cloudflare](https://dash.cloudflare.com/) account (Workers, D1, R2, and Zero Trust Access enabled — Cloudflare's Free plan includes up to 50 Access seats at $0/month)
-- Node.js `>= 20`
+- A [Cloudflare](https://dash.cloudflare.com/) account with Workers, D1, R2, and Zero Trust Access enabled (Zero Trust Free includes up to 50 active users at no cost for personal use)
+- Node.js `>= 20` installed locally
+- Analytics Engine enabled in Cloudflare (optional; can be skipped during deployment)
 
-### Step 1: Configure Cloudflare Access (Required for `/admin`)
+### Step 1: Configure Cloudflare Access (Required for standard build; skip for `nocfa`)
 
-For security, Walnut CMS enforces **Cloudflare Access** authentication during initial setup (`/admin/setup`) and admin console access.
-
-1. Go to Cloudflare **Workers & Pages** page→ Enable **Analytics Engine**
+> For a shorter deployment path, download the **`nocfa`** release package from [Releases](https://github.com/Meirgoo/walnut-edge-cms-community/releases) (removes Cloudflare Access verification for simpler setup, with reduced security compared to the standard build) and jump straight to Step 2.
 
 1. Go to **Cloudflare Zero Trust → Access → Applications → Add an application → Self-hosted**.
-2. Under **Public Hostname**, enter your site domain and set **Path** to **`admin`** *(Important: do **not** add a trailing `*` such as `/admin*` — Cloudflare Access uses prefix matching by default, and a literal `*` will prevent `/admin/setup` from matching)*.
-3. Under **Policies**, create a policy with Action set to **Allow** *(not Bypass)* and include your email address.
-4. Note your **Team Name** (`CF_ACCESS_TEAM_NAME`, **prefix only** — e.g., `myteam` from `myteam.cloudflareaccess.com`, without `https://` or the domain suffix).
-5. Copy the **Application Audience (AUD) Tag** (`CF_ACCESS_AUD`) from the application's **Overview** tab *(strongly recommended to lock JWT verification strictly to this Access application)*.
+2. Enter your site domain under **Public Hostname**, and set **Path** to **`admin`** *(do NOT write `/admin*` or include a `*` wildcard)*.
+3. Under **Policies**, create a new policy with **Action** set to **Allow** *(do not select Bypass)* and add your email under Include rules.
+4. Note your **Team Name** (`CF_ACCESS_TEAM_NAME` — prefix only, e.g., `myteam`).
 
-> **Multi-site tip**: You can add multiple site domains (each with path `admin`) under **one** Access application so all sites share the same `CF_ACCESS_AUD`.
+### Step 2: One-Click Deploy or Build from Source
 
-### Step 2: Deploy
+#### Option 1: One-Click Deployment via Release Package (Recommended)
 
-#### Option A: One-Command Deploy from Release Package (Recommended)
-
-Download and extract `walnut-cms-community.tar.gz` from [Releases](https://github.com/meirgoo/walnut-cms/releases), then run the interactive deployment wizard:
+Download and extract `walnut-cms-community.tar.gz` from [Releases](https://github.com/Meirgoo/walnut-edge-cms-community/releases), then run the zero-dependency interactive deployment wizard in the root directory:
 
 ```bash
-node deploy.mjs          # Auto-detect language (zh / en)
+node deploy.mjs          # Auto-detects system language (zh / en)
 node deploy.mjs --lang=en
 ```
 
-The wizard automatically handles Wrangler login checks, D1/R2 provisioning or reuse, secret preservation, incremental database migrations, and theme asset syncing.
+The wizard automatically verifies authentication, creates or reuses D1/R2 resources, preserves existing secrets, applies incremental database migrations, and syncs theme static assets.
 
-#### Option B: Local Development & Deploy from Source
+#### Option 2: Local Development & Manual Deployment from Source
 
 ```bash
-git clone [https://github.com/](https://github.com/)meirgoo/walnut-cms.git
-cd walnut-cms
+git clone https://github.com/Meirgoo/walnut-edge-cms-community.git
+cd walnut-edge-cms-community
 npm install
 
-# Sync official Univers theme assets to local R2
+# Sync official Univers theme static assets to local R2
 node scripts/sync-theme-assets.mjs --local
 
-# Start local dev server
+# Start local development server
 npm run dev
 ```
 
-To deploy manually from source:
+Deploy manually to Cloudflare from source:
 
 ```bash
 npm run deploy
-# Ensure remote R2 contains the official theme static assets
+# Ensure official theme static assets are synced to remote R2
 node scripts/sync-theme-assets.mjs --remote
 ```
 
-To regenerate Cloudflare Worker TypeScript bindings after modifying `wrangler.jsonc`:
-
-```bash
-npm run cf-typegen
-```
-
-### Step 3: Initialize & Customize
-
-1. Visit `https://your-domain.com/admin/setup` (authenticated via Cloudflare Access) to create your admin account and claim your primary domain.
-2. Walnut ships with the official **`Univers`** theme (light/dark adaptive, 19 single-responsibility components, and 5 page blueprints) plus an interactive starter guide.
-3. All starter articles, pages, and micros are tagged under `folder: guide`—once you're familiar with the workspace, filter by `guide` in Admin to bulk-delete them cleanly.
+### Step 3: Initialize & Start Customizing
+Visit `https://your-domain/admin/setup` (after passing Cloudflare Access verification on the standard build) to create your admin account and claim your default domain.
 
 ---
-
-## Community vs. Open-Core Roadmap
-
-Walnut CMS follows a pragmatic **Open-Core** model designed for sustainable, independent maintenance:
-
-- **Community Edition (Free & Open)**: Full content engine (Articles, Micros, Datasets), unlimited multi-site hosting, visual slot page builder, `@api:` protocols, Git/ZIP theme import, basic form & Webhook forwarding, and the official `Univers` theme.
-- **Commercial Extensions & Themes (Planned)**: Advanced automation workflows, external API gateways, white-label branding, automated R2 backup/restore workflows, and standalone premium themes delivered via private Git/ZIP packages.
-
----
-
-## Status
-
-- Current release: **`v0.9.0-beta.1`**
-- If you run into deployment hiccups, R2 asset sync issues, or edge-case bugs, please open an [Issue](https://github.com/meirgoo/walnut-cms/issues).
 
 ## License
-
-Released under the [MIT License](./LICENSE).
+This project is open-sourced under the [MIT License](./LICENSE).

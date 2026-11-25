@@ -1,6 +1,7 @@
 import type { ExecutionContext } from '@cloudflare/workers-types';
 import { DAL } from './dal';
 import { DEFAULT_DEV_HOST } from './core/url';
+import { extractClientIp } from './core/utils';
 import type {
     ActionType,
     BeforeHookHandler,
@@ -14,7 +15,8 @@ import type {
     QuickActionItem
 } from './types';
 
-export const ENGINE_CORE_VERSION = '0.9-beta.1';
+import { ENGINE_CORE_VERSION } from './version';
+export { WALNUT_VERSION, WALNUT_SCHEMA_VERSION, ENGINE_CORE_VERSION } from './version';
 export const nanoId = (prefix = '', len = 12) => `${prefix ? prefix + '_' : ''}${crypto.randomUUID().replace(/-/g, '').slice(0, len)}`;
 
 
@@ -28,7 +30,7 @@ export class PluginEngine implements IPluginEngine {
     private readonly afterHooks: Map<ActionType, AfterHookHandler[]> = new Map();
     private readonly registeredPlugins: Map<string, WalnutPlugin> = new Map();
     private readonly quickActions: Map<string, QuickActionItem> = new Map();
-    private firewallHandler?: (ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers) => Promise<{ allowed: boolean; status?: number; reason?: string }> | { allowed: boolean; status?: number; reason?: string };
+    private firewallHandler?: (ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers, opts?: { isAdminSession?: boolean }) => Promise<{ allowed: boolean; status?: number; reason?: string }> | { allowed: boolean; status?: number; reason?: string };
 
     public tapBefore<TData = any>(
         action: ActionType,
@@ -97,7 +99,7 @@ export class PluginEngine implements IPluginEngine {
 
     public getQuickActions(licenseTier?: string): QuickActionItem[] {
         const list = Array.from(this.quickActions.values());
-        if (!licenseTier || licenseTier === 'agency' || licenseTier === 'oem') return list;
+        if (!licenseTier || licenseTier === 'agency') return list;
         if (licenseTier === 'personal') return list.filter((a) => a.tier !== 'agency');
         return list.filter((a) => !a.tier || a.tier === 'community');
     }
@@ -106,13 +108,13 @@ export class PluginEngine implements IPluginEngine {
         return this.services.has(action);
     }
 
-    public setFirewallHandler(handler: (ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers) => Promise<{ allowed: boolean; status?: number; reason?: string }> | { allowed: boolean; status?: number; reason?: string }): void {
+    public setFirewallHandler(handler: (ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers, opts?: { isAdminSession?: boolean }) => Promise<{ allowed: boolean; status?: number; reason?: string }> | { allowed: boolean; status?: number; reason?: string }): void {
         this.firewallHandler = handler;
     }
 
-    public async checkFirewall(ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers): Promise<{ allowed: boolean; status?: number; reason?: string }> {
+    public async checkFirewall(ip: string, isWrite: boolean, reqUrl: URL, env: any, reqHeaders?: Headers, opts?: { isAdminSession?: boolean }): Promise<{ allowed: boolean; status?: number; reason?: string }> {
         if (this.firewallHandler) {
-            return await this.firewallHandler(ip, isWrite, reqUrl, env, reqHeaders);
+            return await this.firewallHandler(ip, isWrite, reqUrl, env, reqHeaders, opts);
         }
         return { allowed: true };
     }
@@ -197,14 +199,13 @@ export function createHookContext<TData = any, TResult = any>(
 
     const user = options.user !== undefined ? options.user : (getProp('user') ?? null);
     const siteId = options.siteId ?? getProp('siteId');
-    const tenantId = options.tenantId ?? getProp('tenantId');
     const host = options.host ?? getProp('host') ?? (c?.req as any)?.header?.('host') ?? DEFAULT_DEV_HOST;
     const locale = options.locale ?? getProp('locale') ?? 'zh-CN';
     const clientIp =
         options.clientIp ??
-        (c?.req as any)?.header?.('cf-connecting-ip') ??
-        (c?.req as any)?.header?.('x-forwarded-for')?.split(',')[0]?.trim() ??
-        '127.0.0.1';
+        (typeof (c?.req as any)?.header === 'function'
+            ? extractClientIp(c as any)
+            : '127.0.0.1');
 
     return {
         action,
@@ -214,7 +215,6 @@ export function createHookContext<TData = any, TResult = any>(
         dal,
         user,
         siteId,
-        tenantId,
         clientIp,
         host,
         locale,
@@ -266,4 +266,34 @@ export function isFeatureEnabled(flag: keyof FeatureFlags, env?: any): boolean {
     if (envVal === 'true' || envVal === '1') return true;
     if (envVal === 'false' || envVal === '0') return false;
     return FEATURE_FLAGS[flag];
+}
+
+export async function forwardWorkerBridgeProxy(
+    c: any,
+    pluginEngine: PluginEngine,
+    scope: 'admin' | 'public',
+    prefixBase: '/admin/ext' | '/ext',
+    siteId: string
+): Promise<Response> {
+    const slug = (c.req.param('slug') || '').trim().toLowerCase();
+    const reqUrl = new URL(c.req.url);
+    const prefix = `${prefixBase}/${slug}`;
+    const restPath = reqUrl.pathname.startsWith(prefix) ? (reqUrl.pathname.slice(prefix.length) || '/') : '/';
+    const forwardPath = `${restPath}${reqUrl.search || ''}`;
+    const headers: Record<string, string> = {};
+    c.req.raw.headers.forEach((v: string, k: string) => { headers[k] = v; });
+    const bodyText = (c.req.method !== 'GET' && c.req.method !== 'HEAD') ? await c.req.text() : '';
+    try {
+        const res = await pluginEngine.runPipeline(createHookContext({
+            action: 'WORKER_BRIDGE_PROXY',
+            data: { scope, slug, forwardPath, method: c.req.method, headers, bodyText, siteId },
+            c,
+            siteId,
+            user: scope === 'admin' ? c.get('user') : undefined
+        }));
+        return new Response(res.bodyText, { status: res.status || 200, headers: res.headers });
+    } catch (err: any) {
+        const msg = String(err?.message || 'Worker proxy error');
+        return c.text(msg, (msg.startsWith('LICENSE_') ? 403 : 502) as any);
+    }
 }

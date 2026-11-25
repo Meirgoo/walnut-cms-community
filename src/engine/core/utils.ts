@@ -17,9 +17,14 @@ export function getCookieValue(cookieHeader: string | undefined, name: string): 
 }
 
 export function extractClientIp(c: { req: { header: (k: string) => string | undefined } }): string {
-    return c.req.header('cf-connecting-ip')?.trim()
-        || c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-        || '127.0.0.1';
+    const cfIp = c.req.header('cf-connecting-ip')?.trim();
+    if (cfIp) return cfIp;
+    const host = (c.req.header('host') || '').toLowerCase();
+    // Ignore untrusted X-Forwarded-For so non-CF callers cannot spoof 127.0.0.1 to bypass rate limits.
+    if (!c.req.header('x-forwarded-for') && (host.startsWith('localhost') || host.startsWith('127.0.0.1'))) {
+        return '127.0.0.1';
+    }
+    return 'unverified';
 }
 
 export function isSiteAdminUser(user: any): boolean {
@@ -81,14 +86,15 @@ export function escapeXml(unsafe: string): string {
 }
 
 export function isPreviewRequest(c: { req: { query: (k: string) => string | undefined; header: (k: string) => string | undefined } }): boolean {
-    const q = c.req.query('walnut_preview');
+    const q = c.req.query('edge_preview');
     return Boolean(
         q === '1' ||
         q === 'true' ||
         c.req.query('preview') === '1' ||
-        c.req.header('x-walnut-preview') === '1' ||
+        c.req.header('x-edge-preview') === '1' ||
+        c.req.header('x-edge-preview') === '1' ||
         c.req.header('sec-fetch-dest') === 'iframe' ||
-        (c.req.header('referer') || '').includes('walnut_preview=1')
+        (c.req.header('referer') || '').includes('edge_preview=1')
     );
 }
 

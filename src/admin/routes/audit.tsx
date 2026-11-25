@@ -54,8 +54,8 @@ auditRouter.get('/', async (c) => {
     if (isCommercial) {
         webhookConfigs = extractWebhookConfigsFromSettings(activeSite?.settings);
         const [logsRes, tasksRes, whLogsRes, listRes, blRes, trRes] = await Promise.all([
-            queryAuditLogsWithUsers(ctx.db, activeSiteId, 100).catch(() => []),
-            findTasksBySite(ctx.db, activeSiteId).catch(() => []),
+            queryAuditLogsWithUsers(ctx.db, activeSiteId, 100, ctx.isSuperAdmin).catch(() => []),
+            findTasksBySite(ctx.db, activeSiteId, ctx.isSuperAdmin).catch(() => []),
             fetchWebhookLogs(ctx.db, activeSiteId, 100).catch(() => []),
             runAdminPipeline<{ siteId?: string }, { snapshots: D1SnapshotListItem[] }>(
                 c,
@@ -185,6 +185,11 @@ auditRouter.get('/api/backups/download', async (c) => {
         return renderStatusMessage(c, t(locale, 'common.not_found'), 'error', 404);
     }
 
+    const ownerSiteId = object.customMetadata?.siteId;
+    if (!ctx.isSuperAdmin && ownerSiteId !== ctx.activeSiteId) {
+        return renderStatusMessage(c, t(locale, 'common.forbidden'), 'error', 403);
+    }
+
     const filename = key.split('/').pop() || 'd1-backup.json';
     return new Response(object.body, {
         headers: {
@@ -192,6 +197,38 @@ auditRouter.get('/api/backups/download', async (c) => {
             'Content-Disposition': `attachment; filename="${filename}"`
         }
     });
+});
+
+auditRouter.get('/api/workers', async (c) => {
+    const siteId = c.get('siteId') || 'site_default';
+    try {
+        const res = await runAdminPipeline(c, 'WORKER_BRIDGE_LIST', { siteId }, siteId);
+        return c.json(res);
+    } catch (e: any) {
+        return c.json({ success: false, error: e?.message || 'Error' }, e?.message?.startsWith('LICENSE_') ? 403 : 400);
+    }
+});
+
+auditRouter.post('/api/workers/save', async (c) => {
+    const siteId = c.get('siteId') || 'site_default';
+    try {
+        const body = await c.req.json();
+        const res = await runAdminPipeline(c, 'WORKER_BRIDGE_SAVE', { ...body, siteId }, siteId);
+        return c.json(res);
+    } catch (e: any) {
+        return c.json({ success: false, error: e?.message || 'Error' }, e?.message?.startsWith('LICENSE_') ? 403 : 400);
+    }
+});
+
+auditRouter.delete('/api/workers/:id', async (c) => {
+    const siteId = c.get('siteId') || 'site_default';
+    const id = c.req.param('id');
+    try {
+        const res = await runAdminPipeline(c, 'WORKER_BRIDGE_DELETE', { id, siteId }, siteId);
+        return c.json(res);
+    } catch (e: any) {
+        return c.json({ success: false, error: e?.message || 'Error' }, e?.message?.startsWith('LICENSE_') ? 403 : 400);
+    }
 });
 
 export { auditRouter };

@@ -17,16 +17,15 @@ import { tasksRouter } from './routes/tasks';
 import { usersRouter } from './routes/users';
 import { auditRouter } from './routes/audit';
 import { profileRouter } from './routes/profile';
-import { logsRouter } from './routes/logs';
 import { webhooksRouter } from './routes/webhooks';
 import { mediaRouter } from './routes/media';
 import { datasetRouter } from './routes/datasets';
 import { settingsRouter, sitesRouter } from './routes/settings';
 import { uploadRouter } from './routes/upload';
-import { handleSaveNode, initAdminEngineContext, checkSystemInstalledCached, getAdminRouteContext } from './routes/common';
+import { handleSaveNode, initAdminPluginEngine, checkSystemInstalledCached, getAdminRouteContext } from './routes/common';
 import {
     createHookContext,
-    getSessionUserId,
+    clearSessionCookie,
     setAdminLocaleCookie,
     getAdminLocale,
     normalizeHostKey,
@@ -46,7 +45,8 @@ import {
     autoClaimSiteDomainIfEligible,
     isPreviewRequest,
     verifySameOriginRequest,
-    getCommercialJs
+    getCommercialJs,
+    forwardWorkerBridgeProxy
 } from '../engine';
 
 const adminApp = new Hono<AppHonoEnv>();
@@ -58,6 +58,7 @@ adminApp.use('*', async (c, next) => {
 
     c.header('X-Frame-Options', 'DENY');
     c.header('Content-Security-Policy', "frame-ancestors 'none'");
+    c.header('X-Robots-Tag', 'noindex, nofollow');
 
     // Force full-page redirect when HTMX requests originate outside /admin (e.g. boosted public pages) to prevent injecting the admin shell into a public body.
     if (c.req.header('HX-Request')) {
@@ -102,7 +103,7 @@ adminApp.use('*', async (c, next) => {
         }
     }
 
-    let currentSiteId = c.get('siteId') || getCookie(c, 'walnut_active_site');
+    let currentSiteId = c.get('siteId') || getCookie(c, 'edge_active_site');
     let resolvedSite: any = c.get('site' as any);
     if (currentSiteId && !resolvedSite) {
         try {
@@ -157,7 +158,7 @@ adminApp.use('*', async (c, next) => {
         }
     }
 
-    const pluginEngine = initAdminEngineContext(c);
+    const pluginEngine = initAdminPluginEngine(c);
     if (pluginEngine.hasCommercialPlugins() && !path.startsWith('/admin/setup') && !path.startsWith('/admin/switch-locale')) {
         try {
             const licCtx = createHookContext({ action: 'LICENSE_READ', data: {}, c, siteId: currentSiteId });
@@ -199,12 +200,15 @@ adminApp.use('*', async (c, next) => {
         }
     }
 
-    if (path.startsWith('/admin/setup') || path.startsWith('/admin/switch-locale') || path === '/admin/login' || path === '/admin/api/login') {
+    if (path.startsWith('/admin/setup') || path.startsWith('/admin/switch-locale') || path === '/admin/login' || path === '/admin/api/login' || path === '/admin/auth/cf-access') {
         return await next();
     }
 
-    const sessionUserId = await getSessionUserId(c);
-    if (!user && !sessionUserId) {
+    if (!user) {
+        clearSessionCookie(c);
+        if (path.startsWith('/admin/api/') || path.includes('/api/') || c.req.header('Accept')?.includes('application/json')) {
+            return c.json({ success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' }, 401);
+        }
         return c.redirect('/admin/login');
     }
 
@@ -253,7 +257,7 @@ adminApp.post('/switch-site', async (c) => {
         }
     }
 
-    c.header('Set-Cookie', `walnut_active_site=${targetSiteId}; Path=/; SameSite=Lax; Max-Age=2592000`);
+    c.header('Set-Cookie', `edge_active_site=${targetSiteId}; Path=/; SameSite=Lax; Max-Age=2592000`);
     const currentHost = normalizeHostKey(c.get('host') || c.req.header('host') || '');
     const targetRawDomain = String(targetSite.primary_domain || '').trim();
     const targetNormHost = normalizeHostKey(targetRawDomain);
@@ -293,7 +297,7 @@ adminApp.route('/media', mediaRouter);
 adminApp.route('/datasets', datasetRouter);
 adminApp.route('/settings', settingsRouter);
 adminApp.route('/sites', sitesRouter);
-adminApp.route('/logs', logsRouter);
+adminApp.get('/logs', (c) => c.redirect('/admin/audit?tab=logs', 302));
 adminApp.route('/webhooks', webhooksRouter);
 adminApp.route('/api/upload', uploadRouter);
 
@@ -339,6 +343,17 @@ adminApp.get('/commercial-assets/:file', async (c) => {
 });
 
 adminApp.post('/api/save', handleSaveNode);
+
+const handleAdminExtProxy = async (c: any) => {
+    const pluginEngine = c.get('pluginEngine');
+    if (!pluginEngine?.hasService('WORKER_BRIDGE_PROXY')) {
+        return c.notFound();
+    }
+    return await forwardWorkerBridgeProxy(c, pluginEngine, 'admin', '/admin/ext', c.get('siteId') || 'site_default');
+};
+
+adminApp.all('/ext/:slug', handleAdminExtProxy);
+adminApp.all('/ext/:slug/*', handleAdminExtProxy);
 
 adminApp.all('*', async (c) => {
     const locale = getAdminLocale(c);

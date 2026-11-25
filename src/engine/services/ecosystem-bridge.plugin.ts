@@ -8,7 +8,7 @@ import {
 import { assertSiteAdmin } from './common.helper';
 
 export const ALLOWED_ECOSYSTEM_APPS = new Set(['grain']);
-export const ECOSYSTEM_APP_HEADERS = ['X-Ecosystem-App', ['X', 'Walnut', 'Ecosystem', 'App'].join('-')] as const;
+export const ECOSYSTEM_APP_HEADERS = ['X-Edge-Ecosystem-App', 'X-Ecosystem-App'] as const;
 
 interface OneTimeCodeEntry {
     siteId: string;
@@ -108,7 +108,6 @@ function normalizeLoosePayload(app: string, raw: Record<string, any>) {
 
 export const ecosystemBridgePlugin: WalnutPlugin = {
     name: 'ecosystem:bridge',
-    version: '2.0.0',
     tier: 'community',
 
     setup(engine: IPluginEngine): void {

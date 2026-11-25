@@ -36,22 +36,13 @@ html.is-sidebar-collapsed #admin-sidebar .sidebar-collapsed-only {
   display: flex !important;
 }
 
-#admin-sidebar.sidebar-collapsed .sidebar-group-divider,
-html.is-sidebar-collapsed #admin-sidebar .sidebar-group-divider {
-  display: block !important;
-  width: 1.5rem;
-  height: 1px;
-  background-color: rgb(30 41 59);
-  margin: 0.5rem auto;
-}
-
 #admin-sidebar.sidebar-collapsed .sidebar-header-box,
 html.is-sidebar-collapsed #admin-sidebar .sidebar-header-box {
   flex-direction: column !important;
   height: auto !important;
   justify-content: center !important;
-  padding: 0.65rem 0.25rem !important;
-  gap: 0.45rem;
+  padding: 0.5rem 0.25rem !important;
+  gap: 0.25rem;
 }
 
 #admin-sidebar.sidebar-collapsed .sidebar-item,
@@ -64,12 +55,6 @@ html.is-sidebar-collapsed #admin-sidebar .sidebar-item {
   padding: 0 !important;
   border-left-width: 0 !important;
   border-radius: 0.5rem !important;
-}
-
-#admin-sidebar.sidebar-collapsed .sidebar-item.bg-emerald-500\/10,
-html.is-sidebar-collapsed #admin-sidebar .sidebar-item.bg-emerald-500\/10 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  color: rgb(52 211 153) !important;
 }
 
 #admin-sidebar.sidebar-collapsed .sidebar-item .icon,
@@ -86,6 +71,79 @@ html.is-sidebar-collapsed #admin-sidebar .sidebar-footer-collapsed {
   align-items: center !important;
   gap: 0.5rem !important;
   padding: 0.75rem 0 !important;
+}
+
+@media (max-width: 1023px) {
+  #editor-inspector-sidebar:not(.mobile-inspector-open) {
+    display: none !important;
+  }
+  #editor-inspector-sidebar.mobile-inspector-open {
+    display: flex !important;
+    position: fixed !important;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(330px, 88vw) !important;
+    min-width: 0 !important;
+    max-width: 330px !important;
+    z-index: 60 !important;
+    box-shadow: -12px 0 36px rgba(0, 0, 0, 0.22);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  #sidebar-toggle-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  #admin-sidebar:not(.mobile-drawer-open) {
+    display: none !important;
+  }
+  #admin-sidebar.mobile-drawer-open {
+    display: flex !important;
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+    z-index: 60 !important;
+    box-shadow: 12px 0 36px rgba(0, 0, 0, 0.22);
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-text {
+    display: inline !important;
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-expanded-only,
+  #admin-sidebar.mobile-drawer-open .sidebar-footer-expanded {
+    display: block !important;
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-collapsed-only,
+  #admin-sidebar.mobile-drawer-open .sidebar-footer-collapsed {
+    display: none !important;
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-header-box {
+    flex-direction: row !important;
+    height: 3.5rem !important;
+    justify-content: space-between !important;
+    padding: 0 0.875rem !important;
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-item {
+    justify-content: flex-start !important;
+    padding: 0.375rem 0.625rem !important;
+  }
+  #admin-sidebar.mobile-drawer-open .sidebar-item .icon {
+    margin-right: 0.625rem !important;
+  }
+  #editor-view-toggle,
+  #preview-core {
+    display: none !important;
+  }
+  #editor-pane-source {
+    width: 100% !important;
+  }
 }
 
 /* Hide inactive theme icons on first paint via data-theme-mode to prevent FOUC before JS runs. */
@@ -126,27 +184,27 @@ html[data-theme-mode="system"] .theme-icon-dark {
   visibility: hidden !important;
 }
 
-walnut-select,
-walnut-color-picker {
+edge-select,
+edge-color-picker {
   display: inline-block;
   min-height: 36px;
   box-sizing: border-box;
 }
 
-walnut-select:not(:defined),
-walnut-color-picker:not(:defined) {
+edge-select:not(:defined),
+edge-color-picker:not(:defined) {
   display: inline-block !important;
   min-height: 36px !important;
   box-sizing: border-box !important;
 }
 
-walnut-select.walnut-select-compact,
-walnut-select.walnut-select-compact:not(:defined) {
+edge-select.edge-select-compact,
+edge-select.edge-select-compact:not(:defined) {
   display: inline-flex !important;
   min-height: 0 !important;
 }
 
-walnut-select > option {
+edge-select > option {
   display: none !important;
 }
 
@@ -161,23 +219,21 @@ html:not(.dark) {
 
 input[type="checkbox"] {
   color-scheme: light;
-  accent-color: #059669;
+  accent-color: var(--admin-accent) !important;
 }
 
-.dark input[type="checkbox"],
 html.dark input[type="checkbox"],
 html[data-theme-mode="dark"] input[type="checkbox"] {
   color-scheme: dark !important;
-  accent-color: #10b981 !important;
-  background-color: #1e293b !important;
-  border-color: #475569 !important;
+  accent-color: var(--admin-accent) !important;
+  background-color: var(--admin-surface) !important;
+  border-color: var(--admin-border) !important;
 }
 
-.dark input[type="checkbox"]:checked,
 html.dark input[type="checkbox"]:checked,
 html[data-theme-mode="dark"] input[type="checkbox"]:checked {
-  background-color: #059669 !important;
-  border-color: #059669 !important;
+  background-color: var(--admin-accent) !important;
+  border-color: var(--admin-accent) !important;
 }
 
 /* Omit .htmx-swapping { opacity: 0 } to prevent blank white flashes during swaps. */
@@ -194,8 +250,7 @@ html[data-theme-mode="dark"] input[type="checkbox"]:checked {
 /* Cap row/item transitions at 75ms to prevent hover lag on high-refresh-rate displays. */
 .sidebar-item,
 .sidebar-item .icon,
-table tbody tr,
-.walnut-table tbody tr {
+table tbody tr {
   transition-property: color, background-color, border-color !important;
   transition-duration: 75ms !important;
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1) !important;
@@ -207,18 +262,141 @@ table tbody tr,
 .thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.18); border-radius: 9999px; }
 .thin-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.4); }
 
-.preview-dot-grid {
-  background-color: #f8fafc;
-  background-image: radial-gradient(rgba(203, 213, 225, 0.4) 1px, transparent 1px);
-  background-size: 16px 16px;
+/* Scoped editorial typography for Markdown preview so unstyled HTML tags render cleanly without @tailwindcss/typography. */
+.walnut-prose {
+  color: var(--admin-text);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  word-wrap: break-word;
 }
-
-.dark .preview-dot-grid,
-html.dark .preview-dot-grid,
-html[data-theme-mode="dark"] .preview-dot-grid {
-  background-color: #0b0f19;
-  background-image: radial-gradient(rgba(51, 65, 85, 0.3) 1px, transparent 1px);
-  background-size: 16px 16px;
+.walnut-prose > * {
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.walnut-prose > :first-child {
+  margin-top: 0;
+}
+.walnut-prose h1 {
+  font-size: 1.875rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 1.75rem 0 0.875rem;
+  color: var(--admin-text);
+}
+.walnut-prose h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 1.5rem 0 0.75rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text);
+}
+.walnut-prose h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 1.25rem 0 0.5rem;
+  color: var(--admin-text);
+}
+.walnut-prose h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+  color: var(--admin-text);
+}
+.walnut-prose p {
+  margin: 0.875rem 0;
+}
+.walnut-prose a {
+  color: var(--admin-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: default;
+}
+.walnut-prose strong {
+  font-weight: 700;
+  color: var(--admin-text);
+}
+.walnut-prose blockquote {
+  margin: 1rem 0;
+  padding: 0.625rem 1rem;
+  border-left: 3px solid var(--admin-accent);
+  background-color: var(--admin-chrome);
+  color: var(--admin-text-muted);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+.walnut-prose blockquote p {
+  margin: 0.25rem 0;
+}
+.walnut-prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.875rem 0;
+}
+.walnut-prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin: 0.875rem 0;
+}
+.walnut-prose li {
+  margin: 0.35rem 0;
+}
+.walnut-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  padding: 0.15rem 0.375rem;
+  border-radius: 0.375rem;
+  background-color: var(--admin-chrome);
+  color: var(--admin-accent-text);
+  border: 1px solid var(--admin-border);
+}
+.walnut-prose pre {
+  margin: 1.125rem 0;
+  padding: 1rem 1.125rem;
+  border-radius: 0.75rem;
+  background-color: #161822;
+  color: #F5F5F4;
+  overflow-x: auto;
+  border: 1px solid var(--admin-border);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.walnut-prose pre code {
+  padding: 0;
+  background-color: transparent;
+  color: inherit;
+  border: none;
+  font-size: inherit;
+}
+.walnut-prose hr {
+  margin: 1.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--admin-border);
+}
+.walnut-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+.walnut-prose th,
+.walnut-prose td {
+  border: 1px solid var(--admin-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.walnut-prose th {
+  background-color: var(--admin-chrome);
+  font-weight: 700;
+}
+.walnut-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
 }
 
 #preview-core [class*="md-"] {
@@ -228,43 +406,17 @@ html[data-theme-mode="dark"] .preview-dot-grid {
   margin: 1rem 0;
   padding: 0.875rem 1rem;
   border-radius: 0.75rem;
-  border: 1px solid rgb(226 232 240);
+  border: 1px solid var(--admin-border);
   border-left-width: 4px;
-  border-left-color: rgb(100 116 139);
-  background-color: rgb(248 250 252);
-  color: rgb(30 41 59);
+  border-left-color: var(--admin-text-muted);
+  background-color: var(--admin-chrome);
+  color: var(--admin-text);
 }
 
 #preview-core [class*="md-tip"],
-#preview-core [class*="md-quote"] {
-  border-left-color: rgb(16 185 129);
-}
-
+#preview-core [class*="md-quote"],
 #preview-core [class*="md-warning"] {
-  border-left-color: rgb(245 158 11);
-}
-
-#preview-core [class*="md-step"] {
-  border-left-color: rgb(99 102 241);
-}
-
-html.dark #preview-core [class*="md-"] {
-  border-color: rgb(51 65 85);
-  background-color: rgba(30, 41, 59, 0.8);
-  color: rgb(241 245 249);
-}
-
-html.dark #preview-core [class*="md-tip"],
-html.dark #preview-core [class*="md-quote"] {
-  border-left-color: rgb(16 185 129);
-}
-
-html.dark #preview-core [class*="md-warning"] {
-  border-left-color: rgb(245 158 11);
-}
-
-html.dark #preview-core [class*="md-step"] {
-  border-left-color: rgb(99 102 241);
+  border-left-color: var(--admin-accent);
 }
 
 #preview-core [class*="md-"] * {
@@ -289,14 +441,21 @@ table th .sort-icon {
   width: 16px !important;
   height: 16px !important;
   padding: 0 !important;
+  opacity: 0.4;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+table th:hover .col-filter-btn,
+table th:hover .sort-icon,
+table th .sort-icon.text-amber-600 {
+  opacity: 1;
 }
 table th .sort-icon {
   cursor: pointer;
   border-radius: 0.25rem;
 }
 table th .sort-icon:hover {
-  color: rgb(16 185 129);
-  background-color: rgba(148, 163, 184, 0.15);
+  color: var(--admin-accent-text);
+  background-color: var(--admin-surface-hover);
 }
 table th .col-filter-btn .material-symbols-outlined,
 table th .sort-icon.material-symbols-outlined {
@@ -320,12 +479,126 @@ table th .sort-icon.material-symbols-outlined {
   content: '';
   width: 1px;
   height: 100%;
-  background-color: rgba(148, 163, 184, 0.35);
+  background-color: transparent;
   transition: background-color 75ms ease-out, width 75ms ease-out;
+}
+table th:hover .th-resize-handle::after {
+  background-color: var(--admin-border);
 }
 .th-resize-handle:hover::after,
 .th-resize-handle.is-resizing::after {
   width: 2px;
-  background-color: rgb(16 185 129);
+  background-color: var(--admin-accent);
 }
+
+/* Unified content list chips, low-saturation pills & actions. */
+.folder-chip {
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.folder-chip-active {
+  font-weight: 600;
+  background-color: var(--admin-accent-soft);
+  color: var(--admin-accent-text);
+  border: 1px solid var(--admin-accent-border);
+}
+.folder-chip-inactive {
+  font-weight: 500;
+  background-color: transparent;
+  color: var(--admin-text-muted);
+  border: 1px solid transparent;
+}
+.folder-chip-inactive:hover {
+  background-color: var(--admin-surface-hover);
+  color: var(--admin-text);
+}
+
+.list-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.list-pill-truncate {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.list-pill-published { background-color: rgba(95, 115, 86, 0.12); color: #4A5C42; }
+.list-pill-draft { background-color: rgba(120, 113, 108, 0.11); color: #57534E; }
+.list-pill-scheduled { background-color: rgba(75, 107, 124, 0.12); color: #3D5A69; }
+.list-pill-archived { background-color: rgba(120, 113, 108, 0.08); color: #78716C; }
+.list-pill-locale { background-color: rgba(120, 113, 108, 0.10); color: #57534E; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.list-pill-locale-active { background-color: var(--admin-accent-soft); color: var(--admin-accent-text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+html.dark .list-pill-published { background-color: rgba(143, 168, 130, 0.15); color: #A6BF99; }
+html.dark .list-pill-draft { background-color: rgba(168, 162, 158, 0.14); color: #D6D3D1; }
+html.dark .list-pill-scheduled { background-color: rgba(122, 163, 184, 0.15); color: #93B8CC; }
+html.dark .list-pill-archived { background-color: rgba(168, 162, 158, 0.10); color: #A8A29E; }
+html.dark .list-pill-locale { background-color: rgba(168, 162, 158, 0.14); color: #D6D3D1; }
+
+.list-action-trash {
+  color: var(--admin-text-muted);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.list-action-trash:hover {
+  color: #DC2626;
+  background-color: rgba(220, 38, 38, 0.08);
+}
+html.dark .list-action-trash:hover {
+  color: #F87171;
+  background-color: rgba(248, 113, 113, 0.12);
+}
+
+/* Low-saturation special-route hint tones for page/article slug inspector. */
+.hint-special-warning {
+  background-color: var(--admin-accent-soft);
+  color: var(--admin-accent-text);
+  border-color: var(--admin-accent-border);
+}
+.hint-special-forbidden {
+  background-color: rgba(220, 38, 38, 0.08);
+  color: #B91C1C;
+  border-color: rgba(220, 38, 38, 0.25);
+}
+html.dark .hint-special-forbidden {
+  background-color: rgba(248, 113, 113, 0.12);
+  color: #FCA5A5;
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+/* Dashboard timeline low-saturation semantic colors (warm paper light & dark). */
+.tl-node-article { background-color: #B45309; }
+.tl-pill-article { background-color: rgba(180, 83, 9, 0.10); color: #92400E; }
+.tl-node-page { background-color: #4B6B7C; }
+.tl-pill-page { background-color: rgba(75, 107, 124, 0.11); color: #3D5A69; }
+.tl-node-micro { background-color: #5F7356; }
+.tl-pill-micro { background-color: rgba(95, 115, 86, 0.11); color: #4A5C42; }
+.tl-node-system { background-color: #78716C; }
+.tl-pill-system { background-color: rgba(120, 113, 108, 0.11); color: #57534E; }
+
+html.dark .tl-node-article { background-color: #F59E0B; }
+html.dark .tl-pill-article { background-color: rgba(245, 158, 11, 0.14); color: #FBBF24; }
+html.dark .tl-node-page { background-color: #7AA3B8; }
+html.dark .tl-pill-page { background-color: rgba(122, 163, 184, 0.14); color: #93B8CC; }
+html.dark .tl-node-micro { background-color: #8FA882; }
+html.dark .tl-pill-micro { background-color: rgba(143, 168, 130, 0.14); color: #A6BF99; }
+html.dark .tl-node-system { background-color: #A8A29E; }
+html.dark .tl-pill-system { background-color: rgba(168, 162, 158, 0.14); color: #D6D3D1; }
+
 

@@ -25,7 +25,7 @@
         var codeTokens = [];
         out = out.replace(/`([^`\n]+)`/g, function(_, code) {
             var idx = codeTokens.length;
-            codeTokens.push('<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs text-emerald-600 dark:text-emerald-400">' + escHtml(code) + '</code>');
+            codeTokens.push('<code class="px-1.5 py-0.5 rounded bg-stone-100 dark:bg-stone-800 font-mono text-xs text-amber-600 dark:text-amber-400">' + escHtml(code) + '</code>');
             return '\x00INLCODE' + idx + '\x00';
         });
 
@@ -34,13 +34,13 @@
                 return '<img src="' + safeUrl(src) + '" alt="' + escAttr(alt) + '" class="rounded-xl max-w-full h-auto my-3 shadow-sm" />';
             })
             .replace(/\[([^\[\]\n]+)\]\(([^)\n]+)\)/g, function(_, label, href) {
-                return '<a href="' + safeUrl(href) + '" target="_blank" rel="noopener" class="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">' + label + '</a>';
+                return '<a href="' + safeUrl(href) + '" target="_blank" rel="noopener" class="text-amber-600 dark:text-amber-400 font-semibold hover:underline">' + label + '</a>';
             })
             .replace(/\[\[([^\[\]\n|]+)\|([^\[\]\n]+)\]\]/g, function(_, slug, label) {
-                return '<a href="/' + escAttr(slug.trim()) + '" class="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">' + escHtml(label.trim()) + '</a>';
+                return '<a href="/' + escAttr(slug.trim()) + '" class="text-amber-600 dark:text-amber-400 font-semibold hover:underline">' + escHtml(label.trim()) + '</a>';
             })
             .replace(/\[\[([^\[\]\n:：]+)\]\]/g, function(_, slug) {
-                return '<a href="/' + escAttr(slug.trim()) + '" class="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">' + escHtml(slug.trim()) + '</a>';
+                return '<a href="/' + escAttr(slug.trim()) + '" class="text-amber-600 dark:text-amber-400 font-semibold hover:underline">' + escHtml(slug.trim()) + '</a>';
             })
             .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
             .replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
@@ -57,7 +57,7 @@
         var codeBlocks = [];
         var src = raw.replace(/\r\n/g, '\n').replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(_, lang, code) {
             var idx = codeBlocks.length;
-            codeBlocks.push('<pre class="bg-slate-900 text-emerald-400 p-4 rounded-xl overflow-x-auto text-xs font-mono my-4"><code class="language-' + escAttr(lang || 'text') + '">' + escHtml(code.replace(/\n$/, '')) + '</code></pre>');
+            codeBlocks.push('<pre class="bg-stone-900 text-amber-400 p-4 rounded-xl overflow-x-auto text-xs font-mono my-4"><code class="language-' + escAttr(lang || 'text') + '">' + escHtml(code.replace(/\n$/, '')) + '</code></pre>');
             return '\n\n\x00CODEBLK' + idx + '\x00\n\n';
         });
 
@@ -100,7 +100,7 @@
             }
 
             if (/^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-                htmlParts.push('<hr class="my-6 border-slate-200 dark:border-slate-700" />');
+                htmlParts.push('<hr class="my-6 border-stone-200 dark:border-stone-700" />');
                 i++;
                 continue;
             }
@@ -117,10 +117,10 @@
                     i++;
                 }
                 var tbl = '<table class="w-full text-xs border-collapse my-4"><thead><tr>'
-                    + headers.map(function(h) { return '<th class="border border-slate-200 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-800 text-left font-bold">' + parseInline(h) + '</th>'; }).join('')
+                    + headers.map(function(h) { return '<th class="border border-stone-200 dark:border-stone-700 px-3 py-2 bg-stone-50 dark:bg-stone-800 text-left font-bold">' + parseInline(h) + '</th>'; }).join('')
                     + '</tr></thead><tbody>'
                     + bodyRows.map(function(r) {
-                        return '<tr>' + r.map(function(c) { return '<td class="border border-slate-200 dark:border-slate-700 px-3 py-2">' + parseInline(c) + '</td>'; }).join('') + '</tr>';
+                        return '<tr>' + r.map(function(c) { return '<td class="border border-stone-200 dark:border-stone-700 px-3 py-2">' + parseInline(c) + '</td>'; }).join('') + '</tr>';
                     }).join('')
                     + '</tbody></table>';
                 htmlParts.push(tbl);
@@ -133,7 +133,7 @@
                     qLines.push(lines[i].replace(/^\s*>\s?/, ''));
                     i++;
                 }
-                htmlParts.push('<blockquote class="border-l-4 border-emerald-500 pl-4 py-1 my-4 italic text-slate-600 dark:text-slate-400">' + qLines.map(parseInline).join('<br />') + '</blockquote>');
+                htmlParts.push('<blockquote class="border-l-4 border-amber-500 pl-4 py-1 my-4 italic text-stone-600 dark:text-stone-400">' + qLines.map(parseInline).join('<br />') + '</blockquote>');
                 continue;
             }
 
@@ -144,7 +144,7 @@
                     var taskM = itemTxt.match(/^\[( |x|X)\]\s+(.*)$/);
                     if (taskM) {
                         var checked = taskM[1].toLowerCase() === 'x';
-                        ulItems.push('<li class="list-none flex items-center space-x-2"><input type="checkbox" disabled ' + (checked ? 'checked' : '') + ' class="rounded text-emerald-600" /><span>' + parseInline(taskM[2]) + '</span></li>');
+                        ulItems.push('<li class="list-none flex items-center space-x-2"><input type="checkbox" disabled ' + (checked ? 'checked' : '') + ' class="rounded text-amber-600" /><span>' + parseInline(taskM[2]) + '</span></li>');
                     } else {
                         ulItems.push('<li>' + parseInline(itemTxt) + '</li>');
                     }

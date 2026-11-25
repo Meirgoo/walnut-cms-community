@@ -9,7 +9,13 @@ import type {
     KVNamespace
 } from '@cloudflare/workers-types';
 import type { Site } from './types';
-import { findSiteById, findSiteByPrimaryDomain, findFirstActiveSite } from './core/dal';
+import {
+    findSiteById,
+    findSiteByPrimaryDomain,
+    findFirstActiveSite,
+    captureD1MetaSizeAfter,
+    recordR2BackupSize
+} from './core/dal';
 
 export * from './core/dal';
 
@@ -60,6 +66,7 @@ export class DAL {
         try {
             const statement = this.stmt(sql, ...params);
             const res = await statement.all<T>();
+            captureD1MetaSizeAfter(res?.meta);
             return res.results ?? [];
         } catch {
             return [];
@@ -68,7 +75,9 @@ export class DAL {
 
     public async execute(sql: string, params: unknown[] = []): Promise<D1Result<Record<string, unknown>>> {
         const statement = this.stmt(sql, ...params);
-        return await statement.run<Record<string, unknown>>();
+        const res = await statement.run<Record<string, unknown>>();
+        captureD1MetaSizeAfter(res?.meta);
+        return res;
     }
 
     public async batch<T = Record<string, unknown>>(
@@ -77,7 +86,11 @@ export class DAL {
         if (statements.length === 0) {
             return [];
         }
-        return await this.db.batch<T>(statements);
+        const results = await this.db.batch<T>(statements);
+        for (const r of results) {
+            captureD1MetaSizeAfter(r?.meta);
+        }
+        return results;
     }
 
     public async findSiteById(siteId: string): Promise<Site | null> {
@@ -105,7 +118,17 @@ export class DAL {
         if (!targetBucket) {
             throw new Error('[DAL]Neither BUCKET_BACKUP nor primary BUCKET binding is available.');
         }
-        return await targetBucket.put(this.normalizeR2Key(key), value, options);
+        const normKey = this.normalizeR2Key(key);
+        const putRes = await targetBucket.put(normKey, value, options);
+        const sizeBytes = typeof putRes?.size === 'number'
+            ? putRes.size
+            : (typeof value === 'string'
+                ? new TextEncoder().encode(value).length
+                : ((value as any)?.byteLength ?? 0));
+        if (sizeBytes > 0) {
+            await recordR2BackupSize(this.db, normKey, sizeBytes);
+        }
+        return putRes;
     }
 
     public async getBackupObject(key: string): Promise<R2ObjectBody | null> {

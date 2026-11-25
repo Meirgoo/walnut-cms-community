@@ -19,7 +19,7 @@ export function base64ToUint8Array(b64: string): Uint8Array {
 
 export async function deriveTokenAesKey(sessionSecret: string): Promise<CryptoKey> {
     const enc = new TextEncoder();
-    const normalizedSecret = (sessionSecret || 'walnut_default_session_secret_2026').trim();
+    const normalizedSecret = (sessionSecret || 'edge_default_session_secret_2026').trim();
     const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(normalizedSecret));
     return await crypto.subtle.importKey(
         'raw',

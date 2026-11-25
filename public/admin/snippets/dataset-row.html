@@ -1,29 +1,37 @@
-<tr class="h-11 hover:bg-slate-50/80 dark:hover:bg-slate-700/30 transition-colors duration-75 ease-out dataset-row" data-schema="{{schema_slug}}">
+<tr class="h-11 hover:bg-stone-50/80 dark:hover:bg-stone-700/30 transition-colors duration-75 ease-out dataset-row" data-id="{{id}}" data-schema="{{schema_slug}}" data-slug="{{collection_slug}}">
     <td class="px-4 py-2 text-center">
-        <input type="checkbox" class="dataset-select-box w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500" data-schema="{{schema_slug}}" />
+        <input type="checkbox" class="dataset-select-box w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500" data-id="{{id}}" data-count="{{item_count}}" data-name="{{collection_name}}" onchange="window.updateDatasetBatchState && window.updateDatasetBatchState()" />
     </td>
-    <td class="px-6 py-2 font-bold text-slate-900 dark:text-white text-left">
+    <td class="px-6 py-2 font-bold text-[var(--admin-text)] text-left">
         <div class="flex items-center space-x-2 min-w-0 max-w-[340px] xl:max-w-[460px]">
-            <a href="/admin/datasets/collection/{{schema_slug}}" class="hover:text-emerald-600 transition-colors duration-75 ease-out truncate" title="{{collection_name}}">{{collection_name}}</a>
-            <span class="text-[11px] font-mono font-normal text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded shrink-0">{{schema_slug}}</span>
+            <a href="/admin/datasets/collection/{{id}}" class="hover:text-[var(--admin-accent-text)] transition-colors duration-75 ease-out truncate" title="{{collection_name}}">{{collection_name}}</a>
+            <span class="text-[11px] font-mono font-normal text-[var(--admin-text-muted)] bg-[var(--admin-chrome)] px-1.5 py-0.5 rounded shrink-0">{{collection_slug}}</span>
         </div>
     </td>
-    <td class="px-6 py-2 text-center hidden font-mono text-xs text-slate-500 whitespace-nowrap" data-col="schema_slug">{{schema_slug}}</td>
+    <td class="px-6 py-2 text-center hidden font-mono text-xs text-[var(--admin-text-muted)] whitespace-nowrap" data-col="schema_slug">{{collection_slug}}</td>
     <td class="px-6 py-2 text-center whitespace-nowrap">
-        <span class="bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold inline-block max-w-[160px] truncate align-middle" title="{{schema_title}}">
+        <span class="list-pill list-pill-locale list-pill-truncate" title="{{schema_title}}">
             {{schema_title}}
         </span>
     </td>
     <td class="px-6 py-2 text-center font-mono text-xs whitespace-nowrap">
-        <span class="bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 rounded-full font-bold text-slate-700 dark:text-slate-200">{{item_count_label}}</span>
+        <span class="list-pill list-pill-draft">{{item_count_label}}</span>
     </td>
-    <td class="px-6 py-2 text-center hidden font-mono text-xs text-slate-500 whitespace-nowrap" data-col="ref_pages">{{ref_pages_count}}</td>
-    <td class="px-6 py-2 text-center hidden text-xs font-mono text-slate-400 whitespace-nowrap" data-col="created">{{created_at_formatted}}</td>
-    <td class="px-6 py-2 text-center text-xs font-mono text-slate-400 whitespace-nowrap">
+    <td class="px-6 py-2 text-center hidden font-mono text-xs text-[var(--admin-text-muted)] whitespace-nowrap" data-col="ref_pages">{{ref_pages_count}}</td>
+    <td class="px-6 py-2 text-center hidden text-xs text-[var(--admin-text-muted)] whitespace-nowrap" data-col="created" title="{{created_at_full}}">{{created_at_formatted}}</td>
+    <td class="px-6 py-2 text-center text-xs text-[var(--admin-text-muted)] whitespace-nowrap" title="{{updated_at_full}}">
         {{updated_at_formatted}}
     </td>
-    <td class="px-6 py-2 text-center space-x-3 whitespace-nowrap">
-        <a href="/admin/datasets/collection/{{schema_slug}}" class="text-emerald-600 dark:text-emerald-400 hover:underline font-bold text-xs">{{btn_manage_items}}</a>
-        <a href="/admin/datasets/api/export-collection/{{schema_slug}}" download="{{schema_slug}}.json" class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-bold text-xs">{{btn_export_json}}</a>
+    <td class="px-6 py-2 text-center space-x-2 whitespace-nowrap">
+        <a href="/admin/datasets/collection/{{id}}" class="text-xs font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition">{{btn_manage_items}}</a>
+        <a href="/admin/datasets/api/export-collection/{{id}}" download="{{collection_slug}}.json" class="text-xs font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition">{{btn_export_json}}</a>
+        <button
+            type="button"
+            onclick="window.deleteDatasetCollection && window.deleteDatasetCollection('{{id}}', '{{collection_name_js}}', {{item_count}})"
+            title="{{common.delete}}"
+            class="p-1 rounded-md list-action-trash cursor-pointer inline-flex items-center justify-center align-middle"
+        >
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+        </button>
     </td>
 </tr>

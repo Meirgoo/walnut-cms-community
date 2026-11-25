@@ -4,11 +4,13 @@ import { purgeEdgeAndZoneCache } from './cache-index.dal';
 
 export async function findTasksBySite(
     db: D1Database,
-    siteId: string
+    siteId: string,
+    includeGlobal = false
 ): Promise<ScheduledTask[]> {
+    const whereClause = includeGlobal ? '(site_id = ? OR site_id IS NULL)' : 'site_id = ?';
     const { results } = await db.prepare(`
         SELECT * FROM scheduled_tasks 
-        WHERE site_id = ? OR site_id IS NULL
+        WHERE ${whereClause}
         ORDER BY created_at DESC
     `).bind(siteId).all<ScheduledTask>();
     return results || [];
@@ -26,13 +28,20 @@ export interface DueTaskItem {
 
 export async function findTaskById(
     db: D1Database,
-    taskId: string
+    taskId: string,
+    siteId?: string
 ): Promise<DueTaskItem | null> {
-    const row = await db.prepare(`
-        SELECT id, site_id, task_type, schedule_type, interval_preset, payload, cron_interval_minutes
-        FROM scheduled_tasks
-        WHERE id = ?
-    `).bind(taskId).first<DueTaskItem>();
+    const row = siteId
+        ? await db.prepare(`
+            SELECT id, site_id, task_type, schedule_type, interval_preset, payload, cron_interval_minutes
+            FROM scheduled_tasks
+            WHERE id = ? AND site_id = ?
+        `).bind(taskId, siteId).first<DueTaskItem>()
+        : await db.prepare(`
+            SELECT id, site_id, task_type, schedule_type, interval_preset, payload, cron_interval_minutes
+            FROM scheduled_tasks
+            WHERE id = ?
+        `).bind(taskId).first<DueTaskItem>();
     return row || null;
 }
 
@@ -52,59 +61,101 @@ export async function findDueTasks(
 
 export function buildUpdateTaskRunningStatement(
     db: D1Database,
+    taskId: string,
+    nowIso: string = new Date().toISOString()
+): D1PreparedStatement {
+    // Compare last_run_at using ISO8601 consistently and require pending status for optimistic locking.
+    return db.prepare(`
+        UPDATE scheduled_tasks 
+        SET status = 'running', last_run_at = ? 
+        WHERE id = ? AND status = 'pending'
+    `).bind(nowIso, taskId);
+}
+
+export function buildResetFinishedTaskToPendingStatement(
+    db: D1Database,
     taskId: string
 ): D1PreparedStatement {
     return db.prepare(`
         UPDATE scheduled_tasks 
-        SET status = 'running', last_run_at = CURRENT_TIMESTAMP 
-        WHERE id = ?
+        SET status = 'pending' 
+        WHERE id = ? AND status IN ('completed', 'failed')
     `).bind(taskId);
+}
+
+function buildTaskStatusUpdateStatement(
+    db: D1Database,
+    status: 'completed' | 'failed',
+    taskId: string,
+    lastResult?: string,
+    nowIso: string = new Date().toISOString()
+): D1PreparedStatement {
+    return db.prepare(`
+        UPDATE scheduled_tasks 
+        SET status = ?, last_run_at = ?, last_result = ?
+        WHERE id = ?
+    `).bind(status, nowIso, lastResult || null, taskId);
 }
 
 export function buildUpdateTaskCompletedStatement(
     db: D1Database,
     taskId: string,
-    lastResult?: string
+    lastResult?: string,
+    nowIso: string = new Date().toISOString()
 ): D1PreparedStatement {
-    return db.prepare(`
-        UPDATE scheduled_tasks 
-        SET status = 'completed', last_run_at = CURRENT_TIMESTAMP, last_result = ?
-        WHERE id = ?
-    `).bind(lastResult || null, taskId);
+    return buildTaskStatusUpdateStatement(db, 'completed', taskId, lastResult, nowIso);
+}
+
+export function buildMarkTaskFailedStatement(
+    db: D1Database,
+    taskId: string,
+    lastResult?: string,
+    nowIso: string = new Date().toISOString()
+): D1PreparedStatement {
+    return buildTaskStatusUpdateStatement(db, 'failed', taskId, lastResult, nowIso);
 }
 
 export function buildRescheduleTaskStatement(
     db: D1Database,
     taskId: string,
     nextRunAtIso: string,
-    lastResult?: string
+    lastResult?: string,
+    nowIso: string = new Date().toISOString()
 ): D1PreparedStatement {
     return db.prepare(`
         UPDATE scheduled_tasks 
-        SET status = 'pending', next_run_at = ?, last_run_at = CURRENT_TIMESTAMP, last_result = ?
+        SET status = 'pending', next_run_at = ?, last_run_at = ?, last_result = ?
         WHERE id = ?
-    `).bind(nextRunAtIso, lastResult || null, taskId);
+    `).bind(nextRunAtIso, nowIso, lastResult || null, taskId);
 }
 
 export function buildTriggerTaskNowStatement(
     db: D1Database,
-    taskId: string
+    taskId: string,
+    siteId?: string,
+    nowIso: string = new Date().toISOString()
 ): D1PreparedStatement {
-    return db.prepare(`
-        UPDATE scheduled_tasks 
-        SET next_run_at = CURRENT_TIMESTAMP, status = 'pending' 
-        WHERE id = ?
-    `).bind(taskId);
+    return siteId
+        ? db.prepare(`
+            UPDATE scheduled_tasks 
+            SET next_run_at = ?, status = 'pending' 
+            WHERE id = ? AND site_id = ? AND status != 'running'
+        `).bind(nowIso, taskId, siteId)
+        : db.prepare(`
+            UPDATE scheduled_tasks 
+            SET next_run_at = ?, status = 'pending' 
+            WHERE id = ? AND status != 'running'
+        `).bind(nowIso, taskId);
 }
 
 export function buildDeleteTaskStatement(
     db: D1Database,
-    taskId: string
+    taskId: string,
+    siteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`
-        DELETE FROM scheduled_tasks 
-        WHERE id = ?
-    `).bind(taskId);
+    return siteId
+        ? db.prepare(`DELETE FROM scheduled_tasks WHERE id = ? AND site_id = ?`).bind(taskId, siteId)
+        : db.prepare(`DELETE FROM scheduled_tasks WHERE id = ?`).bind(taskId);
 }
 
 export interface SaveTaskDalParams {
@@ -139,13 +190,15 @@ export function buildInsertTaskStatement(
 
 export function buildUpdateTaskStatement(
     db: D1Database,
-    params: SaveTaskDalParams
+    params: SaveTaskDalParams,
+    scopeSiteId?: string
 ): D1PreparedStatement {
-    return db.prepare(`
+    const sql = `
         UPDATE scheduled_tasks 
         SET site_id = ?, task_type = ?, schedule_type = ?, interval_preset = ?, payload = ?, cron_interval_minutes = ?, next_run_at = ?, status = 'pending'
-        WHERE id = ?
-    `).bind(
+        WHERE id = ?${scopeSiteId ? ' AND site_id = ?' : ''}
+    `;
+    const args: any[] = [
         params.siteId || null,
         params.taskType,
         params.scheduleType || 'recurring',
@@ -154,13 +207,30 @@ export function buildUpdateTaskStatement(
         params.cronIntervalMinutes,
         params.nextRunAt,
         params.id
-    );
+    ];
+    if (scopeSiteId) args.push(scopeSiteId);
+    return db.prepare(sql).bind(...args);
 }
 
 export function buildPublishNodesByIdStatements(
     db: D1Database,
-    nodeId: string
+    nodeId: string,
+    siteId?: string
 ): D1PreparedStatement[] {
+    if (siteId) {
+        return [
+            db.prepare(`
+                UPDATE articles 
+                SET status = 'published', published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND site_id = ?
+            `).bind(nodeId, siteId),
+            db.prepare(`
+                UPDATE pages 
+                SET status = 'published', published_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ? AND site_id = ?
+            `).bind(nodeId, siteId)
+        ];
+    }
     return [
         db.prepare(`
             UPDATE articles 
@@ -177,20 +247,29 @@ export function buildPublishNodesByIdStatements(
 
 export async function executePublishDueArticles(
     db: D1Database,
-    siteId: string
+    siteId: string,
+    nowIso: string = new Date().toISOString()
 ): Promise<number> {
     const updateRes = await db.prepare(`
         UPDATE articles 
-        SET status = 'published', updated_at = CURRENT_TIMESTAMP 
-        WHERE site_id = ? AND status = 'draft' AND published_at IS NOT NULL AND published_at <= CURRENT_TIMESTAMP
-    `).bind(siteId).run();
+        SET status = 'published', updated_at = ? 
+        WHERE site_id = ? AND status IN ('scheduled', 'draft') AND deleted_at IS NULL AND published_at IS NOT NULL AND REPLACE(published_at, ' ', 'T') <= ?
+    `).bind(nowIso, siteId, nowIso).run();
     return updateRes.meta.changes || 0;
 }
 
 export function buildUnpublishNodesByIdStatements(
     db: D1Database,
-    nodeId: string
+    nodeId: string,
+    siteId?: string
 ): D1PreparedStatement[] {
+    if (siteId) {
+        return [
+            db.prepare(`UPDATE articles SET status = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(nodeId, siteId),
+            db.prepare(`UPDATE pages SET status = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND site_id = ?`).bind(nodeId, siteId),
+            db.prepare(`DELETE FROM site_routes WHERE entity_id = ? AND site_id = ?`).bind(nodeId, siteId)
+        ];
+    }
     return [
         db.prepare(`
             UPDATE articles
@@ -235,29 +314,52 @@ export async function executeUnpublishDueContent(
         ...rows.flatMap(r => buildUnpublishNodesByIdStatements(db, r.id)),
         db.prepare(`
             UPDATE site_routes SET is_dirty = 1, rendered_html = NULL, version = version + 1, updated_at = ?
-            WHERE site_id = ? AND path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json')
+            WHERE site_id = ? AND path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/llm.txt', '/llms.txt')
         `).bind(nowIso, siteId)
     ];
     await db.batch(stmts);
     const affectedPaths = [
         ...rows.map(r => (r.slug === '/' ? '/' : `/${String(r.slug || '').replace(/^\/+/, '')}`)),
-        '/', '/sitemap.xml', '/feed.xml', '/feed.json'
+        '/', '/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/llm.txt', '/llms.txt'
     ];
     await purgeEdgeAndZoneCache(db, siteId, affectedPaths);
     return rows.length;
 }
 
+export async function findExpiredDeletedMediaAssets(
+    db: D1Database,
+    cutoffIso: string,
+    siteId?: string
+): Promise<Array<{ id: string; site_id: string; r2_key: string | null }>> {
+    const sql = siteId
+        ? `SELECT id, site_id, r2_key FROM media_assets WHERE site_id = ? AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`
+        : `SELECT id, site_id, r2_key FROM media_assets WHERE deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`;
+    const res = siteId
+        ? await db.prepare(sql).bind(siteId, cutoffIso).all<{ id: string; site_id: string; r2_key: string | null }>()
+        : await db.prepare(sql).bind(cutoffIso).all<{ id: string; site_id: string; r2_key: string | null }>();
+    return res.results || [];
+}
+
 export function buildCleanupSoftDeletedEntitiesStatements(
     db: D1Database,
-    cutoffIso: string
+    cutoffIso: string,
+    siteId?: string
 ): D1PreparedStatement[] {
+    if (siteId) {
+        return [
+            db.prepare(`DELETE FROM entity_versions WHERE site_id = ? AND entity_type IN ('article', 'micro', 'page') AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(siteId, cutoffIso),
+            db.prepare(`DELETE FROM articles WHERE site_id = ? AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(siteId, cutoffIso),
+            db.prepare(`DELETE FROM micros WHERE site_id = ? AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(siteId, cutoffIso),
+            db.prepare(`DELETE FROM pages WHERE site_id = ? AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(siteId, cutoffIso),
+            db.prepare(`DELETE FROM media_assets WHERE site_id = ? AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(siteId, cutoffIso)
+        ];
+    }
     return [
-        db.prepare(`DELETE FROM articles WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso),
-        db.prepare(`DELETE FROM micros WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso),
-        db.prepare(`DELETE FROM pages WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso),
-        db.prepare(`DELETE FROM article_versions WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso),
-        db.prepare(`DELETE FROM micro_versions WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso),
-        db.prepare(`DELETE FROM page_versions WHERE deleted_at IS NOT NULL AND deleted_at <= ?`).bind(cutoffIso)
+        db.prepare(`DELETE FROM articles WHERE deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(cutoffIso),
+        db.prepare(`DELETE FROM micros WHERE deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(cutoffIso),
+        db.prepare(`DELETE FROM pages WHERE deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(cutoffIso),
+        db.prepare(`DELETE FROM entity_versions WHERE entity_type IN ('article', 'micro', 'page') AND deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(cutoffIso),
+        db.prepare(`DELETE FROM media_assets WHERE deleted_at IS NOT NULL AND REPLACE(deleted_at, ' ', 'T') <= ?`).bind(cutoffIso)
     ];
 }
 
@@ -271,7 +373,7 @@ export async function recoverZombieRunningTasks(
         const res = await db.prepare(`
             UPDATE scheduled_tasks
             SET status = 'failed', last_result = ?
-            WHERE status = 'running' AND COALESCE(last_run_at, created_at) <= ?
+            WHERE status = 'running' AND REPLACE(COALESCE(last_run_at, created_at), ' ', 'T') <= ?
         `).bind(reason, zombieCutoffIso).run();
         return res.meta?.changes || 0;
     } catch {
@@ -286,8 +388,8 @@ export async function hasDueOrScheduledWork(
 ): Promise<boolean> {
     try {
         const [dueTask, dueArt] = await db.batch([
-            db.prepare(`SELECT 1 FROM scheduled_tasks WHERE status IN ('pending', 'active', 'scheduled') AND (next_run_at IS NULL OR next_run_at <= ?) LIMIT 1`).bind(nowIso),
-            db.prepare(`SELECT 1 FROM articles WHERE status = 'scheduled' AND published_at <= ? LIMIT 1`).bind(nowIso)
+            db.prepare(`SELECT 1 FROM scheduled_tasks WHERE status IN ('pending', 'active', 'scheduled') AND (next_run_at IS NULL OR REPLACE(next_run_at, ' ', 'T') <= ?) LIMIT 1`).bind(nowIso),
+            db.prepare(`SELECT 1 FROM articles WHERE status IN ('scheduled', 'draft') AND deleted_at IS NULL AND published_at IS NOT NULL AND REPLACE(published_at, ' ', 'T') <= ? LIMIT 1`).bind(nowIso)
         ]);
         return Boolean((dueTask.results && dueTask.results.length > 0) || (dueArt.results && dueArt.results.length > 0));
     } catch {
@@ -317,7 +419,7 @@ export async function findQuickActionStateBatch(
 ): Promise<{ user: any | null; siteRole: string | null; failedTasksCount: number }> {
     try {
         const [uRes, mRes, fRes] = await db.batch([
-            db.prepare(`SELECT id, username, email, global_role FROM users WHERE id = ? LIMIT 1`).bind(userId),
+            db.prepare(`SELECT id, username, email, global_role, metadata FROM users WHERE id = ? LIMIT 1`).bind(userId),
             db.prepare(`SELECT role FROM site_members WHERE site_id = ? AND user_id = ? LIMIT 1`).bind(siteId, userId),
             db.prepare(`SELECT COUNT(*) as total FROM scheduled_tasks WHERE (site_id = ? OR site_id IS NULL) AND status = 'failed'`).bind(siteId)
         ]);

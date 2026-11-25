@@ -1,15 +1,19 @@
 import type { D1Database } from '@cloudflare/workers-types';
 
 export * from './content.dal';
+export * from './versions.dal';
 export * from './auth.dal';
 export * from './media.dal';
 export * from './sites.dal';
 export * from './themes.dal';
 export * from './datasets.dal';
 export * from './cache-index.dal';
+export * from './route-fallback.dal';
+export * from './site-feeds.dal';
 export * from './tasks.dal';
 export * from './audit.dal';
 export * from './tokens.dal';
+export * from './storage.dal';
 
 // Bounded in-memory rate limiter to prevent spoofed IPs from exhausting Worker memory (OOM).
 const MAX_RATE_LIMIT_ENTRIES = 2000;
@@ -80,10 +84,9 @@ export function invalidateQueryCache(siteId?: string): void {
         queryCacheStore.clear();
         return;
     }
-    const prefixContent = `content:${siteId}:`;
-    const prefixDataset = `datasets:${siteId}:`;
+    const prefixes = [`content:${siteId}:`, `datasets:${siteId}:`, `feed:${siteId}:`, `media:${siteId}:`];
     for (const key of queryCacheStore.keys()) {
-        if (key.startsWith(prefixContent) || key.startsWith(prefixDataset)) {
+        if (prefixes.some(p => key.startsWith(p))) {
             queryCacheStore.delete(key);
         }
     }

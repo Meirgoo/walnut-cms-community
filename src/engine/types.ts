@@ -32,7 +32,8 @@ export interface AuthenticatedUser {
     global_role: GlobalRole;
     site_role?: SiteRole;
     metadata?: Record<string, any>;
-    auth_provider: 'cf_access' | 'password' | 'session';
+    auth_provider: 'cf_access' | 'password' | 'session' | 'api_token';
+    token_site_id?: string;
 }
 
 export interface SiteMember {
@@ -47,7 +48,6 @@ export interface AppContextVariables {
     locale: string;
     actualPath: string;
     host: string;
-    tenantId?: string;
     siteId?: string;
     siteDomain?: string;
     user?: AuthenticatedUser;
@@ -98,13 +98,21 @@ export interface SiteSettings {
     theme_name?: string;
     default_template_page_id?: string;
     default_template_slug?: string;
-    site_mode?: 'standard' | 'media_bed' | 'maintenance';
+    site_mode?: 'standard' | 'internal';
+    internal?: {
+        status_code?: 503 | 404 | 301 | 302;
+        redirect_url?: string;
+        title?: string;
+        message?: string;
+        retry_after?: number;
+    };
     sitemap_domain?: string;
     robots_control?: string;
     google_analytics_id?: string;
     seo?: {
         keywords?: string[];
         og_image?: string;
+        og_use_first_image?: boolean;
         google_site_verification?: string;
         ga_id?: string;
         robots?: string;
@@ -124,7 +132,6 @@ export interface SiteSettings {
     primary_color_dark?: string;
     routing?: {
         maintenance_mode?: number;
-        is_media_bed_only?: number;
     };
     security?: {
         anti_hotlink_enabled?: boolean;
@@ -137,13 +144,11 @@ export interface SiteSettings {
 
 export interface Site {
     id: string;
-    tenant_id: string;
     name: string;
     primary_domain: string;
     custom_domains?: string[];
     default_locale: string;
     theme_id?: string | null;
-    is_media_bed_only: number;
     license_key?: string;
     settings?: SiteSettings;
     robots_txt?: string | null;
@@ -155,7 +160,6 @@ export interface Site {
 export type ArticleStatus = 'draft' | 'published' | 'archived' | 'scheduled';
 export type MicroProgress = 'none' | 'draft' | 'in-progress' | 'done' | 'highlight' | 'bookmark' | (string & {});
 export type ArticleMaturity = MicroProgress;
-export type MicroMaturity = MicroProgress;
 
 export interface Article {
     id: string;
@@ -227,15 +231,31 @@ export interface PageVersion {
     deleted_at?: string | null;
 }
 
+export interface DatasetCollection {
+    id: string;
+    site_id: string;
+    slug: string;
+    name: string;
+    schema_key: string;
+    description?: string | null;
+    item_count?: number;
+    latest_updated_at?: string;
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+}
+
 export interface Dataset {
     id: string;
     site_id: string;
+    collection_id?: string | null;
     schema_slug: string;
     slug: string;
     title: string;
     summary?: string | null;
     metadata?: Record<string, any> | string;
     status: string;
+    sort_order?: number;
     curator_id?: string;
     current_version_id?: string | null;
     created_at: string;
@@ -282,6 +302,7 @@ export type TaskType =
     | 'purge_deleted'
     | 'archive_analytics'
     | 'vacuum_db'
+    | 'calibrate_storage_usage'
     | 'generate_visitor_page_index'
     | 'recompile_dirty_routes'
     | 'update_sitemap'
@@ -290,7 +311,8 @@ export type TaskType =
     | 'd1_backup'
     | 'r2_scheduled_backup'
     | 'webhook_retry_sweep'
-    | 'topology_health_audit';
+    | 'topology_health_audit'
+    | 'external_worker_call';
 
 export type TaskScheduleType = 'once' | 'recurring';
 export type TaskIntervalPreset = 'hourly' | 'daily' | 'weekly' | 'monthly' | 'custom';
@@ -308,6 +330,40 @@ export interface ScheduledTask {
     last_result?: string | null;
     status: string;
     created_at: string;
+}
+
+export interface ThemeComponentDataSlot {
+    key: string;
+    label?: string;
+    required?: boolean;
+}
+
+export function normalizeThemeComponentDataSlots(raw: unknown): ThemeComponentDataSlot[] | undefined {
+    if (!Array.isArray(raw)) return undefined;
+    return raw
+        .filter((s: any) => s && typeof s === 'object' && typeof s.key === 'string' && s.key.trim().length > 0)
+        .map((s: any) => ({
+            key: String(s.key).trim(),
+            ...(typeof s.label === 'string' && s.label.trim() ? { label: s.label.trim() } : {}),
+            ...(s.required === true ? { required: true } : {})
+        }));
+}
+
+export interface UiSchemaField {
+    key: string;
+    label?: string;
+    title?: string;
+    name?: string;
+    type?: 'text' | 'textarea' | 'markdown' | 'number' | 'boolean' | 'switch' | 'select' | 'image' | 'url' | 'list' | 'array' | 'json' | string;
+    widget?: string;
+    default?: any;
+    placeholder?: string;
+    group?: string;
+    required?: boolean;
+    options?: Array<string | { label: string; value: any }>;
+    item_fields?: any[];
+    item_schema?: any[] | { fields?: any[] };
+    [key: string]: any;
 }
 
 export interface ThemeComponentManifest {
@@ -338,11 +394,13 @@ export interface ThemeComponentManifest {
     schema_binding?: string;
     hydration?: 'none' | 'instant' | 'idle' | 'visible';
     keep_field?: string[];
+    /** Optional semantic data slots exposed for PageEditor field_map binding. */
+    data_slots?: ThemeComponentDataSlot[];
     field_map?: {
         dataset_type: string;
         mappings: Record<string, string>;
     };
-    ui_schema?: any[];
+    ui_schema?: UiSchemaField[];
     version?: number;
     itemCardTemplate?: string;
     backlinkItemTemplate?: string;
@@ -378,6 +436,7 @@ export const ThemeComponentManifestZod = {
         if (!allowCustomJs) {
             delete sanitizedObj.custom_js;
         }
+        const normalizedDataSlots = normalizeThemeComponentDataSlots(obj.data_slots);
         return {
             success: true,
             data: {
@@ -388,6 +447,7 @@ export const ThemeComponentManifestZod = {
                 template_html: resolvedTemplateHtml,
                 default_props: resolvedDefaultProps,
                 slots: resolvedSlots,
+                ...(normalizedDataSlots && normalizedDataSlots.length > 0 ? { data_slots: normalizedDataSlots } : {}),
                 category: typeof obj.category === 'string' ? obj.category : 'content',
                 icon: typeof obj.icon === 'string' ? obj.icon : 'widgets',
                 description: typeof obj.description === 'string' ? obj.description : '',
@@ -442,13 +502,16 @@ export const ThemeManifestZod = {
                 description: typeof obj.description === 'string' ? obj.description : '',
                 author: typeof obj.author === 'string' ? obj.author : '',
                 default_locale: typeof obj.default_locale === 'string' ? obj.default_locale : 'zh-CN',
-                locales: Array.isArray(obj.locales) ? obj.locales : ['zh-CN', 'en-US'],
+                locales: (obj.locales && typeof obj.locales === 'object' && !Array.isArray(obj.locales))
+                    ? obj.locales
+                    : (Array.isArray(obj.locales) ? obj.locales : ['zh-CN', 'en-US']),
                 color_schemes: Array.from(new Set(rawSchemes.length > 0 ? rawSchemes : ['light', 'dark'])),
                 global_assets: {
                     styles: Array.isArray(obj.global_assets?.styles) ? obj.global_assets.styles : [],
                     scripts: Array.isArray(obj.global_assets?.scripts) ? obj.global_assets.scripts : []
                 },
                 layouts: Array.isArray(obj.layouts) ? obj.layouts : [],
+                templates: Array.isArray(obj.templates) ? obj.templates : [],
                 presets: Array.isArray(obj.presets) ? obj.presets : [],
                 components: Array.isArray(obj.components) ? obj.components : [],
                 dataset_templates: Array.isArray(obj.dataset_templates) ? obj.dataset_templates : []
@@ -498,11 +561,7 @@ export type ActionType =
     | 'NODE_UPDATE'
     | 'NODE_DELETE'
     | 'NODE_RESTORE'
-    | 'NODE_PURGE'
-    | 'NODE_HARD_DELETE'
     | 'NODE_BATCH_SOFT_DELETE'
-    | 'NODE_BATCH_RESTORE'
-    | 'NODE_BATCH_HARD_DELETE'
     | 'NODE_BATCH_MOVE_FOLDER'
     | 'VERSION_RESTORE'
     | 'VERSION_DELETE'
@@ -550,6 +609,11 @@ export type ActionType =
     | 'WEBHOOK_CONFIG_DELETE'
     | 'WEBHOOK_LOGS_QUERY'
     | 'WEBHOOK_TEST_TRIGGER'
+    | 'WORKER_BRIDGE_LIST'
+    | 'WORKER_BRIDGE_SAVE'
+    | 'WORKER_BRIDGE_DELETE'
+    | 'WORKER_BRIDGE_PROXY'
+    | 'WORKER_BRIDGE_RESOLVE_PUBLIC'
     | (string & {});
 
 export type WalnutEnvBindings = EngineStorageBindings & {
@@ -576,7 +640,6 @@ export interface HookContext<TData = any, TResult = any> {
     dal: DAL;
     user?: AuthenticatedUser | null;
     siteId?: string;
-    tenantId?: string;
     clientIp: string;
     host: string;
     locale: string;
@@ -595,7 +658,6 @@ export interface CreateHookContextOptions<TData = any> {
     dal?: DAL;
     user?: AuthenticatedUser | null;
     siteId?: string;
-    tenantId?: string;
     clientIp?: string;
     host?: string;
     locale?: string;

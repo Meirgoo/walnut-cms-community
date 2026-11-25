@@ -22,7 +22,7 @@ export async function getRootSecret(env?: Record<string, any>, db?: D1Database):
             return newSalt;
         } catch {}
     }
-    return (env?.AUTHER_KEY_PUBLIC || env?.CF_ACCOUNT_ID || 'walnut_fallback_root_secret_2026');
+    return (env?.AUTHER_KEY_PUBLIC || env?.CF_ACCOUNT_ID || 'edge_fallback_root_secret_2026');
 }
 
 // Derive purpose-isolated HKDF subkeys so session, vault, and webhook secrets never share key material.

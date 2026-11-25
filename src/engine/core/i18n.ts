@@ -12,9 +12,56 @@ export const ADMIN_LOCALES: Record<string, AdminTranslationDict> = {
 };
 
 export const SUPPORTED_LOCALES: Record<string, string> = {
-    'zh-CN': '🇨🇳 简体中文',
-    'en-US': '🇺🇸 English'
+    'zh-CN': '简体中文',
+    'en-US': 'English'
 };
+
+export function normalizeLocaleCode(loc?: string | null): string {
+    const raw = String(loc || '').trim();
+    if (!raw) return '';
+    const hyphenated = raw.replace(/_/g, '-');
+    const lower = hyphenated.toLowerCase();
+    if (lower === 'zh' || lower === 'zh-cn') return 'zh-CN';
+    if (lower === 'en' || lower === 'en-us') return 'en-US';
+    return hyphenated;
+}
+
+export function formatSafeLocaleDate(dateInput: Date | string | number, rawLocale?: string | null): string {
+    const dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (Number.isNaN(dateObj.getTime())) return '';
+    const candidate = normalizeLocaleCode(rawLocale) || 'zh-CN';
+    try {
+        return dateObj.toLocaleDateString(candidate);
+    } catch {
+        // Invalid BCP-47 tags must not crash SSR; fall back to default locale.
+        try {
+            return dateObj.toLocaleDateString('zh-CN');
+        } catch {
+            return dateObj.toISOString().slice(0, 10);
+        }
+    }
+}
+
+export function getLocaleShortPrefix(locale?: string | null): string {
+    const norm = normalizeLocaleCode(locale);
+    if (!norm) return '';
+    return norm.split('-')[0].toLowerCase();
+}
+
+export function buildLocalizedRoutePath(
+    rawSlug: string,
+    targetLocale: string,
+    siteDefaultLocale: string = 'zh-CN'
+): string {
+    const cleanSlug = String(rawSlug || '').replace(/^\/+/, '');
+    const isDefault = normalizeLocaleCode(targetLocale) === normalizeLocaleCode(siteDefaultLocale);
+    if (isDefault) {
+        return cleanSlug === '' ? '/' : `/${cleanSlug}`;
+    }
+    const prefix = getLocaleShortPrefix(targetLocale);
+    if (!prefix) return cleanSlug === '' ? '/' : `/${cleanSlug}`;
+    return cleanSlug === '' ? `/${prefix}` : `/${prefix}/${cleanSlug}`;
+}
 
 export function renderLocaleOptions(selectedLocale: string): string {
     return Object.entries(SUPPORTED_LOCALES)
@@ -22,7 +69,7 @@ export function renderLocaleOptions(selectedLocale: string): string {
         .join('');
 }
 
-export const ADMIN_LOCALE_COOKIE = 'walnut_admin_locale';
+export const ADMIN_LOCALE_COOKIE = 'edge_admin_locale';
 
 export async function loadAdminLocales(env?: any): Promise<void> {
     const targetEnv = env || (typeof globalThis !== 'undefined' && (globalThis as any).__CF_ENV__);
@@ -236,8 +283,8 @@ export function getInlineI18nScript(
         }
     }
     let json = JSON.stringify(base).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/\//g, '\\u002f');
-    if (brandReplacement) json = json.replace(/Walnut CMS|Walnut/g, brandReplacement);
-    return `<script id="walnut-i18n-dict" type="application/json">${json}</script>`;
+    if (brandReplacement) json = json.replace(/Walnut Edge CMS|Walnut CMS|Walnut/g, brandReplacement);
+    return `<script id="edge-i18n-dict" type="application/json">${json}</script>`;
 }
 
 setGlobalLocaleResolver((loc: string, key: string) => {
@@ -255,23 +302,32 @@ export interface TimezoneOption {
     labelEn: string;
 }
 
-export const SUPPORTED_TIMEZONES: TimezoneOption[] = ([
-    ['Asia/Shanghai', '🇨🇳 (UTC+8) 北京 / 上海', '🇨🇳 (UTC+8) Beijing / Shanghai'],
-    ['Asia/Hong_Kong', '🇭🇰 (UTC+8) 香港', '🇭🇰 (UTC+8) Hong Kong'],
-    ['Asia/Taipei', '🇹🇼 (UTC+8) 台北', '🇹🇼 (UTC+8) Taipei'],
-    ['Asia/Singapore', '🇸🇬 (UTC+8) 新加坡', '🇸🇬 (UTC+8) Singapore'],
-    ['Asia/Tokyo', '🇯🇵 (UTC+9) 东京', '🇯🇵 (UTC+9) Tokyo'],
-    ['UTC', '🌐 (UTC+0) 协调世界时 UTC', '🌐 (UTC+0) Coordinated Universal Time'],
-    ['Europe/London', '🇬🇧 (UTC+0/+1) 伦敦', '🇬🇧 (UTC+0/+1) London'],
-    ['Europe/Paris', '🇫🇷 (UTC+1/+2) 巴黎 / 柏林', '🇫🇷 (UTC+1/+2) Paris / Berlin'],
-    ['America/New_York', '🇺🇸 (UTC-5/-4) 纽约 (美东)', '🇺🇸 (UTC-5/-4) New York (EDT/EST)'],
-    ['America/Chicago', '🇺🇸 (UTC-6/-5) 芝加哥 (美中)', '🇺🇸 (UTC-6/-5) Chicago (CDT/CST)'],
-    ['America/Los_Angeles', '🇺🇸 (UTC-8/-7) 洛杉矶 (美西)', '🇺🇸 (UTC-8/-7) Los Angeles (PDT/PST)'],
-    ['Australia/Sydney', '🇦🇺 (UTC+10/+11) 悉尼', '🇦🇺 (UTC+10/+11) Sydney']
-] as const).map(([value, labelZh, labelEn]) => ({ value, labelZh, labelEn }));
+const UTC_HOUR_OFFSETS = [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+
+export const SUPPORTED_TIMEZONES: TimezoneOption[] = UTC_HOUR_OFFSETS.map((h) => {
+    const sign = h > 0 ? '+' : (h < 0 ? '-' : '');
+    const abs = String(Math.abs(h)).padStart(2, '0');
+    const value = h === 0 ? 'UTC' : `${sign}${abs}:00`;
+    const label = h === 0 ? 'UTC+0' : `UTC${sign}${h}`;
+    return { value, labelZh: label, labelEn: label };
+});
+
+export function normalizeTimezoneOptionValue(rawTz?: string): string {
+    const tz = (rawTz || '').trim();
+    if (!tz) return '+08:00';
+    if (SUPPORTED_TIMEZONES.some(o => o.value === tz)) return tz;
+    const offsetLabel = formatTimezoneOffsetLabel(tz);
+    const m = offsetLabel.match(/^UTC([+-])(\d{1,2})(?::(\d{2}))?$/);
+    if (m) {
+        const hrs = Number(m[2]);
+        if (hrs === 0) return 'UTC';
+        return `${m[1]}${String(hrs).padStart(2, '0')}:00`;
+    }
+    return '+08:00';
+}
 
 export function getSiteTimezone(site?: any | null): string {
-    if (!site) return 'Asia/Shanghai';
+    if (!site) return '+08:00';
     let settings = site.settings;
     if (typeof settings === 'string') {
         try {
@@ -280,7 +336,7 @@ export function getSiteTimezone(site?: any | null): string {
             settings = {};
         }
     }
-    return (settings && settings.timezone) || 'Asia/Shanghai';
+    return (settings && settings.timezone) || '+08:00';
 }
 
 export function getUserTimezone(user?: any | null, site?: any | null): string {
@@ -293,18 +349,26 @@ export function getUserTimezone(user?: any | null, site?: any | null): string {
                 meta = {};
             }
         }
-        if (meta && typeof meta === 'object' && meta.timezone) {
+        if (meta && typeof meta === 'object' && meta.timezone && meta.timezone !== 'auto') {
             return String(meta.timezone);
         }
     }
     return getSiteTimezone(site);
 }
 
-export function formatTimezoneOffsetLabel(timeZone = 'Asia/Shanghai'): string {
+export function formatTimezoneOffsetLabel(timeZone = '+08:00'): string {
+    const trimmed = (timeZone || '').trim();
+    const fixedMatch = trimmed.match(/^([+-])(\d{2}):(\d{2})$/);
+    if (fixedMatch) {
+        const sign = fixedMatch[1];
+        const hrs = Number(fixedMatch[2]);
+        return hrs === 0 ? 'UTC+0' : `UTC${sign}${hrs}`;
+    }
+    if (trimmed === 'UTC' || trimmed === 'GMT') return 'UTC+0';
     try {
         const now = new Date();
         const parts = new Intl.DateTimeFormat('en-US', {
-            timeZone,
+            timeZone: trimmed,
             timeZoneName: 'shortOffset'
         }).formatToParts(now);
         const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
@@ -339,14 +403,14 @@ export function parseUtcDate(dateStrOrNum?: string | number | Date | null): Date
 export function formatSiteDateTime(
     dateStrOrNum?: string | number | Date | null,
     locale = 'zh-CN',
-    timeZone = 'Asia/Shanghai'
+    timeZone = '+08:00'
 ): string {
     if (!dateStrOrNum) return '';
     try {
         const d = parseUtcDate(dateStrOrNum);
         if (!d) return String(dateStrOrNum);
         return new Intl.DateTimeFormat(locale, {
-            timeZone: timeZone || 'Asia/Shanghai',
+            timeZone: timeZone || '+08:00',
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -358,6 +422,36 @@ export function formatSiteDateTime(
     } catch {
         const d = parseUtcDate(dateStrOrNum);
         return d ? d.toLocaleString(locale) : String(dateStrOrNum);
+    }
+}
+
+export function formatRelativeOrShortTime(
+    dateStrOrNum?: string | number | Date | null,
+    locale = 'zh-CN',
+    timeZone = '+08:00'
+): { short: string; full: string } {
+    if (!dateStrOrNum) return { short: '-', full: '-' };
+    const full = formatSiteDateTime(dateStrOrNum, locale, timeZone);
+    const parsed = parseUtcDate(dateStrOrNum);
+    if (!parsed) return { short: full, full };
+    const diffMs = Math.max(0, Date.now() - parsed.getTime());
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return { short: t(locale, 'dashboard.time_just_now'), full };
+    if (diffMin < 60) return { short: t(locale, 'dashboard.time_minutes_ago', { count: diffMin }), full };
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return { short: t(locale, 'dashboard.time_hours_ago', { count: diffHr }), full };
+    try {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+            timeZone: timeZone || 'UTC',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        }).format(parsed);
+        return { short: fmt.replace(',', ''), full };
+    } catch {
+        return { short: full, full };
     }
 }
 

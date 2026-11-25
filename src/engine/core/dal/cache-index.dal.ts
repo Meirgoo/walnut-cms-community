@@ -2,10 +2,41 @@ import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types'
 import type { Site } from '../../types';
 import { renderDynamicVisitorPage } from '../../render';
 import { invalidateSiteMemoryCache, findSiteById } from './sites.dal';
-import { isLocalHost } from '../url';
-import { t } from '../i18n';
-import { buildAbsoluteUrl, resolveBaseUrl, DEFAULT_DEV_HOST, resolveEffectiveDomain } from '../url';
-import { parseJson, escapeXml } from '../utils';
+import { findPageSlugById, createPageParentPathResolver, loadPublishedPageParentResolver } from './pages.dal';
+import { isLocalHost, resolveEffectiveDomain } from '../url';
+import { t, buildLocalizedRoutePath, normalizeLocaleCode, getLocaleShortPrefix } from '../i18n';
+import { parseJson } from '../utils';
+import { isRestrictedAccess } from './content-common';
+import { vaultDecrypt } from '../crypto/vault';
+import {
+    normalizeRoutePath,
+    inspectSpecialRoute,
+    buildSpecialRouteCacheRequest,
+    putSpecialRouteToEdgeCache,
+    matchSpecialRouteFromEdgeCache,
+    renderFallbackErrorHtml,
+    type SpecialRouteCheckResult
+} from './route-fallback.dal';
+import {
+    rebuildSiteSitemapRoute,
+    renderRichSitemapXml,
+    rebuildSiteFeedRoute,
+    rebuildSiteLlmTxtRoute
+} from './site-feeds.dal';
+
+export {
+    normalizeRoutePath,
+    inspectSpecialRoute,
+    buildSpecialRouteCacheRequest,
+    putSpecialRouteToEdgeCache,
+    matchSpecialRouteFromEdgeCache,
+    renderFallbackErrorHtml,
+    rebuildSiteSitemapRoute,
+    renderRichSitemapXml,
+    rebuildSiteFeedRoute,
+    rebuildSiteLlmTxtRoute,
+    type SpecialRouteCheckResult
+};
 
 export interface CacheIndexRebuildNodeRow {
     id: string;
@@ -13,6 +44,7 @@ export interface CacheIndexRebuildNodeRow {
     parent_id?: string | null;
     type: string;
     locale: string;
+    visibility?: string | null;
     translation_group_id?: string | null;
     title: string;
     summary?: string | null;
@@ -90,173 +122,88 @@ export interface UpsertSiteRouteInput {
     dependencies?: Record<string, any> | Array<any>;
 }
 
-export interface SpecialRouteCheckResult {
-    normPath: string;
-    level: 'none' | 'warning' | 'forbidden';
-    code?: 'HOME_INDEX' | 'CUSTOM_404' | 'CUSTOM_500' | 'CUSTOM_503' | 'RESERVED_SYSTEM';
-    message?: string;
-}
-
-export function normalizeRoutePath(rawSlugOrPath?: string | null, parentSlugOrPath?: string | null): string {
-    const rawWithoutQuery = (rawSlugOrPath || '').trim().split('?')[0].split('#')[0];
-    const cleaned = rawWithoutQuery.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '');
-
-    if (parentSlugOrPath) {
-        const cleanParent = parentSlugOrPath.trim().split('?')[0].split('#')[0].replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '');
-        if (cleanParent && cleanParent !== 'index') {
-            if (!cleaned || cleaned === 'index') {
-                return `/${cleanParent}`;
-            }
-            return `/${cleanParent}/${cleaned}`;
-        }
-    }
-
-    if (!cleaned || cleaned === 'index') {
-        return '/';
-    }
-    return `/${cleaned}`;
-}
-
-const FORBIDDEN_PREFIXES = new Set(['admin', 'api', 'shared', 'assets', 'content', 'theme', 'commercial', 'cdn-cgi', '.well-known']);
-
-export function inspectSpecialRoute(
-    rawSlugOrPath?: string | null,
-    parentSlugOrPath?: string | null,
-    locale: string = 'zh-CN'
-): SpecialRouteCheckResult {
-    const rawTrimmed = (rawSlugOrPath || '').trim();
-    const normPath = normalizeRoutePath(rawTrimmed, parentSlugOrPath);
-    const lowerPath = normPath.toLowerCase();
-    const firstSegment = lowerPath.replace(/^\/+/, '').split('/')[0] || '';
-
-    if (['/zh-cn', '/en-us'].includes(lowerPath)) {
-        return { normPath, level: 'forbidden', code: 'RESERVED_SYSTEM', message: t(locale, 'common.route_forbidden_locale', { path: lowerPath === '/zh-cn' ? '/zh-CN' : '/en-US' }) };
-    }
-    const exactName = { '/sitemap.xml': 'sitemap', '/robots.txt': 'robots', '/favicon.ico': 'favicon', '/app.css': 'appcss' }[lowerPath];
-    if (exactName) {
-        return { normPath, level: 'forbidden', code: 'RESERVED_SYSTEM', message: t(locale, `common.route_forbidden_${exactName}`) };
-    }
-    if (FORBIDDEN_PREFIXES.has(firstSegment)) {
-        return { normPath, level: 'forbidden', code: 'RESERVED_SYSTEM', message: t(locale, `common.route_forbidden_${firstSegment.replace(/[^a-z0-9]/g, '')}`) };
-    }
-
-    if (normPath === '/') {
-        const isRawIndex = rawTrimmed.replace(/^\/+|\/+$/g, '').toLowerCase() === 'index';
-        return {
-            normPath: '/',
-            level: 'warning',
-            code: 'HOME_INDEX',
-            message: isRawIndex ? t(locale, 'common.route_warn_home_index') : t(locale, 'common.route_warn_home_root')
-        };
-    }
-
-    if (lowerPath === '/404') return { normPath: '/404', level: 'warning', code: 'CUSTOM_404', message: t(locale, 'common.route_warn_404') };
-    if (lowerPath === '/500') return { normPath: '/500', level: 'warning', code: 'CUSTOM_500', message: t(locale, 'common.route_warn_500') };
-    if (lowerPath === '/503' || lowerPath === '/maintenance') return { normPath, level: 'warning', code: 'CUSTOM_503', message: t(locale, 'common.route_warn_503', { path: normPath }) };
-
-    return { normPath, level: 'none' };
-}
-
-export function buildSpecialRouteCacheRequest(siteId: string, routeKey: '500' | '503'): Request {
-    return new Request(`https://walnut-special-cache.internal/${siteId}/${routeKey}`, { method: 'GET' });
-}
-
-export async function putSpecialRouteToEdgeCache(
-    siteId: string,
-    routeKey: '500' | '503',
-    html: string,
-    statusCode: number,
-    executionCtx?: any
-): Promise<void> {
-    const edgeCache: Cache | undefined = (globalThis as any).caches?.default;
-    if (!edgeCache || !html) return;
-
-    const cacheReq = buildSpecialRouteCacheRequest(siteId, routeKey);
-    const headers = new Headers({
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000',
-        'X-Walnut-Special-Cache': 'HIT',
-        'X-Walnut-Status': String(statusCode)
-    });
-    const putPromise = edgeCache.put(cacheReq, new Response(html, { status: statusCode, headers })).catch(() => {});
-    if (executionCtx && typeof executionCtx.waitUntil === 'function') {
-        executionCtx.waitUntil(putPromise);
-    } else {
-        await putPromise;
-    }
-}
-
-export async function matchSpecialRouteFromEdgeCache(
-    siteId: string,
-    routeKey: '500' | '503'
-): Promise<{ html: string; status: number } | null> {
-    const edgeCache: Cache | undefined = (globalThis as any).caches?.default;
-    if (!edgeCache || !siteId) return null;
-    try {
-        const hit = await edgeCache.match(buildSpecialRouteCacheRequest(siteId, routeKey));
-        if (hit) {
-            const html = await hit.text();
-            if (html && html.length > 20) {
-                return { html, status: hit.status || (routeKey === '500' ? 500 : 503) };
-            }
-        }
-    } catch {}
-    return null;
-}
-
-export function renderFallbackErrorHtml(statusCode: 404 | 500 | 503, siteName = 'Content Management System', locale = 'zh-CN'): string {
-    const c = statusCode === 404
-        ? { t: '404 - Not Found', s: 'The requested page could not be found or has been unpublished.', col: 'text-amber-500' }
-        : statusCode === 503
-            ? { t: '503 - Service Unavailable', s: 'The site is currently undergoing scheduled maintenance. Please check back shortly.', col: 'text-indigo-500' }
-            : { t: '500 - Internal Server Error', s: 'The server encountered an error while processing your request. Please try again later.', col: 'text-rose-500' };
-    return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${c.t} - ${siteName}</title><link rel="stylesheet" href="/shared/app.css" /></head><body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen flex items-center justify-center p-6 text-center font-sans antialiased"><div class="max-w-md w-full space-y-4 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"><h1 class="text-5xl font-black ${c.col} tracking-tight">${statusCode}</h1><h2 class="text-lg font-bold text-slate-900 dark:text-white">${c.t}</h2><p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${c.s}</p><div class="pt-3"><a href="/" class="inline-block bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm transition">&larr; Return Home</a></div></div></body></html>`;
-}
-
-// Single UNION query enforces cross-table route uniqueness in one D1 round-trip.
+// Resolve collisions using the final localized canonical path so different locales may share a slug while identical effective URLs are blocked.
 export async function assertSiteRouteUnique(
     db: D1Database,
     siteId: string,
     rawPath: string,
     currentEntityId?: string | null,
-    locale: string = 'zh-CN'
+    locale: string = 'zh-CN',
+    siteDefaultLocale?: string
 ): Promise<string> {
     const specialCheck = inspectSpecialRoute(rawPath, null, locale);
     if (specialCheck.level === 'forbidden') {
         throw new Error(specialCheck.message || t(locale, 'common.error'));
     }
 
-    const normPath = specialCheck.normPath;
+    const defaultLocale = siteDefaultLocale || (await findSiteById(db, siteId).catch(() => null))?.default_locale || 'zh-CN';
+    const targetLocale = locale || defaultLocale;
+    const localizedPath = buildLocalizedRoutePath(specialCheck.normPath, targetLocale, defaultLocale);
     const excludeId = currentEntityId || '';
-    const bareSlug = normPath === '/' ? '' : normPath.slice(1);
-    const slugCandidates = normPath === '/' ? ['/', 'index'] : [bareSlug, normPath];
-    const placeholders = slugCandidates.map(() => '?').join(', ');
 
-    const conflict = await db.prepare(`
-        SELECT id, title, entity_type as type FROM site_routes
+    const routeConflict = await db.prepare(`
+        SELECT entity_id as id, title, entity_type as type FROM site_routes
         WHERE site_id = ? AND path = ? AND entity_id IS NOT NULL AND entity_id != ?
-        UNION ALL
-        SELECT id, title, 'article' as type FROM articles
-        WHERE site_id = ? AND id != ? AND slug IN (${placeholders}) AND deleted_at IS NULL
-        UNION ALL
-        SELECT id, title, 'page' as type FROM pages
-        WHERE site_id = ? AND id != ? AND slug IN (${placeholders}) AND deleted_at IS NULL
-          AND (metadata NOT LIKE '%"page_type":"template"%' OR metadata IS NULL)
         LIMIT 1
-    `).bind(
-        siteId, normPath, excludeId,
-        siteId, excludeId, ...slugCandidates,
-        siteId, excludeId, ...slugCandidates
-    ).first<{ id: string; title: string; type: string }>();
+    `).bind(siteId, localizedPath, excludeId).first<{ id: string; title: string; type: string }>();
 
-    if (conflict) {
-        const typeLabel = conflict.type === 'article' ? 'article' : (conflict.type === 'page' ? 'page' : 'route');
+    if (routeConflict) {
+        const typeLabel = routeConflict.type === 'article' ? 'article' : (routeConflict.type === 'page' ? 'page' : 'route');
         throw new Error(
-            `Same-site route conflict: path [${normPath}] is already occupied by ${typeLabel} [${conflict.title || conflict.id}], please change Slug`
+            `Same-site route conflict: path [${localizedPath}] is already occupied by ${typeLabel} [${routeConflict.title || routeConflict.id}], please change Slug`
         );
     }
 
-    return normPath;
+    const bareLocalized = localizedPath === '/' ? '' : localizedPath.slice(1);
+    const lastSeg = bareLocalized.split('/').pop() || '';
+    const rawBare = specialCheck.normPath === '/' ? '' : specialCheck.normPath.slice(1);
+    const rawLastSeg = rawBare.split('/').pop() || '';
+    const slugCandidates = Array.from(new Set([
+        '/', 'index', '',
+        ...(lastSeg ? [lastSeg, `/${lastSeg}`] : []),
+        ...(rawLastSeg ? [rawLastSeg, `/${rawLastSeg}`] : []),
+        ...(bareLocalized ? [bareLocalized, `/${bareLocalized}`] : []),
+        ...(rawBare ? [rawBare, `/${rawBare}`] : [])
+    ]));
+    const placeholders = slugCandidates.map(() => '?').join(', ');
+    const likeLast = lastSeg ? `%/${lastSeg}` : '%';
+
+    const [artCandidates, pageCandidates] = await db.batch([
+        db.prepare(`
+            SELECT id, title, slug, locale FROM articles
+            WHERE site_id = ? AND id != ? AND deleted_at IS NULL AND (slug IN (${placeholders}) OR slug LIKE ?)
+        `).bind(siteId, excludeId, ...slugCandidates, likeLast),
+        db.prepare(`
+            SELECT id, title, slug, parent_id, locale FROM pages
+            WHERE site_id = ? AND id != ? AND deleted_at IS NULL
+              AND (metadata NOT LIKE '%"page_type":"template"%' OR metadata IS NULL)
+              AND (slug IN (${placeholders}) OR slug LIKE ?)
+        `).bind(siteId, excludeId, ...slugCandidates, likeLast)
+    ]);
+
+    for (const art of (artCandidates.results || []) as Array<{ id: string; title: string; slug: string; locale?: string }>) {
+        const artLocalized = buildLocalizedRoutePath(normalizeRoutePath(art.slug), art.locale || defaultLocale, defaultLocale);
+        if (artLocalized === localizedPath) {
+            throw new Error(
+                `Same-site route conflict: path [${localizedPath}] is already occupied by article [${art.title || art.id}], please change Slug`
+            );
+        }
+    }
+
+    const pageRows = (pageCandidates.results || []) as Array<{ id: string; title: string; slug: string; parent_id?: string | null; locale?: string }>;
+    const resolveParent = await loadPublishedPageParentResolver(db, siteId, pageRows.some(pg => Boolean(pg.parent_id)));
+    for (const pg of pageRows) {
+        const parentPath = pg.parent_id ? resolveParent(pg.parent_id) : null;
+        const pageRaw = normalizeRoutePath(pg.slug, parentPath);
+        const pageLocalized = buildLocalizedRoutePath(pageRaw, pg.locale || defaultLocale, defaultLocale);
+        if (pageLocalized === localizedPath) {
+            throw new Error(
+                `Same-site route conflict: path [${localizedPath}] is already occupied by page [${pg.title || pg.id}], please change Slug`
+            );
+        }
+    }
+
+    return localizedPath;
 }
 
 async function mutateAndFlushRoutes(
@@ -288,25 +235,35 @@ async function mutateAndFlushRoutes(
 export async function purgeEdgeAndZoneCache(
     db: D1Database,
     siteId: string,
-    paths?: string[]
+    paths?: string[],
+    opts: { purgeEverything?: boolean; requestOrigin?: string; siteOverride?: any } = {}
 ): Promise<void> {
     const edgeCache: Cache | undefined = (globalThis as any).caches?.default;
     const basePaths = (paths && paths.length > 0 ? paths : ['/']).map(p => (p === '/sitemap.xml' ? '/sitemap.xml' : normalizeRoutePath(p)));
     const expandedPaths = new Set<string>(basePaths);
     for (const p of basePaths) {
-        if (p === '/sitemap.xml' || p === '/feed.xml' || p === '/feed.json' || p === '/robots.txt') continue;
+        if (
+            p.startsWith('/theme/') ||
+            p.startsWith('/content/') ||
+            ['/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/zh/feed.xml', '/zh/feed.json', '/zh/rss.xml', '/llm.txt', '/llms.txt', '/robots.txt'].includes(p)
+        ) continue;
         for (const pref of ['/en', '/en-US', '/zh', '/zh-CN']) {
             expandedPaths.add(p === '/' ? pref : `${pref}${p}`);
         }
     }
     const targetPaths = Array.from(expandedPaths);
-    const site = await findSiteById(db, siteId).catch(() => null);
+    const site = opts.siteOverride !== undefined ? opts.siteOverride : await findSiteById(db, siteId).catch(() => null);
+    const siteSettings = parseJson<Record<string, any>>(site?.settings, {});
     const rawDomain = (site?.primary_domain || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
     const origins: string[] = ['http://localhost:8787'];
-    if (rawDomain && rawDomain !== '*') {
-        const proto = isLocalHost(rawDomain) ? 'http' : 'https';
-        origins.push(`${proto}://${rawDomain}`);
+    for (const cand of [rawDomain, siteSettings.sitemap_domain, siteSettings.seo?.sitemap_domain]) {
+        const cleanDom = String(cand || '').trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '');
+        if (cleanDom && cleanDom !== '*') {
+            const proto = isLocalHost(cleanDom) ? 'http' : 'https';
+            origins.push(`${proto}://${cleanDom}`);
+        }
     }
+    if (opts.requestOrigin) origins.push(opts.requestOrigin);
     const knownOrigins: Set<string> | undefined = (globalThis as any).__WALNUT_KNOWN_ORIGINS__;
     if (knownOrigins) {
         for (const o of knownOrigins) {
@@ -330,19 +287,34 @@ export async function purgeEdgeAndZoneCache(
     }
 
     const cfEnv = (globalThis as any).__CF_ENV__;
-    const siteSettings = parseJson<Record<string, any>>(site?.settings, {});
     const zoneId = cfEnv?.CF_ZONE_ID || siteSettings.cf_zone_id;
-    const apiToken = cfEnv?.CF_API_TOKEN || siteSettings.cf_api_token;
-    if (zoneId && apiToken && rawDomain && rawDomain !== '*' && !isLocalHost(rawDomain) && purgeUrls.length > 0) {
-        const zoneFiles = purgeUrls.filter(u => !u.startsWith('http://localhost')).slice(0, 30);
-        if (zoneFiles.length > 0) {
-            await fetch(`https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zoneId)}/purge_cache`, {
+    const rawApiToken = String(cfEnv?.CF_API_TOKEN || siteSettings.cf_api_token || '').trim();
+    const apiToken = rawApiToken.startsWith('enc:v1:')
+        ? await vaultDecrypt(rawApiToken, siteId, 'cf_api_token', cfEnv, db).catch(() => '')
+        : rawApiToken;
+
+    if (zoneId && apiToken && rawDomain && rawDomain !== '*' && !isLocalHost(rawDomain)) {
+        const purgeEndpoint = `https://api.cloudflare.com/client/v4/zones/${encodeURIComponent(zoneId)}/purge_cache`;
+        const reqHeaders = {
+            'Authorization': `Bearer ${apiToken}`,
+            'Content-Type': 'application/json'
+        };
+        if (opts.purgeEverything) {
+            await fetch(purgeEndpoint, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ files: zoneFiles })
+                headers: reqHeaders,
+                body: JSON.stringify({ purge_everything: true })
+            }).catch(() => {});
+            return;
+        }
+        const zoneFiles = Array.from(new Set(purgeUrls.filter(u => !u.startsWith('http://localhost'))));
+        // Cloudflare purge_cache rejects payloads exceeding 30 URLs per request.
+        for (let i = 0; i < zoneFiles.length; i += 30) {
+            const chunk = zoneFiles.slice(i, i + 30);
+            await fetch(purgeEndpoint, {
+                method: 'POST',
+                headers: reqHeaders,
+                body: JSON.stringify({ files: chunk })
             }).catch(() => {});
         }
     }
@@ -402,10 +374,12 @@ export async function findSiteRouteByPath(
 export async function markSiteRoutesDirty(
     db: D1Database,
     siteId: string,
-    paths?: string[]
+    paths?: string[],
+    opts: { purgeEverything?: boolean; requestOrigin?: string } = {}
 ): Promise<void> {
     const nowIso = new Date().toISOString();
     let purgePaths = paths;
+    let purgeEverything = Boolean(opts.purgeEverything);
     let stmt: D1PreparedStatement;
     if (paths && paths.length > 0) {
         const normPaths = Array.from(new Set(paths.map(p => (p === '/sitemap.xml' ? '/sitemap.xml' : normalizeRoutePath(p)))));
@@ -416,12 +390,26 @@ export async function markSiteRoutesDirty(
             WHERE site_id = ? AND path IN (${placeholders})
         `).bind(nowIso, siteId, ...normPaths);
     } else {
+        purgeEverything = true;
+        const collected: string[] = [];
+        const pageSize = 200;
+        let offset = 0;
         try {
-            const allRows = await db.prepare(`SELECT path FROM site_routes WHERE site_id = ? LIMIT 100`).bind(siteId).all<{ path: string }>();
-            if (allRows.results && allRows.results.length > 0) {
-                purgePaths = allRows.results.map(r => r.path);
+            while (true) {
+                const pageRows = await db.prepare(
+                    `SELECT path FROM site_routes WHERE site_id = ? ORDER BY path ASC LIMIT ? OFFSET ?`
+                ).bind(siteId, pageSize, offset).all<{ path: string }>();
+                const list = pageRows.results || [];
+                for (const r of list) {
+                    if (r.path) collected.push(r.path);
+                }
+                if (list.length < pageSize) break;
+                offset += pageSize;
             }
         } catch {}
+        if (collected.length > 0) {
+            purgePaths = collected;
+        }
         stmt = db.prepare(`
             UPDATE site_routes
             SET is_dirty = 1, rendered_html = NULL, version = version + 1, updated_at = ?
@@ -429,7 +417,7 @@ export async function markSiteRoutesDirty(
         `).bind(nowIso, siteId);
     }
     await mutateAndFlushRoutes(db, siteId, [stmt], false);
-    await purgeEdgeAndZoneCache(db, siteId, purgePaths);
+    await purgeEdgeAndZoneCache(db, siteId, purgePaths, { purgeEverything, requestOrigin: opts.requestOrigin });
 }
 
 export async function markRoutesDirtyByDependency(
@@ -477,6 +465,13 @@ export async function removeEntityFromSiteRoutes(
     await mutateAndFlushRoutes(db, siteId, [buildDeleteEntitySiteRoutesStatement(db, siteId, entityId)], true);
 }
 
+const LOCALE_PREFIX_TO_CODE: Record<string, string> = {
+    'en': 'en-US',
+    'en-us': 'en-US',
+    'zh': 'zh-CN',
+    'zh-cn': 'zh-CN'
+};
+
 export async function compileAndSaveSiteRoute(
     db: D1Database,
     site: Site,
@@ -485,9 +480,22 @@ export async function compileAndSaveSiteRoute(
 ): Promise<{ html: string; status: number; redirectUrl?: string }> {
     const normPath = normalizeRoutePath(rawPath);
     const targetHost = resolveEffectiveDomain(site.primary_domain, host);
-    const locale = site.default_locale || 'zh-CN';
+    const defaultLocale = site.default_locale || 'zh-CN';
+    const existing = await findSiteRouteByPath(db, site.id, normPath);
 
-    const renderResult = await renderDynamicVisitorPage(db, site, normPath, targetHost, locale, undefined);
+    const firstSeg = (normPath.slice(1).split('/')[0] || '').toLowerCase();
+    const prefixLocale = LOCALE_PREFIX_TO_CODE[firstSeg];
+    const locale = existing?.locale || prefixLocale || defaultLocale;
+    const expectedPrefix = normalizeLocaleCode(locale) !== normalizeLocaleCode(defaultLocale)
+        ? getLocaleShortPrefix(locale)
+        : '';
+    const hasExpectedPrefix = Boolean(expectedPrefix && (normPath === `/${expectedPrefix}` || normPath.startsWith(`/${expectedPrefix}/`)));
+    const renderPath = hasExpectedPrefix ? (normPath.slice(expectedPrefix.length + 1) || '/') : normPath;
+
+    const renderResult = await renderDynamicVisitorPage(db, site, renderPath, targetHost, locale, undefined, false, undefined, {
+        requestPath: normPath,
+        hasExplicitLocalePrefix: hasExpectedPrefix
+    });
 
     const isSpecial404 = normPath === '/404';
     const isSpecial500 = normPath === '/500';
@@ -505,7 +513,6 @@ export async function compileAndSaveSiteRoute(
 
     if (renderResult.html && (targetStatusCode === 200 || targetStatusCode === 301 || targetStatusCode === 302 || isSpecialRoute)) {
         try {
-            const existing = await findSiteRouteByPath(db, site.id, normPath);
             const upsertStmt = buildUpsertSiteRouteStatement(db, {
                 id: existing?.id,
                 siteId: site.id,
@@ -521,7 +528,7 @@ export async function compileAndSaveSiteRoute(
                 isDirty: 0,
                 changefreq: existing?.changefreq || (normPath === '/' ? 'daily' : 'weekly'),
                 priority: existing?.priority ?? (normPath === '/' ? 1.0 : (isSpecialRoute ? 0.2 : 0.8)),
-                dependencies: renderResult.dependencies?.length ? renderResult.dependencies : undefined
+                dependencies: Array.isArray(renderResult.dependencies) ? renderResult.dependencies : []
             });
             await mutateAndFlushRoutes(db, site.id, [upsertStmt], false);
 
@@ -542,16 +549,17 @@ export async function fetchNodesForCacheIndexRebuild(
     db: D1Database,
     siteId: string
 ): Promise<CacheIndexRebuildNodeRow[]> {
+    const nowIso = new Date().toISOString();
     const { results } = await db.prepare(`
-        SELECT id, slug, NULL as parent_id, 'article' as type, locale, translation_group_id, title, summary, cover_image_url, metadata, updated_at, published_at
+        SELECT id, slug, NULL as parent_id, 'article' as type, locale, visibility, translation_group_id, title, summary, cover_image_url, metadata, updated_at, published_at
         FROM articles
-        WHERE site_id = ? AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND deleted_at IS NULL
+        WHERE site_id = ? AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND (published_at IS NULL OR REPLACE(published_at, ' ', 'T') <= ?) AND deleted_at IS NULL
         UNION ALL
-        SELECT id, slug, parent_id, 'page' as type, locale, NULL as translation_group_id, title, summary, cover_image_url, metadata, updated_at, published_at
+        SELECT id, slug, parent_id, 'page' as type, locale, visibility, COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as translation_group_id, title, summary, cover_image_url, metadata, updated_at, published_at
         FROM pages
-        WHERE site_id = ? AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND deleted_at IS NULL
+        WHERE site_id = ? AND status = 'published' AND (visibility = 'public' OR visibility IS NULL) AND (published_at IS NULL OR REPLACE(published_at, ' ', 'T') <= ?) AND deleted_at IS NULL
         ORDER BY updated_at DESC
-    `).bind(siteId, siteId).all<CacheIndexRebuildNodeRow>();
+    `).bind(siteId, nowIso, siteId, nowIso).all<CacheIndexRebuildNodeRow>();
     return results || [];
 }
 
@@ -593,7 +601,7 @@ function buildCacheIndexFromRouteRows(rows: SiteRouteRow[]): SiteCacheIndex {
 
     for (const row of rows) {
         if (
-            ['/sitemap.xml', '/404', '/500', '/503', '/maintenance'].includes(row.path) ||
+            ['/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/zh/feed.xml', '/zh/feed.json', '/zh/rss.xml', '/llm.txt', '/llms.txt', '/404', '/500', '/503', '/maintenance'].includes(row.path) ||
             row.entity_type === 'redirect' ||
             row.status_code !== 200
         ) continue;
@@ -628,6 +636,8 @@ export async function rebuildFullSiteCacheIndex(
     _kv?: unknown,
     siteId: string = 'site_default'
 ): Promise<SiteCacheIndex> {
+    const site = await findSiteById(db, siteId).catch(() => null);
+    const siteDefaultLocale = site?.default_locale || 'zh-CN';
     const results = await fetchNodesForCacheIndexRebuild(db, siteId);
     const existingRowsRes = await db.prepare(`SELECT * FROM site_routes WHERE site_id = ?`).bind(siteId).all<SiteRouteRow>();
     const existingByPath = new Map<string, SiteRouteRow>();
@@ -635,32 +645,7 @@ export async function rebuildFullSiteCacheIndex(
         existingByPath.set(r.path, r);
     }
 
-    const pageMap = new Map<string, { slug: string; parent_id?: string | null }>();
-    for (const row of results) {
-        if (row.type === 'page') {
-            pageMap.set(row.id, { slug: row.slug, parent_id: row.parent_id });
-        }
-    }
-
-    const memoFullPath = new Map<string, string>();
-    function resolvePageFullPath(pageId: string, visited = new Set<string>()): string {
-        if (memoFullPath.has(pageId)) return memoFullPath.get(pageId)!;
-        if (visited.has(pageId)) return '';
-        visited.add(pageId);
-
-        const page = pageMap.get(pageId);
-        if (!page) return '';
-        const cleanSlug = (page.slug || '').replace(/^\/+|\/+$/g, '');
-        if (!page.parent_id) {
-            memoFullPath.set(pageId, cleanSlug);
-            return cleanSlug;
-        }
-
-        const parentPath = resolvePageFullPath(page.parent_id, visited);
-        const full = parentPath ? `${parentPath}/${cleanSlug}` : cleanSlug;
-        memoFullPath.set(pageId, full);
-        return full;
-    }
+    const resolvePageFullPath = createPageParentPathResolver(results.filter(r => r.type === 'page'));
 
     const validPaths = new Set<string>(['/sitemap.xml']);
     const batchStmts: D1PreparedStatement[] = [];
@@ -671,20 +656,23 @@ export async function rebuildFullSiteCacheIndex(
     for (const row of results) {
         const meta = parseJson<Record<string, any>>(row.metadata, {});
         if (row.type === 'page' && meta.page_type === 'template') continue;
+        if (isRestrictedAccess(row.visibility, meta)) continue;
 
         const parentPath = row.parent_id ? resolvePageFullPath(row.parent_id) : null;
-        const normPath = normalizeRoutePath(row.slug, parentPath);
+        const bareNormPath = normalizeRoutePath(row.slug, parentPath);
+        const nodeLocale = row.locale || siteDefaultLocale;
+        const normPath = buildLocalizedRoutePath(bareNormPath, nodeLocale, siteDefaultLocale);
         validPaths.add(normPath);
 
         const isRedirect = row.type === 'page' && meta.page_type === 'redirect';
         let statusCode = 200;
         if (isRedirect) {
             statusCode = parseInt(meta.redirect_code) || 301;
-        } else if (normPath === '/404') {
+        } else if (bareNormPath === '/404') {
             statusCode = 404;
-        } else if (normPath === '/500') {
+        } else if (bareNormPath === '/500') {
             statusCode = 500;
-        } else if (normPath === '/503' || normPath === '/maintenance') {
+        } else if (bareNormPath === '/503' || bareNormPath === '/maintenance') {
             statusCode = 503;
         }
 
@@ -694,6 +682,7 @@ export async function rebuildFullSiteCacheIndex(
 
         const existing = existingByPath.get(normPath);
         const keepCompiled = existing && existing.is_dirty === 0 && existing.rendered_html && existing.entity_id === row.id;
+        const tgId = row.translation_group_id || meta.translation_group_id || null;
 
         batchStmts.push(
             buildUpsertSiteRouteStatement(db, {
@@ -702,15 +691,15 @@ export async function rebuildFullSiteCacheIndex(
                 path: normPath,
                 entityType: isRedirect ? 'redirect' : row.type,
                 entityId: row.id,
-                locale: row.locale || 'zh-CN',
-                translationGroupId: row.translation_group_id || null,
+                locale: nodeLocale,
+                translationGroupId: tgId,
                 title: row.title || 'Untitled',
                 renderedHtml: keepCompiled ? existing.rendered_html : null,
                 statusCode,
                 redirectTarget: isRedirect ? (meta.redirect_url || '/') : null,
                 isDirty: keepCompiled ? 0 : 1,
-                changefreq: normPath === '/' ? 'daily' : 'weekly',
-                priority: normPath === '/' ? 1.0 : (row.type === 'article' ? 0.8 : 0.6),
+                changefreq: bareNormPath === '/' ? 'daily' : 'weekly',
+                priority: bareNormPath === '/' ? 1.0 : (row.type === 'article' ? 0.8 : 0.6),
                 images,
                 templateId: meta.template_id || meta.template_slug || null,
                 schemaSlug: meta.schema_slug || null
@@ -721,11 +710,35 @@ export async function rebuildFullSiteCacheIndex(
         if (
             statusCode === 200 &&
             !isRedirect &&
-            normPath !== '/404' &&
-            normPath !== '/500' &&
-            normPath !== '/503' &&
-            normPath !== '/maintenance'
+            bareNormPath !== '/404' &&
+            bareNormPath !== '/500' &&
+            bareNormPath !== '/503' &&
+            bareNormPath !== '/maintenance'
         ) {
+            if (Array.isArray(meta.aliases)) {
+                for (const rawAlias of meta.aliases) {
+                    const aliasPath = normalizeRoutePath(String(rawAlias || ''));
+                    if (!aliasPath || aliasPath === '/' || aliasPath === normPath || validPaths.has(aliasPath)) continue;
+                    validPaths.add(aliasPath);
+                    const existingAlias = existingByPath.get(aliasPath);
+                    batchStmts.push(
+                        buildUpsertSiteRouteStatement(db, {
+                            id: existingAlias?.id,
+                            siteId,
+                            path: aliasPath,
+                            entityType: 'redirect',
+                            entityId: row.id,
+                            locale: nodeLocale,
+                            translationGroupId: tgId,
+                            title: row.title || 'Untitled',
+                            renderedHtml: null,
+                            statusCode: 301,
+                            redirectTarget: normPath,
+                            isDirty: 0
+                        })
+                    );
+                }
+            }
             indexTable[normPath] = {
                 path: normPath,
                 version: (existing?.version || 0) + (keepCompiled ? 0 : 1),
@@ -733,17 +746,17 @@ export async function rebuildFullSiteCacheIndex(
                 node_id: row.id,
                 type: row.type,
                 title: row.title || 'Untitled',
-                locale: row.locale || 'zh-CN',
+                locale: nodeLocale,
                 images: images.length > 0 ? images : undefined,
-                changefreq: normPath === '/' ? 'daily' : 'weekly',
-                priority: normPath === '/' ? 1.0 : (row.type === 'article' ? 0.8 : 0.6)
+                changefreq: bareNormPath === '/' ? 'daily' : 'weekly',
+                priority: bareNormPath === '/' ? 1.0 : (row.type === 'article' ? 0.8 : 0.6)
             };
 
-            if (row.translation_group_id) {
-                nodeTgMap.set(normPath, row.translation_group_id);
-                const list = tgMap.get(row.translation_group_id) || [];
-                list.push({ locale: row.locale || 'zh-CN', path: normPath });
-                tgMap.set(row.translation_group_id, list);
+            if (tgId) {
+                nodeTgMap.set(normPath, tgId);
+                const list = tgMap.get(tgId) || [];
+                list.push({ locale: nodeLocale, path: normPath });
+                tgMap.set(tgId, list);
             }
         }
     }
@@ -761,35 +774,6 @@ export async function rebuildFullSiteCacheIndex(
     linkPeerTranslations(indexTable, tgMap, p => nodeTgMap.get(p));
 
     return indexTable;
-}
-
-export async function rebuildSiteSitemapRoute(
-    db: D1Database,
-    site: Site,
-    host?: string,
-    existingIndex?: SiteCacheIndex
-): Promise<string> {
-    const index = existingIndex || await getOrBuildSiteCacheIndex(db, undefined, site.id);
-    const targetHost = resolveEffectiveDomain(site.primary_domain, host);
-    const xml = renderRichSitemapXml(index, site, targetHost);
-
-    const upsertSitemapStmt = buildUpsertSiteRouteStatement(db, {
-        id: `sr_${site.id}_sitemap`,
-        siteId: site.id,
-        path: '/sitemap.xml',
-        entityType: 'sitemap',
-        entityId: 'sitemap',
-        locale: site.default_locale || 'zh-CN',
-        title: 'Sitemap XML',
-        renderedHtml: xml,
-        statusCode: 200,
-        isDirty: 0,
-        changefreq: 'daily',
-        priority: 1.0
-    });
-
-    await upsertSitemapStmt.run();
-    return xml;
 }
 
 export async function recompileDirtySiteRoutes(
@@ -836,44 +820,40 @@ export async function recompileDirtySiteRoutes(
     return { compiledCount, syncedCount, sitemapUpdated: true };
 }
 
-export function renderRichSitemapXml(
-    index: SiteCacheIndex,
-    site: Site,
-    host: string
-): string {
-    const domain = resolveEffectiveDomain(site.primary_domain, host);
-    const entries = Object.values(index);
-    const xmlUrlNodes: string[] = [];
-
-    for (const item of entries) {
-        if (item.path === '/sitemap.xml') continue;
-        const normPath = normalizeRoutePath(item.path);
-        const loc = buildAbsoluteUrl(normPath, domain);
-        const lastmod = item.updated_at ? item.updated_at.split('T')[0].split(' ')[0] : new Date().toISOString().split('T')[0];
-        const changefreq = item.changefreq || 'weekly';
-        const priority = (item.priority !== undefined ? item.priority : 0.8).toFixed(1);
-
-        const xhtmlLinks = (item.translations && item.translations.length > 0)
-            ? [`    <xhtml:link rel="alternate" hreflang="${item.locale || 'x-default'}" href="${loc}" />`, ...item.translations.map(t => `    <xhtml:link rel="alternate" hreflang="${t.locale}" href="${buildAbsoluteUrl(normalizeRoutePath(t.path), domain)}" />`)]
-            : [];
-
-        const imageNodes = (item.images || []).map(img =>
-            `    <image:image>\n      <image:loc>${escapeXml(buildAbsoluteUrl(img.loc, domain))}</image:loc>${img.title ? `\n      <image:title>${escapeXml(img.title)}</image:title>` : ''}\n    </image:image>`
-        );
-
-        xmlUrlNodes.push(`  <url>\n    <loc>${escapeXml(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n${xhtmlLinks.join('\n')}${imageNodes.length ? (xhtmlLinks.length ? '\n' : '') + imageNodes.join('\n') : ''}\n  </url>`);
+export async function assertAliasRoutesAvailable(
+    db: D1Database,
+    siteId: string,
+    aliases: string[],
+    currentEntityId?: string | null
+): Promise<void> {
+    if (!aliases || aliases.length === 0) return;
+    const placeholders = aliases.map(() => '?').join(', ');
+    const excludeId = currentEntityId || '';
+    const conflict = await db.prepare(`
+        SELECT path, entity_id, title, entity_type FROM site_routes
+        WHERE site_id = ? AND path IN (${placeholders}) AND entity_id IS NOT NULL AND entity_id != ?
+        LIMIT 1
+    `).bind(siteId, ...aliases, excludeId).first<{ path: string; entity_id: string; title?: string; entity_type?: string }>();
+    if (conflict) {
+        throw new Error(`Same-site route conflict: alias [${conflict.path}] is already occupied by [${conflict.title || conflict.entity_id}]`);
     }
-
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:xhtml="http://www.w3.org/1999/xhtml"\n        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${xmlUrlNodes.join('\n')}\n</urlset>`.trim();
 }
 
 export function buildDeleteOtherSiteRoutesStatement(
     db: D1Database,
     siteId: string,
     entityId: string,
-    keepPath: string
+    keepPaths: string | string[]
 ): D1PreparedStatement {
-    return db.prepare(`DELETE FROM site_routes WHERE site_id = ? AND entity_id = ? AND path != ?`).bind(siteId, entityId, keepPath);
+    const list = Array.isArray(keepPaths) ? Array.from(new Set(keepPaths.filter(Boolean))) : [keepPaths];
+    if (list.length === 0) {
+        return buildDeleteEntitySiteRoutesStatement(db, siteId, entityId);
+    }
+    if (list.length === 1) {
+        return db.prepare(`DELETE FROM site_routes WHERE site_id = ? AND entity_id = ? AND path != ?`).bind(siteId, entityId, list[0]);
+    }
+    const ph = list.map(() => '?').join(', ');
+    return db.prepare(`DELETE FROM site_routes WHERE site_id = ? AND entity_id = ? AND path NOT IN (${ph})`).bind(siteId, entityId, ...list);
 }
 
 export function buildDeleteEntitySiteRoutesStatement(
@@ -896,73 +876,53 @@ const markRoutesDirty = (db: D1Database, siteId: string, whereClause: string, no
     db.prepare(`UPDATE site_routes SET is_dirty = 1, rendered_html = NULL, version = version + 1, updated_at = ? WHERE site_id = ? AND ${whereClause}`).bind(nowIso, siteId);
 
 export const buildMarkHomeAndSitemapRoutesDirtyStatement = (db: D1Database, siteId: string, nowIso?: string) =>
-    markRoutesDirty(db, siteId, "path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json')", nowIso);
+    markRoutesDirty(db, siteId, "path IN ('/', '/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/zh/feed.xml', '/zh/feed.json', '/zh/rss.xml', '/llm.txt', '/llms.txt')", nowIso);
 
 export const buildMarkSitemapRouteDirtyStatement = (db: D1Database, siteId: string, nowIso?: string) =>
-    markRoutesDirty(db, siteId, "path IN ('/sitemap.xml', '/feed.xml', '/feed.json')", nowIso);
-
-export async function rebuildSiteFeedRoute(
-    db: D1Database,
-    site: Site,
-    host: string,
-    format: 'xml' | 'json'
-): Promise<string> {
-    const domain = resolveEffectiveDomain(site.primary_domain, host);
-    const siteUrl = buildAbsoluteUrl('/', domain);
-    const feedPath = format === 'xml' ? '/feed.xml' : '/feed.json';
-    const feedUrl = buildAbsoluteUrl(feedPath, domain);
-
-    const { results } = await db.prepare(`
-        SELECT id, slug, title, summary, published_at, updated_at
-        FROM articles
-        WHERE site_id = ? AND status = 'published' AND deleted_at IS NULL
-        ORDER BY COALESCE(published_at, updated_at) DESC
-        LIMIT 30
-    `).bind(site.id).all<{ id: string; slug: string; title: string; summary: string; published_at: string; updated_at: string }>();
-
-    const items = results || [];
-    let body = '';
-    if (format === 'json') {
-        body = JSON.stringify({
-            version: 'https://jsonfeed.org/version/1.1',
-            title: site.name || 'Walnut CMS',
-            home_page_url: siteUrl,
-            feed_url: feedUrl,
-            items: items.map(it => ({
-                id: it.id,
-                url: buildAbsoluteUrl(`/${String(it.slug || '').replace(/^\/+/, '')}`, domain),
-                title: it.title || '',
-                summary: it.summary || '',
-                date_published: it.published_at || it.updated_at
-            }))
-        }, null, 2);
-    } else {
-        const rssItems = items.map(it => {
-            const link = buildAbsoluteUrl(`/${String(it.slug || '').replace(/^\/+/, '')}`, domain);
-            return `<item><title>${escapeXml(it.title)}</title><link>${escapeXml(link)}</link><guid>${escapeXml(link)}</guid><pubDate>${new Date(it.published_at || it.updated_at || Date.now()).toUTCString()}</pubDate><description>${escapeXml(it.summary || '')}</description></item>`;
-        }).join('');
-        const siteDesc = (site as any)?.settings?.site_description || (site as any)?.settings?.description || '';
-        body = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>${escapeXml(site.name || 'Walnut CMS')}</title><link>${escapeXml(siteUrl)}</link><description>${escapeXml(siteDesc)}</description>${rssItems}</channel></rss>`;
-    }
-
-    try {
-        await buildUpsertSiteRouteStatement(db, {
-            siteId: site.id,
-            path: feedPath,
-            entityType: 'page',
-            title: format === 'xml' ? 'RSS Feed' : 'JSON Feed',
-            renderedHtml: body,
-            statusCode: 200,
-            isDirty: 0,
-            changefreq: 'hourly',
-            priority: 0.3
-        }).run();
-    } catch {}
-    return body;
-}
+    markRoutesDirty(db, siteId, "path IN ('/sitemap.xml', '/feed.xml', '/feed.json', '/rss.xml', '/en/feed.xml', '/en/feed.json', '/en/rss.xml', '/zh/feed.xml', '/zh/feed.json', '/zh/rss.xml', '/llm.txt', '/llms.txt')", nowIso);
 
 export const buildMarkAllNonRedirectSiteRoutesDirtyStatement = (db: D1Database, siteId: string, nowIso?: string) =>
     markRoutesDirty(db, siteId, "entity_type NOT IN ('redirect')", nowIso);
+
+// Sibling translation pages/articles render bidirectional hreflang and switcher links,
+// so adding, updating, unpublishing, or deleting one locale must dirty its siblings' cached HTML.
+export async function markTranslationGroupPeersDirty(
+    db: D1Database,
+    siteId: string,
+    entityId: string,
+    explicitTgId?: string | string[] | null
+): Promise<string[]> {
+    const tgIds = new Set<string>();
+    if (Array.isArray(explicitTgId)) {
+        explicitTgId.map(v => String(v || '').trim()).filter(Boolean).forEach(v => tgIds.add(v));
+    } else if (explicitTgId) {
+        tgIds.add(String(explicitTgId).trim());
+    }
+    if (tgIds.size === 0) {
+        const [selfRoute, selfArt, selfPage] = await db.batch([
+            db.prepare(`SELECT translation_group_id FROM site_routes WHERE site_id = ? AND entity_id = ? AND translation_group_id IS NOT NULL LIMIT 1`).bind(siteId, entityId),
+            db.prepare(`SELECT translation_group_id FROM articles WHERE id = ? AND site_id = ? LIMIT 1`).bind(entityId, siteId),
+            db.prepare(`SELECT COALESCE(NULLIF(translation_group_id, ''), json_extract(metadata, '$.translation_group_id')) as translation_group_id FROM pages WHERE id = ? AND site_id = ? LIMIT 1`).bind(entityId, siteId)
+        ]);
+        for (const res of [selfRoute, selfArt, selfPage]) {
+            const val = String((res?.results?.[0] as any)?.translation_group_id || '').trim();
+            if (val) tgIds.add(val);
+        }
+    }
+    const tgList = Array.from(tgIds);
+    if (tgList.length === 0) return [];
+
+    const ph = tgList.map(() => '?').join(', ');
+    const { results } = await db.prepare(
+        `SELECT path FROM site_routes WHERE site_id = ? AND translation_group_id IN (${ph}) AND (entity_id IS NULL OR entity_id != ?)`
+    ).bind(siteId, ...tgList, entityId).all<{ path: string }>();
+
+    const peerPaths = Array.from(new Set((results || []).map(r => r.path).filter(Boolean)));
+    if (peerPaths.length > 0) {
+        await markSiteRoutesDirty(db, siteId, peerPaths);
+    }
+    return peerPaths;
+}
 
 export function buildTouchSiteUpdatedAtStatement(
     db: D1Database,

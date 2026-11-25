@@ -31,7 +31,7 @@ export const AdminLayout = async (props: AdminLayoutProps) => {
         site_id: s.id,
         site_name: s.name,
         primary_domain: s.primary_domain,
-        active_class: s.id === currentSite?.id ? 'text-emerald-400 font-bold bg-slate-800/40' : '',
+        active_class: s.id === currentSite?.id ? 'text-amber-400 font-bold bg-stone-800/40' : '',
     })).join('');
 
     const activeSiteBlock = renderTemplate(siteSwitcherTemplate, {
@@ -65,14 +65,18 @@ export const AdminLayout = async (props: AdminLayoutProps) => {
         : '';
     const supportLabel = t(locale, 'common.contact_support') || 'Contact Support';
     const supportLinkHtml = brandInfo.supportUrl
-        ? `<a href="${brandInfo.supportUrl}" target="_blank" rel="noopener noreferrer" class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition group whitespace-nowrap" title="${supportLabel}"><span class="icon material-symbols-outlined text-[19px] mr-2.5 text-emerald-400 shrink-0">support_agent</span><span class="sidebar-text truncate">${supportLabel}</span></a>`
+        ? `<a href="${brandInfo.supportUrl}" target="_blank" rel="noopener noreferrer" class="sidebar-item flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-400 hover:text-amber-300 hover:bg-stone-800 transition group whitespace-nowrap" title="${supportLabel}"><span class="icon material-symbols-outlined text-[19px] mr-2.5 text-amber-400 shrink-0">support_agent</span><span class="sidebar-text truncate">${supportLabel}</span></a>`
         : '';
 
     const sidebarBrandTitle = brandInfo.hasStickyWhitelabel
         ? (brandInfo.effectiveWhitelabel?.brand_name || brandInfo.effectiveWhitelabel?.system_title || 'CMS')
-        : 'CMS';
+        : 'Walnut Edge';
+    const SIDEBAR_SHORT_LOCALE_LABELS: Record<string, string> = {
+        'zh-CN': t(locale, 'nav.locale_short_zh'),
+        'en-US': t(locale, 'nav.locale_short_en')
+    };
     const sidebarLocaleOptionsHtml = Object.entries(SUPPORTED_LOCALES).map(([val, label]) =>
-        `<option value="${val}" ${val === locale ? 'selected' : ''}>${label}</option>`
+        `<option value="${val}" ${val === locale ? 'selected' : ''}>${SIDEBAR_SHORT_LOCALE_LABELS[val] || label}</option>`
     ).join('');
 
     const userMetaObj = parseJson<Record<string, any>>((props.currentUser as any)?.metadata, {});
@@ -106,7 +110,7 @@ export const AdminLayout = async (props: AdminLayoutProps) => {
         user_has_explicit_tz: userHasExplicitTz ? 'true' : 'false',
         sidebar_locale_options_html: sidebarLocaleOptionsHtml,
         locale_zh_label: SUPPORTED_LOCALES['zh-CN'] || '',
-        locale_en_label: SUPPORTED_LOCALES['en-US'] || '🇺🇸 English',
+        locale_en_label: SUPPORTED_LOCALES['en-US'] || 'English',
         locale_zh_selected: locale === 'zh-CN' ? 'selected' : '',
         locale_en_selected: locale === 'en-US' ? 'selected' : '',
         user_email: props.currentUser?.email || props.currentUser?.username || '',
@@ -119,6 +123,12 @@ export const AdminLayout = async (props: AdminLayoutProps) => {
         : undefined;
     const clientSections = props.clientI18nSections || [];
     const clientSlice = getClientJsI18nSlice(locale, clientSections);
+    if (!isCommercial && clientSlice.pages && typeof clientSlice.pages === 'object') {
+        // Keep commercial bulk-landing strings out of Community client i18n JSON.
+        clientSlice.pages = Object.fromEntries(
+            Object.entries(clientSlice.pages).filter(([k]) => !k.startsWith('bl_') && !k.startsWith('bulk_landing_'))
+        );
+    }
     const inlineI18nScript = getInlineI18nScript(locale, clientSlice, brandReplacement);
 
     let layoutHtml = renderTemplate(adminLayoutTemplate, {

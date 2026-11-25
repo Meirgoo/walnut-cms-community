@@ -31,7 +31,7 @@ export async function findApiTokenByHash(
     if (siteId) {
         return (
             (await db
-                .prepare(`SELECT * FROM api_tokens WHERE token_hash = ? AND (site_id = ? OR site_id = 'site_default') LIMIT 1`)
+                .prepare(`SELECT * FROM api_tokens WHERE token_hash = ? AND site_id = ? LIMIT 1`)
                 .bind(tokenHash, siteId)
                 .first<ApiTokenRow>()) || null
         );
@@ -42,6 +42,17 @@ export async function findApiTokenByHash(
             .bind(tokenHash)
             .first<ApiTokenRow>()) || null
     );
+}
+
+export function buildRevokeApiTokensByCreatorStatement(
+    db: D1Database,
+    userId: string,
+    siteId?: string
+): D1PreparedStatement {
+    if (siteId) {
+        return db.prepare(`DELETE FROM api_tokens WHERE created_by = ? AND site_id = ?`).bind(userId, siteId);
+    }
+    return db.prepare(`DELETE FROM api_tokens WHERE created_by = ?`).bind(userId);
 }
 
 export async function listApiTokensBySite(

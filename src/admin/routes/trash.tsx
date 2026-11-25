@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { AppHonoEnv } from '../../engine';
-import { getTrashListData } from '../../engine';
+import { getTrashListData, normalizeTrashCategory } from '../../engine';
 import { TrashListPage } from '../pages/TrashList';
 import {
     getAdminRouteContext,
@@ -14,10 +14,9 @@ export const trashRouter = new Hono<AppHonoEnv>();
 
 trashRouter.get('/', async (c) => {
     const ctx = await getAdminRouteContext(c);
-    const tabParam = c.req.query('tab');
-    const activeTab = tabParam === 'micro' ? 'micro' : 'article';
+    const activeTab = normalizeTrashCategory(c.req.query('tab'));
 
-    const { groups, articleCount, microCount } = await getTrashListData(ctx.db, ctx.activeSiteId);
+    const { groups, articleCount, pageCount, microCount, datasetCount } = await getTrashListData(ctx.db, ctx.activeSiteId);
 
     return c.html(
         <TrashListPage
@@ -25,7 +24,9 @@ trashRouter.get('/', async (c) => {
             {...ctx}
             activeTab={activeTab}
             articleCount={articleCount}
+            pageCount={pageCount}
             microCount={microCount}
+            datasetCount={datasetCount}
         />
     );
 });
@@ -93,12 +94,16 @@ trashRouter.post('/api/batch-hard-delete', async (c) => {
 
 trashRouter.post('/api/empty', async (c) => {
     const siteId = c.get('siteId') || '';
-    const category = c.req.query('category') || 'article';
+    const category = normalizeTrashCategory(c.req.query('category'));
 
     try {
         await runAdminPipeline(c, 'TRASH_EMPTY', { siteId, category });
-        c.header('HX-Refresh', 'true');
-        return c.redirect(`/admin/trash?tab=${category}`);
+        const target = `/admin/trash?tab=${category}`;
+        if (c.req.header('HX-Request')) {
+            c.header('HX-Redirect', target);
+            return c.body(null, 200);
+        }
+        return c.redirect(target);
     } catch (err: any) {
         return c.html(await renderStatusBadge(err.message, 'text-red-500'), 500);
     }

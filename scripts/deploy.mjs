@@ -42,18 +42,25 @@ const I18N = {
         d1_created: '✅ 已创建并绑定 D1 数据库: {name} ({id})',
         d1_linked: '✅ 已关联既有 D1 数据库 (升级/重装保留数据): {name} ({id})',
         d1_create_failed: '❌ 创建或解析 D1 数据库失败，请检查 Wrangler 权限或手动填写 wrangler.jsonc。',
-        r2_checking: '\n🪣 正在检查 R2 存储桶配置...',
-        r2_reused: '✅ 复用已有 R2 存储桶: {name}',
-        r2_creating: '🚀 正在创建缺失的 R2 存储桶: {name}...',
-        r2_created: '✅ 已创建 R2 存储桶: {name}',
+        r2_checking: '\n🪣 正在查询账号下已有的 R2 存储桶...',
+        r2_select_prompt: '请选择 {binding} R2 存储桶模式:\n  [0] 新建一个 R2 存储桶\n{list}\n请输入编号 (默认 0): ',
+        r2_ask_new_name: '请输入新建 {binding} R2 存储桶名称 (默认 {name}): ',
+        r2_reused: '✅ 已关联既有 R2 存储桶 ({binding}): {name}',
+        r2_creating: '🚀 正在创建 R2 存储桶 ({binding}): {name}...',
+        r2_created: '✅ 已创建并绑定 R2 存储桶 ({binding}): {name}',
         r2_warn: '⚠️ R2 存储桶 "{name}" 检查/创建跳过（若尚未开通 R2，请先在 Cloudflare 控制台启用 R2）: {msg}',
         r2_syncing_themes: '\n🎨 正在上传预置主题静态资源到 R2 存储桶 ({name})...',
         r2_sync_themes_ok: '✅ 已同步 {count} 个预置主题静态资源至 R2 (/theme/*)。',
         r2_sync_themes_warn: '⚠️ 预置主题资源上传 R2 失败，可稍后手动运行 `node sync-theme-assets.mjs --remote`: {msg}',
-        cf_access_team_prompt: '\n🛡️ [首次初始化必填] Cloudflare Zero Trust Access Team Name (当前: {cur}，如 myteam): ',
-        cf_access_aud_prompt: '🛡️ [可选] Cloudflare Access Application AUD Tag (当前: {cur}，留空跳过): ',
-        cf_access_enabled: '✅ 已启用生产环境 Cloudflare Access JWT 强验签: {team}',
-        cf_access_missing_warn: '⚠️ 未设置 CF_ACCESS_TEAM_NAME：生产环境首次访问 /admin/setup 将严格返回 403，请配置 Zero Trust Access 后填写此项。',
+        cf_access_disabled_info: '\n🛡️ 检测到当前为免 CFA 精简版，已跳过 Cloudflare Access 配置（开箱即用密码初始化与登录）。',
+        cf_access_team_prompt: '\n🛡️ [可选] Cloudflare Zero Trust Access Team Name (当前: {cur}，如 myteam，留空跳过): ',
+        cf_access_aud_prompt: '🛡️ [必填] Cloudflare Access Application AUD Tag (当前: {cur}): ',
+        cf_access_aud_missing: '⚠️ 未填写 CF_ACCESS_AUD，出于安全原因暂不启用 CF Access JWT 校验（可稍后补充后重部署）。',
+        cf_access_enabled: '✅ 已启用生产环境 Cloudflare Access JWT 强验签 (Team: {team}, AUD: {aud})',
+        cf_access_missing_warn: '⚠️ 未启用 CF Access：仅当需要零信任网关时才需配置 CF_ACCESS_TEAM_NAME 与 CF_ACCESS_AUD。',
+        analytics_prompt: '\n📊 是否启用 Cloudflare Analytics Engine (PAGE_METRICS)？需先在 Cloudflare 控制台手动开通 Analytics Engine (y/N): ',
+        analytics_skipped: '⏭️ 已跳过 Analytics Engine 绑定（已从本次部署配置中移除 analytics_engine_datasets）。',
+        analytics_auto_fallback: '⚠️ 检测到当前账号尚未开通 Cloudflare Analytics Engine，正在自动移除 analytics_engine_datasets 并重试部署...',
         secret_checking: '\n🔐 正在检测 Worker 密钥 ({key})...',
         secret_preserved: '✅ 检测到已存在 {key}，已保留既有密钥（不会覆盖现有会话/令牌）。',
         secret_creating: '🔑 未检测到 {key}，正在生成高强度随机密钥并写入 Cloudflare Secrets...',
@@ -81,18 +88,25 @@ const I18N = {
         d1_created: '✅ Created and bound D1 database: {name} ({id})',
         d1_linked: '✅ Linked existing D1 database (upgrade preserves data): {name} ({id})',
         d1_create_failed: '❌ Failed to create or parse D1 database. Please check Wrangler permissions or edit wrangler.jsonc manually.',
-        r2_checking: '\n🪣 Checking R2 buckets...',
-        r2_reused: '✅ Reusing existing R2 bucket: {name}',
-        r2_creating: '🚀 Creating missing R2 bucket: {name}...',
-        r2_created: '✅ Created R2 bucket: {name}',
+        r2_checking: '\n🪣 Listing existing R2 buckets...',
+        r2_select_prompt: 'Select {binding} R2 bucket mode:\n  [0] Create a new R2 bucket\n{list}\nEnter choice (default 0): ',
+        r2_ask_new_name: 'Enter new {binding} R2 bucket name (default {name}): ',
+        r2_reused: '✅ Linked existing R2 bucket ({binding}): {name}',
+        r2_creating: '🚀 Creating R2 bucket ({binding}): {name}...',
+        r2_created: '✅ Created and bound R2 bucket ({binding}): {name}',
         r2_warn: '⚠️ Skipped R2 bucket "{name}" (ensure R2 is enabled in Cloudflare Dashboard): {msg}',
         r2_syncing_themes: '\n🎨 Uploading preset theme static assets to R2 bucket ({name})...',
         r2_sync_themes_ok: '✅ Uploaded {count} preset theme asset(s) to R2 (/theme/*).',
         r2_sync_themes_warn: '⚠️ Failed to upload preset theme assets to R2; run `node sync-theme-assets.mjs --remote` manually: {msg}',
-        cf_access_team_prompt: '\n🛡️ [Required for Setup] Cloudflare Zero Trust Access Team Name (current: {cur}, e.g. myteam): ',
-        cf_access_aud_prompt: '🛡️ [Optional] Cloudflare Access Application AUD Tag (current: {cur}, Enter to skip): ',
-        cf_access_enabled: '✅ Enabled production Cloudflare Access JWT verification: {team}',
-        cf_access_missing_warn: '⚠️ CF_ACCESS_TEAM_NAME is unset: /admin/setup will strictly return 403 in production until Zero Trust Access is configured.',
+        cf_access_disabled_info: '\n🛡️ No-CFA community build detected; skipping Cloudflare Access setup (password init & login work out of the box).',
+        cf_access_team_prompt: '\n🛡️ [Optional] Cloudflare Zero Trust Access Team Name (current: {cur}, e.g. myteam, Enter to skip): ',
+        cf_access_aud_prompt: '🛡️ [Required] Cloudflare Access Application AUD Tag (current: {cur}): ',
+        cf_access_aud_missing: '⚠️ CF_ACCESS_AUD is missing; skipping CF Access JWT verification for safety.',
+        cf_access_enabled: '✅ Enabled production Cloudflare Access JWT verification (Team: {team}, AUD: {aud})',
+        cf_access_missing_warn: '⚠️ CF Access not configured (optional unless using Zero Trust Access).',
+        analytics_prompt: '\n📊 Enable Cloudflare Analytics Engine (PAGE_METRICS)? Requires Analytics Engine enabled in Cloudflare Dashboard (y/N): ',
+        analytics_skipped: '⏭️ Skipped Analytics Engine binding (removed analytics_engine_datasets from deployment config).',
+        analytics_auto_fallback: '⚠️ Cloudflare Analytics Engine is not enabled on this account; removing analytics_engine_datasets and retrying deploy...',
         secret_checking: '\n🔐 Checking Worker secret ({key})...',
         secret_preserved: '✅ Existing {key} detected and preserved (sessions/tokens remain valid).',
         secret_creating: '🔑 {key} not found. Generating and uploading a secure random secret...',
@@ -240,7 +254,7 @@ async function main() {
         // Write updated wrangler.jsonc before migrations/deploy
         fs.writeFileSync(wranglerPath, JSON.stringify(wranglerConfig, null, 2) + '\n', 'utf8');
 
-        // 4. R2 Buckets: reuse existing or create missing
+        // 4. R2 Buckets: interactive select existing or create new for each binding
         console.log(msg('r2_checking'));
         let existingBuckets = new Set();
         try {
@@ -260,21 +274,42 @@ async function main() {
             } catch {}
         }
 
+        const existingBucketList = Array.from(existingBuckets);
         for (const r2Entry of wranglerConfig.r2_buckets || []) {
-            const bName = r2Entry?.bucket_name;
-            if (!bName) continue;
-            if (existingBuckets.has(bName)) {
-                console.log(msg('r2_reused', { name: bName }));
+            const binding = r2Entry?.binding || 'BUCKET';
+            const r2ListText = existingBucketList
+                .map((bName, idx) => `  [${idx + 1}] ${bName}`)
+                .join('\n');
+            const r2ChoiceRaw = (await rl.question(msg('r2_select_prompt', { binding, list: r2ListText || '  (none)' }))).trim();
+            const r2ChoiceIdx = r2ChoiceRaw ? Number.parseInt(r2ChoiceRaw, 10) : 0;
+
+            let targetBucketName = '';
+            if (Number.isFinite(r2ChoiceIdx) && r2ChoiceIdx >= 1 && r2ChoiceIdx <= existingBucketList.length) {
+                targetBucketName = existingBucketList[r2ChoiceIdx - 1];
+                r2Entry.bucket_name = targetBucketName;
+                console.log(msg('r2_reused', { binding, name: targetBucketName }));
             } else {
-                console.log(msg('r2_creating', { name: bName }));
-                try {
-                    runWranglerCapture(['r2', 'bucket', 'create', bName]);
-                    console.log(msg('r2_created', { name: bName }));
-                } catch (err) {
-                    console.warn(msg('r2_warn', { name: bName, msg: err?.message || '' }));
+                const defaultNewName = binding === 'BUCKET_BACKUP'
+                    ? `${chosenWorkerName}-assets-backup`
+                    : `${chosenWorkerName}-assets`;
+                targetBucketName = (await rl.question(msg('r2_ask_new_name', { binding, name: r2Entry.bucket_name || defaultNewName }))).trim() || r2Entry.bucket_name || defaultNewName;
+                r2Entry.bucket_name = targetBucketName;
+                if (existingBuckets.has(targetBucketName)) {
+                    console.log(msg('r2_reused', { binding, name: targetBucketName }));
+                } else {
+                    console.log(msg('r2_creating', { binding, name: targetBucketName }));
+                    try {
+                        runWranglerCapture(['r2', 'bucket', 'create', targetBucketName]);
+                        existingBuckets.add(targetBucketName);
+                        if (!existingBucketList.includes(targetBucketName)) existingBucketList.push(targetBucketName);
+                        console.log(msg('r2_created', { binding, name: targetBucketName }));
+                    } catch (err) {
+                        console.warn(msg('r2_warn', { name: targetBucketName, msg: err?.message || '' }));
+                    }
                 }
             }
         }
+        fs.writeFileSync(wranglerPath, JSON.stringify(wranglerConfig, null, 2) + '\n', 'utf8');
 
         // 4.5 Sync preset theme static assets (themes/*) into primary R2 bucket
         const primaryBucketName = wranglerConfig?.r2_buckets?.[0]?.bucket_name;
@@ -319,18 +354,41 @@ async function main() {
         // 5b. Production ENVIRONMENT lock & optional Cloudflare Zero Trust Access vars
         wranglerConfig.vars = wranglerConfig.vars || {};
         wranglerConfig.vars.ENVIRONMENT = 'production';
-        const curTeam = wranglerConfig.vars.CF_ACCESS_TEAM_NAME || '(none)';
-        const teamAns = (await rl.question(msg('cf_access_team_prompt', { cur: curTeam }))).trim();
-        if (teamAns) {
-            wranglerConfig.vars.CF_ACCESS_TEAM_NAME = teamAns;
-            const curAud = wranglerConfig.vars.CF_ACCESS_AUD || '(none)';
-            const audAns = (await rl.question(msg('cf_access_aud_prompt', { cur: curAud }))).trim();
-            if (audAns) wranglerConfig.vars.CF_ACCESS_AUD = audAns;
-        }
-        if (wranglerConfig.vars.CF_ACCESS_TEAM_NAME) {
-            console.log(msg('cf_access_enabled', { team: wranglerConfig.vars.CF_ACCESS_TEAM_NAME }));
+        if (wranglerConfig.vars.CF_ACCESS_MODE === 'disabled') {
+            delete wranglerConfig.vars.CF_ACCESS_TEAM_NAME;
+            delete wranglerConfig.vars.CF_ACCESS_AUD;
+            console.log(msg('cf_access_disabled_info'));
         } else {
-            console.warn(msg('cf_access_missing_warn'));
+            const curTeam = wranglerConfig.vars.CF_ACCESS_TEAM_NAME || '(none)';
+            const teamAns = (await rl.question(msg('cf_access_team_prompt', { cur: curTeam }))).trim();
+            if (teamAns) {
+                wranglerConfig.vars.CF_ACCESS_TEAM_NAME = teamAns;
+                const curAud = wranglerConfig.vars.CF_ACCESS_AUD || '(none)';
+                const audAns = (await rl.question(msg('cf_access_aud_prompt', { cur: curAud }))).trim();
+                if (audAns) {
+                    wranglerConfig.vars.CF_ACCESS_AUD = audAns;
+                } else if (!wranglerConfig.vars.CF_ACCESS_AUD) {
+                    delete wranglerConfig.vars.CF_ACCESS_TEAM_NAME;
+                    console.warn(msg('cf_access_aud_missing'));
+                }
+            }
+            if (wranglerConfig.vars.CF_ACCESS_TEAM_NAME && wranglerConfig.vars.CF_ACCESS_AUD) {
+                console.log(msg('cf_access_enabled', {
+                    team: wranglerConfig.vars.CF_ACCESS_TEAM_NAME,
+                    aud: wranglerConfig.vars.CF_ACCESS_AUD
+                }));
+            } else {
+                console.warn(msg('cf_access_missing_warn'));
+            }
+        }
+
+        // 5c. Cloudflare Analytics Engine (optional; skip cleanly if not enabled on account)
+        if (Array.isArray(wranglerConfig.analytics_engine_datasets) && wranglerConfig.analytics_engine_datasets.length > 0) {
+            const aeAns = (await rl.question(msg('analytics_prompt'))).trim().toLowerCase();
+            if (aeAns !== 'y' && aeAns !== 'yes') {
+                delete wranglerConfig.analytics_engine_datasets;
+                console.log(msg('analytics_skipped'));
+            }
         }
         fs.writeFileSync(wranglerPath, JSON.stringify(wranglerConfig, null, 2) + '\n', 'utf8');
 
@@ -339,9 +397,25 @@ async function main() {
         runWranglerInteractive(['d1', 'migrations', 'apply', targetDbName, '--remote']);
         console.log(msg('migrate_ok'));
 
-        // 7. Deploy Worker
+        // 7. Deploy Worker (with automatic Analytics Engine fallback if account lacks entitlement)
         console.log(msg('deploying'));
-        runWranglerInteractive(['deploy']);
+        const deployRes = spawnSync('npx', ['wrangler', 'deploy'], { encoding: 'utf8' });
+        if (deployRes.stdout) process.stdout.write(deployRes.stdout);
+        if (deployRes.stderr) process.stderr.write(deployRes.stderr);
+        if (deployRes.status !== 0) {
+            const combinedOut = `${deployRes.stdout || ''}\n${deployRes.stderr || ''}`;
+            if (
+                Array.isArray(wranglerConfig.analytics_engine_datasets) &&
+                /analytics.*engine|workers_analytics_engine|10089|not enabled/i.test(combinedOut)
+            ) {
+                console.warn(msg('analytics_auto_fallback'));
+                delete wranglerConfig.analytics_engine_datasets;
+                fs.writeFileSync(wranglerPath, JSON.stringify(wranglerConfig, null, 2) + '\n', 'utf8');
+                runWranglerInteractive(['deploy']);
+            } else {
+                throw new Error(`wrangler deploy exited with code ${deployRes.status}`);
+            }
+        }
         console.log(msg('deploy_ok'));
     } finally {
         rl.close();

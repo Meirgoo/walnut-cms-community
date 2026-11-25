@@ -30,9 +30,11 @@ export const TrashListPage = async (props: {
     currentUser?: AuthenticatedUser;
     isSuperAdmin?: boolean;
     locale?: string;
-    activeTab?: 'article' | 'micro';
+    activeTab?: 'article' | 'page' | 'micro' | 'dataset';
     articleCount?: number;
+    pageCount?: number;
     microCount?: number;
+    datasetCount?: number;
 }) => {
     const locale = props.locale || 'zh-CN';
     const activeSite = props.sites.find(s => s.id === props.currentSiteId) || props.sites[0];
@@ -45,20 +47,27 @@ export const TrashListPage = async (props: {
     const trashVersionItemTemplate = await fetchAsset('/admin/snippets/trash-version-item.html');
     const emptyPlaceholderTemplate = await fetchAsset('/admin/snippets/empty-placeholder.html');
     const activeTab = props.activeTab || 'article';
-    const isMicroTab = activeTab === 'micro';
 
-    const filteredGroups = isMicroTab
-        ? props.groups.filter(g => g.type === 'micro')
-        : props.groups.filter(g => g.type !== 'micro');
+    const filteredGroups = props.groups.filter(g => g.type === activeTab);
 
-    const articleCount = props.articleCount ?? props.groups.filter(g => g.type !== 'micro').length;
+    const articleCount = props.articleCount ?? props.groups.filter(g => g.type === 'article').length;
+    const pageCount = props.pageCount ?? props.groups.filter(g => g.type === 'page').length;
     const microCount = props.microCount ?? props.groups.filter(g => g.type === 'micro').length;
+    const datasetCount = props.datasetCount ?? props.groups.filter(g => g.type === 'dataset').length;
+    const backHrefMap: Record<string, string> = {
+        article: '/admin/articles',
+        page: '/admin/pages',
+        micro: '/admin/micros',
+        dataset: '/admin/datasets'
+    };
+    const activeTabCls = 'border-amber-600 text-amber-700 dark:text-amber-400';
+    const inactiveTabCls = 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200';
 
     const trashGroupsContentHtml = filteredGroups.length === 0
         ? renderTemplate(emptyPlaceholderTemplate, { message: i18n.empty })
         : filteredGroups.map(group => {
             const versionsHtml = group.versions.length === 0
-                ? `<div class="p-4 text-center text-xs text-slate-400">${i18n.full_article_archived}</div>`
+                ? `<div class="p-4 text-center text-xs text-stone-400">${i18n.full_article_archived}</div>`
                 : group.versions.map(ver => renderTemplate(trashVersionItemTemplate, {
                     version_id: ver.versionId,
                     node_id: group.nodeId,
@@ -95,14 +104,20 @@ export const TrashListPage = async (props: {
     const snapshotPreviewModalHtml = renderTemplate(snapshotPreviewModalTemplate, {}, i18n);
 
     const pageHtml = renderTemplate(trashListTemplate, {
-        back_href: isMicroTab ? '/admin/micros' : '/admin/articles',
+        back_href: backHrefMap[activeTab] || '/admin/articles',
         active_tab: activeTab,
         empty_trash_button_class: filteredGroups.length > 0 ? '' : 'hidden',
-        tab_article_class: !isMicroTab ? 'border-slate-900 dark:border-white text-slate-900 dark:text-white' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200',
-        tab_micro_class: isMicroTab ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200',
+        tab_article_class: activeTab === 'article' ? activeTabCls : inactiveTabCls,
+        tab_page_class: activeTab === 'page' ? activeTabCls : inactiveTabCls,
+        tab_micro_class: activeTab === 'micro' ? activeTabCls : inactiveTabCls,
+        tab_dataset_class: activeTab === 'dataset' ? activeTabCls : inactiveTabCls,
+        tab_pages: i18n.tab_pages || t(locale, 'trash.tab_pages'),
         tab_micro: i18n.tab_micro || t(locale, 'trash.title_micro'),
+        tab_datasets: i18n.tab_datasets || t(locale, 'trash.tab_datasets'),
         article_count: articleCount,
+        page_count: pageCount,
         micro_count: microCount,
+        dataset_count: datasetCount,
         total_records_text: t(locale, 'common.total_records', { count: filteredGroups.length }),
         selected_count_zero: t(locale, 'common.selected_count', { count: 0 }),
         trash_groups_content: trashGroupsContentHtml,

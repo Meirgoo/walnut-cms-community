@@ -8,24 +8,14 @@ CREATE TABLE IF NOT EXISTS system_meta (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 1. 租户与多站点
-CREATE TABLE IF NOT EXISTS tenants (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
+-- 1. 多站点配置
 CREATE TABLE IF NOT EXISTS sites (
     id TEXT PRIMARY KEY,
-    tenant_id TEXT NOT NULL,
     name TEXT NOT NULL,
     primary_domain TEXT NOT NULL UNIQUE,
     custom_domains TEXT,
     default_locale TEXT DEFAULT 'zh-CN',
     theme_id TEXT,
-    is_media_bed_only INTEGER DEFAULT 0,
     license_key TEXT,
     settings TEXT,
     robots_txt TEXT,
@@ -56,7 +46,7 @@ CREATE TABLE IF NOT EXISTS site_members (
     UNIQUE(site_id, user_id)
 );
 
--- 3. 核心文章与快照版本控制 (Articles & Article Versions)
+-- 3. 核心文章 (Articles)
 CREATE TABLE IF NOT EXISTS articles (
     id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
@@ -80,23 +70,7 @@ CREATE TABLE IF NOT EXISTS articles (
     UNIQUE(site_id, slug, locale)
 );
 
-CREATE TABLE IF NOT EXISTS article_versions (
-    id TEXT PRIMARY KEY,
-    article_id TEXT NOT NULL,
-    version_number INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    summary TEXT,
-    content_raw TEXT NOT NULL DEFAULT '',
-    content_rendered TEXT DEFAULT '',
-    metadata_snapshot TEXT,
-    commit_message TEXT,
-    author_id TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted_at DATETIME,
-    UNIQUE(article_id, version_number)
-);
-
--- 4. 微内容闪念速记与快照版本控制 (Micros & Micro Versions)
+-- 4. 微内容闪念速记 (Micros)
 CREATE TABLE IF NOT EXISTS micros (
     id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
@@ -107,6 +81,7 @@ CREATE TABLE IF NOT EXISTS micros (
     progress TEXT DEFAULT '',
     title TEXT NOT NULL,
     content_raw TEXT NOT NULL DEFAULT '',
+    content_html TEXT DEFAULT '',
     metadata TEXT,
     current_version_id TEXT,
     curator_id TEXT,
@@ -117,27 +92,14 @@ CREATE TABLE IF NOT EXISTS micros (
     UNIQUE(site_id, slug, locale)
 );
 
-CREATE TABLE IF NOT EXISTS micro_versions (
-    id TEXT PRIMARY KEY,
-    micro_id TEXT NOT NULL,
-    version_number INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    content_raw TEXT NOT NULL DEFAULT '',
-    metadata_snapshot TEXT,
-    commit_message TEXT,
-    author_id TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted_at DATETIME,
-    UNIQUE(micro_id, version_number)
-);
-
--- 5. 独立页面与快照版本控制 (Pages & Page Versions)
+-- 5. 独立页面 (Pages)
 CREATE TABLE IF NOT EXISTS pages (
     id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
     slug TEXT NOT NULL,
-    parent_id TEXT,
+    parent_id TEXT NOT NULL DEFAULT '',
     locale TEXT DEFAULT 'zh-CN',
+    translation_group_id TEXT,
     status TEXT DEFAULT 'draft',
     visibility TEXT DEFAULT 'public',
     password TEXT,
@@ -154,24 +116,7 @@ CREATE TABLE IF NOT EXISTS pages (
     UNIQUE(site_id, slug, locale, parent_id)
 );
 
-CREATE TABLE IF NOT EXISTS page_versions (
-    id TEXT PRIMARY KEY,
-    page_id TEXT NOT NULL,
-    version_number INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    summary TEXT,
-    content_raw TEXT NOT NULL DEFAULT '',
-    content_rendered TEXT DEFAULT '',
-    metadata_snapshot TEXT,
-    commit_message TEXT,
-    author_id TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    deleted_at DATETIME,
-    UNIQUE(page_id, version_number)
-);
-
--- 6. 主题与快照版本控制 (Themes & Theme Versions)
--- 包含模板、组件、布局与 Schema 预设等完整配置包
+-- 6. 主题配置包 (Themes)
 CREATE TABLE IF NOT EXISTS themes (
     id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
@@ -191,17 +136,24 @@ CREATE TABLE IF NOT EXISTS themes (
     UNIQUE(site_id, slug)
 );
 
-CREATE TABLE IF NOT EXISTS theme_versions (
+-- 6.1 统一实体版本快照表 (Entity Versions)
+CREATE TABLE IF NOT EXISTS entity_versions (
     id TEXT PRIMARY KEY,
-    theme_id TEXT NOT NULL,
+    site_id TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
     version_number INTEGER NOT NULL,
     version_tag TEXT,
+    title TEXT NOT NULL DEFAULT '',
+    summary TEXT,
+    content_raw TEXT NOT NULL DEFAULT '',
+    content_rendered TEXT DEFAULT '',
     metadata_snapshot TEXT,
     commit_message TEXT,
     author_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME,
-    UNIQUE(theme_id, version_number)
+    UNIQUE(entity_type, entity_id, version_number)
 );
 
 -- 7. 双链与拓扑关系图谱 (Wiki-Links & Content Relations)
@@ -217,45 +169,37 @@ CREATE TABLE IF NOT EXISTS content_relations (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7.1 文章多语言翻译组关联 (Translation Groups)
-CREATE TABLE IF NOT EXISTS translation_groups (
+-- 7.1 结构化数据集集合与条目 (Dataset Collections & Items)
+CREATE TABLE IF NOT EXISTS dataset_collections (
     id TEXT PRIMARY KEY,
     site_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- 7.2 结构化数据集与版本快照 (Datasets & Dataset Versions)
-CREATE TABLE IF NOT EXISTS datasets (
-    id TEXT PRIMARY KEY,
-    site_id TEXT NOT NULL,
-    schema_slug TEXT NOT NULL,
     slug TEXT NOT NULL,
-    title TEXT NOT NULL,
-    summary TEXT,
-    metadata TEXT,
-    status TEXT NOT NULL DEFAULT 'published',
-    curator_id TEXT,
-    current_version_id TEXT,
+    name TEXT NOT NULL,
+    schema_key TEXT NOT NULL,
+    description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME,
     UNIQUE(site_id, slug)
 );
 
-CREATE TABLE IF NOT EXISTS dataset_versions (
+CREATE TABLE IF NOT EXISTS datasets (
     id TEXT PRIMARY KEY,
-    dataset_id TEXT NOT NULL,
-    version_number INTEGER NOT NULL,
+    site_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL DEFAULT '',
+    schema_slug TEXT NOT NULL,
+    slug TEXT NOT NULL,
     title TEXT NOT NULL,
     summary TEXT,
-    metadata_snapshot TEXT NOT NULL,
-    commit_message TEXT,
-    author_id TEXT,
+    metadata TEXT,
+    status TEXT NOT NULL DEFAULT 'published',
+    sort_order INTEGER DEFAULT 0,
+    curator_id TEXT,
+    current_version_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME,
-    UNIQUE(dataset_id, version_number)
+    UNIQUE(site_id, collection_id, slug)
 );
 
 -- 8. 独立图床与多媒体资产 (Media Assets)
@@ -331,27 +275,27 @@ CREATE TABLE IF NOT EXISTS webhooks (
 -- 13. 核心索引优化
 CREATE INDEX IF NOT EXISTS idx_articles_lookup ON articles(site_id, status, visibility, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(site_id, slug, locale);
-CREATE INDEX IF NOT EXISTS idx_article_versions ON article_versions(article_id, version_number DESC);
 
 CREATE INDEX IF NOT EXISTS idx_micros_lookup ON micros(site_id, status, visibility, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_micros_slug ON micros(site_id, slug, locale);
-CREATE INDEX IF NOT EXISTS idx_micro_versions ON micro_versions(micro_id, version_number DESC);
 
 CREATE INDEX IF NOT EXISTS idx_pages_lookup ON pages(site_id, status, visibility, deleted_at);
 CREATE INDEX IF NOT EXISTS idx_pages_slug ON pages(site_id, slug, locale);
-CREATE INDEX IF NOT EXISTS idx_page_versions ON page_versions(page_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS idx_pages_trans_group ON pages(site_id, translation_group_id);
 
 CREATE INDEX IF NOT EXISTS idx_themes_site ON themes(site_id, is_active, deleted_at);
-CREATE INDEX IF NOT EXISTS idx_theme_versions ON theme_versions(theme_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS idx_entity_versions_lookup ON entity_versions(entity_type, entity_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS idx_entity_versions_site ON entity_versions(site_id, entity_type, deleted_at);
 
 CREATE INDEX IF NOT EXISTS idx_relations_source ON content_relations(site_id, source_id);
 CREATE INDEX IF NOT EXISTS idx_relations_target ON content_relations(site_id, target_slug);
 
 CREATE INDEX IF NOT EXISTS idx_media_site ON media_assets(site_id, deleted_at);
-CREATE INDEX IF NOT EXISTS idx_trans_site ON translation_groups(site_id);
+CREATE INDEX IF NOT EXISTS idx_dataset_collections_site ON dataset_collections(site_id, deleted_at);
+CREATE INDEX IF NOT EXISTS idx_datasets_site_collection ON datasets(site_id, collection_id, status, deleted_at);
+CREATE INDEX IF NOT EXISTS idx_datasets_sort_order ON datasets(site_id, collection_id, sort_order DESC, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_datasets_site_schema ON datasets(site_id, schema_slug, status, deleted_at);
-CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets(site_id, slug);
-CREATE INDEX IF NOT EXISTS idx_dataset_versions ON dataset_versions(dataset_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS idx_datasets_slug ON datasets(site_id, collection_id, slug);
 CREATE INDEX IF NOT EXISTS idx_tasks_run ON scheduled_tasks(status, next_run_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_site ON scheduled_tasks(site_id, status);
 CREATE INDEX IF NOT EXISTS idx_site_routes_lookup ON site_routes(site_id, path);

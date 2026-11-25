@@ -1,12 +1,12 @@
 <div
     id="media-card-{{id}}"
-    class="media-card-item group bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between relative cursor-pointer"
+    class="media-card-item group bg-[var(--admin-surface)] rounded-xl border border-[var(--admin-border)] overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between relative cursor-pointer"
     onclick="openMediaModal({{asset_json}})"
 >
     <div class="absolute top-2 left-2 z-10" onclick="event.stopPropagation()">
         <input
             type="checkbox"
-            class="media-select-box w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500"
+            class="media-select-box w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500"
             data-id="{{id}}"
             data-url="{{public_url}}"
             data-name="{{file_name}}"
@@ -14,7 +14,7 @@
         />
     </div>
 
-    <div class="h-36 bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden relative">
+    <div class="h-36 bg-stone-100 dark:bg-stone-900 flex items-center justify-center overflow-hidden relative">
         {{thumb_content}}
         <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center space-x-2">
             <span class="text-white text-xs font-bold bg-black/50 px-2 py-1 rounded">{{click_to_zoom}}</span>
@@ -22,8 +22,8 @@
     </div>
 
     <div class="p-2.5">
-        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate" title="{{file_name}}">{{file_name}}</div>
-        <div class="flex justify-between items-center mt-1 text-[10px] text-slate-400 font-mono">
+        <div class="text-xs font-bold text-stone-800 dark:text-stone-200 truncate" title="{{file_name}}">{{file_name}}</div>
+        <div class="flex justify-between items-center mt-1 text-[10px] text-stone-400 font-mono">
             <span>{{file_size_formatted}}</span>
             <span class="uppercase">{{file_ext}}</span>
         </div>

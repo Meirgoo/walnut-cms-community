@@ -5,9 +5,12 @@ export {
     getSharedPluginEngine,
     resetSharedPluginEngine,
     ENGINE_CORE_VERSION,
+    WALNUT_VERSION,
+    WALNUT_SCHEMA_VERSION,
     type FeatureFlags,
     FEATURE_FLAGS,
     isFeatureEnabled,
+    forwardWorkerBridgeProxy,
     nanoId
 } from './kernel';
 export { DAL, createDAL } from './dal';

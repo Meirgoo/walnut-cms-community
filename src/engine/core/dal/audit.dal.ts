@@ -43,13 +43,15 @@ export function buildInsertAuditLogStatement(
 export async function queryAuditLogsWithUsers(
     db: D1Database,
     siteId: string,
-    limit = 100
+    limit = 100,
+    includeGlobal = false
 ): Promise<AuditLogRowWithUser[]> {
+    const whereClause = includeGlobal ? '(a.site_id = ? OR a.site_id IS NULL)' : 'a.site_id = ?';
     const { results } = await db.prepare(`
         SELECT a.*, u.username
         FROM audit_logs a
         LEFT JOIN users u ON u.id = a.user_id
-        WHERE a.site_id = ? OR a.site_id IS NULL
+        WHERE ${whereClause}
         ORDER BY a.created_at DESC
         LIMIT ?
     `).bind(siteId, limit).all<AuditLogRowWithUser>();
@@ -101,4 +103,25 @@ export async function findRecentUserAuditLogs(
         LIMIT ?
     `).bind(siteId, userId, limit).all<{ id: string; action: string; status: string; ip_address?: string; created_at: string }>();
     return results || [];
+}
+
+export async function findRecentAbnormalAuditLogs(
+    db: D1Database,
+    siteId: string,
+    sinceIso: string,
+    limit = 5
+): Promise<Array<{ id: string; action: string; status: string; details?: string; created_at: string }>> {
+    try {
+        // Reuses idx_audit_site(site_id, created_at DESC); silently returns [] in Community Edition where audit_logs is absent.
+        const { results } = await db.prepare(`
+            SELECT id, action, status, details, created_at
+            FROM audit_logs
+            WHERE site_id = ? AND created_at >= ? AND status != 'success'
+            ORDER BY created_at DESC
+            LIMIT ?
+        `).bind(siteId, sinceIso, limit).all<{ id: string; action: string; status: string; details?: string; created_at: string }>();
+        return results || [];
+    } catch {
+        return [];
+    }
 }

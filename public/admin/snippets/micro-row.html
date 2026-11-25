@@ -1,15 +1,15 @@
-<tr id="micro-row-{{id}}" data-folder="{{folder}}" class="hover:bg-slate-50/60 dark:hover:bg-slate-700/30 transition">
+<tr id="micro-row-{{id}}" data-folder="{{folder}}" class="hover:bg-stone-50/60 dark:hover:bg-stone-700/30 transition">
     <td class="w-12 px-4 py-3.5 text-center">
         <input
             type="checkbox"
-            class="row-select-box w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500"
+            class="row-select-box w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500"
             data-id="{{id}}"
             onchange="window.updateTableBatchState('micro-table')"
         />
     </td>
     <td class="px-6 py-2.5 text-left" data-col="title" data-sort-val="{{title}}">
-        <div class="font-bold text-slate-900 dark:text-white flex items-center space-x-2 max-w-[340px] xl:max-w-[460px]">
-            <a href="/admin/micros/edit/{{id}}" class="hover:text-emerald-700 dark:hover:text-emerald-400 truncate block" title="{{title}}">
+        <div class="font-bold text-[var(--admin-text)] flex items-center space-x-2 max-w-[340px] xl:max-w-[460px]">
+            <a href="/admin/micros/edit/{{id}}" class="hover:text-[var(--admin-accent-text)] truncate block" title="{{title}}">
                 {{title}}
             </a>
         </div>
@@ -18,32 +18,32 @@
         {{folder_badge_html}}
     </td>
     <td class="px-6 py-2.5 text-center col-status hidden whitespace-nowrap" data-col="status">
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap {{status_badge_class}}">
+        <span class="{{status_badge_class}}">
             {{status_badge_text}}
         </span>
     </td>
     <td class="px-6 py-2.5 text-center col-maturity whitespace-nowrap" data-col="maturity">
         {{maturity_html}}
     </td>
-    <td class="px-6 py-2.5 text-center font-mono text-xs text-slate-500 dark:text-slate-400 col-locale hidden whitespace-nowrap" data-col="locale">
+    <td class="px-6 py-2.5 text-center font-mono text-xs text-[var(--admin-text-muted)] col-locale hidden whitespace-nowrap" data-col="locale">
         {{locale}}
     </td>
     <td class="px-6 py-2.5 text-center col-tags whitespace-nowrap" data-col="tags">
         {{tags_html}}
     </td>
-    <td class="px-6 py-2.5 text-center text-xs font-mono text-slate-400 col-updated whitespace-nowrap" data-col="updated" data-sort-val="{{updated_at}}">
+    <td class="px-6 py-2.5 text-center text-xs text-[var(--admin-text-muted)] col-updated whitespace-nowrap" data-col="updated" data-sort-val="{{updated_at}}" title="{{updated_at_full}}">
         {{updated_at_formatted}}
     </td>
-    <td class="px-6 py-2.5 text-center space-x-2.5 col-actions whitespace-nowrap" data-col="actions">
+    <td class="px-6 py-2.5 text-center space-x-2 col-actions whitespace-nowrap" data-col="actions">
         <button
             type="button"
             onclick="window.convertMicroToArticle('{{id}}')"
-            class="p-1 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 cursor-pointer inline-flex items-center justify-center align-middle"
+            class="p-1 rounded-md text-[var(--admin-text-muted)] hover:text-[var(--admin-accent-text)] hover:bg-[var(--admin-accent-soft)] cursor-pointer inline-flex items-center justify-center align-middle transition"
             title="{{btn_convert_to_article}}"
         >
             <span class="material-symbols-outlined text-[16px]">article</span>
         </button>
-        <a href="/admin/micros/edit/{{id}}" class="text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:underline">
+        <a href="/admin/micros/edit/{{id}}" class="text-xs font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] transition">
             {{edit}}
         </a>
         <button
@@ -52,9 +52,10 @@
             hx-target="#micro-row-{{id}}"
             hx-swap="outerHTML"
             hx-confirm="{{confirm_delete}}"
-            class="text-xs font-bold text-red-500 hover:text-red-700 cursor-pointer"
+            title="{{btn_move_to_trash}}"
+            class="p-1 rounded-md list-action-trash cursor-pointer inline-flex items-center justify-center align-middle"
         >
-            {{delete}}
+            <span class="material-symbols-outlined text-[16px]">delete</span>
         </button>
     </td>
 </tr>

@@ -1,214 +1,231 @@
 <div class="p-6 md:p-8 overflow-y-auto h-full flex flex-col min-h-0 space-y-4 w-full">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div class="flex items-center space-x-3">
-            <h1 class="text-xl font-black text-slate-900 dark:text-white tracking-tight">{{articles_title}}</h1>
-            <span class="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-lg border border-slate-200/80 dark:border-slate-700">
+            <h1 class="text-xl font-black text-[var(--admin-text)] tracking-tight">{{articles_title}}</h1>
+            <span id="articles-filter-count" data-total-label="{{total_records_text}}" class="text-xs font-mono font-medium bg-[var(--admin-surface)] text-[var(--admin-text-muted)] px-2.5 py-0.5 rounded-full border border-[var(--admin-border)]">
                 {{total_records_text}}
             </span>
         </div>
 
         <div class="flex items-center flex-wrap gap-2">
-            <div class="relative" id="column-picker-wrapper-articles">
+            <a
+                href="/admin/trash?tab=article"
+                class="h-8 px-2.5 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] text-xs font-medium border border-[var(--admin-border)] transition flex items-center space-x-1.5 cursor-pointer"
+            >
+                <span class="material-symbols-outlined text-[15px]">delete</span>
+                <span>{{btn_trash}}</span>
+                {{trash_badge_html}}
+            </a>
+
+            <div class="relative more-actions-wrapper" id="column-picker-wrapper-articles">
                 <button
                     type="button"
-                    onclick="window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('articles-table', 'articles')"
-                    class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
+                    onclick="window.toggleMoreActionsMenu('articles-more-menu', event)"
+                    class="h-8 w-8 rounded-lg bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-[var(--admin-border)] transition flex items-center justify-center cursor-pointer"
+                    title="{{more_actions}}"
                 >
-                    <span class="material-symbols-outlined text-[16px]">view_column</span>
-                    <span>{{btn_columns}}</span>
+                    <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                 </button>
                 <div
-                    id="column-picker-menu-articles"
-                    class="hidden absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-3 z-50 text-xs space-y-2"
+                    id="articles-more-menu"
+                    class="more-actions-menu hidden absolute right-0 top-full mt-1.5 w-48 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-lg p-1.5 z-50 space-y-0.5"
                 >
-                    <div class="font-bold text-slate-400 text-[10px] uppercase tracking-wider pb-1 border-b border-slate-100 dark:border-slate-700">{{custom_columns}}</div>
+                    <button
+                        type="button"
+                        onclick="window.toggleMoreActionsMenu('articles-more-menu'); window.toggleColumnPickerMenu && window.toggleColumnPickerMenu('articles-table', 'articles')"
+                        class="w-full px-3 py-2 text-left text-xs font-medium text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] rounded-lg flex items-center space-x-2 cursor-pointer transition"
+                    >
+                        <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)]">view_column</span>
+                        <span>{{btn_columns}}</span>
+                    </button>
+                    {{slot_batch_porter_buttons}}
+                </div>
+                <div
+                    id="column-picker-menu-articles"
+                    class="hidden absolute right-0 top-full mt-1.5 w-48 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-xl shadow-lg p-3 z-50 text-xs space-y-2"
+                >
+                    <div class="font-semibold text-[var(--admin-text-muted)] text-[10px] uppercase tracking-wider pb-1.5 border-b border-[var(--admin-border)]">{{custom_columns}}</div>
                     <div class="space-y-1.5">
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'folder', this.checked, 'articles')" class="col-toggle-folder rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'folder', this.checked, 'articles')" class="col-toggle-folder rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_folder}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'trans-group', this.checked, 'articles')" class="col-toggle-trans-group rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'trans-group', this.checked, 'articles')" class="col-toggle-trans-group rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_trans_group}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'slug', this.checked, 'articles')" class="col-toggle-slug rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'slug', this.checked, 'articles')" class="col-toggle-slug rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_slug}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'type', this.checked, 'articles')" class="col-toggle-type rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'type', this.checked, 'articles')" class="col-toggle-type rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_type}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'locale', this.checked, 'articles')" class="col-toggle-locale rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'locale', this.checked, 'articles')" class="col-toggle-locale rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_locale}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'tags', this.checked, 'articles')" class="col-toggle-tags rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'tags', this.checked, 'articles')" class="col-toggle-tags rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_tags}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'maturity', this.checked, 'articles')" class="col-toggle-maturity rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'maturity', this.checked, 'articles')" class="col-toggle-maturity rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_maturity}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'status', this.checked, 'articles')" class="col-toggle-status rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'status', this.checked, 'articles')" class="col-toggle-status rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_status}}</span>
                         </label>
-                        <label class="flex items-center space-x-2 text-slate-700 dark:text-slate-200 cursor-pointer">
-                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'updated', this.checked, 'articles')" class="col-toggle-updated rounded text-emerald-600 focus:ring-0" />
+                        <label class="flex items-center space-x-2 text-[var(--admin-text)] cursor-pointer">
+                            <input type="checkbox" checked onchange="window.toggleTableColumn && window.toggleTableColumn('articles-table', 'updated', this.checked, 'articles')" class="col-toggle-updated rounded accent-[var(--admin-accent)] focus:ring-0" />
                             <span>{{col_updated}}</span>
                         </label>
                     </div>
                 </div>
             </div>
 
-            <a
-                href="/admin/trash?tab=article"
-                class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/80 dark:border-slate-700 shadow-2xs transition flex items-center space-x-1.5 cursor-pointer"
-            >
-                <span class="material-symbols-outlined text-[16px] text-slate-500 dark:text-slate-400">delete</span>
-                <span>{{btn_trash}}</span>
-                {{trash_badge_html}}
-            </a>
-
-            {{slot_batch_porter_buttons}}
-
-            <a href="/admin/articles/new/article" class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition flex items-center space-x-1.5 cursor-pointer">
+            <a href="/admin/articles/new/article" class="h-8 px-3 rounded-lg bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-white text-[13px] font-semibold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">edit_note</span>
                 <span>{{btn_article}}</span>
             </a>
         </div>
     </div>
 
-    <div class="bg-white dark:bg-slate-800/90 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-        <div class="flex items-center space-x-2 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800 w-full sm:w-60 shrink-0">
-            <span class="material-symbols-outlined text-slate-400 text-[16px]">search</span>
-            <input
-                type="text"
-                id="articles-search-input"
-                placeholder="{{search_placeholder}}"
-                oninput="window.filterTableRows('articles-table', this.value, 'articles-filter-count', 'articles-empty-state')"
-                class="bg-transparent text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none w-full font-medium"
-            />
-        </div>
+    <div class="bg-[var(--admin-surface)] rounded-2xl border border-[var(--admin-border)] shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div class="px-4 py-2.5 border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div class="flex items-center space-x-2 bg-[var(--admin-surface)] px-2.5 h-8 rounded-lg border border-[var(--admin-border)] w-full sm:w-60 shrink-0 focus-within:border-[var(--admin-accent)] transition">
+                <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[16px]">search</span>
+                <input
+                    type="text"
+                    id="articles-search-input"
+                    placeholder="{{search_placeholder}}"
+                    oninput="window.filterTableRows('articles-table', this.value, 'articles-filter-count', 'articles-empty-state')"
+                    class="bg-transparent text-xs text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] outline-none w-full font-medium"
+                />
+            </div>
 
-        <div class="flex items-center flex-wrap gap-1.5 flex-1 min-w-0 justify-start sm:justify-end">
-            <div id="articles-folder-chips" class="flex items-center flex-wrap gap-1.5">
+            <div class="flex items-center flex-wrap gap-1.5 flex-1 min-w-0 justify-start sm:justify-end">
+                <div id="articles-folder-chips" class="flex items-center flex-wrap gap-1">
+                    <button
+                        type="button"
+                        class="folder-chip folder-chip-active"
+                        data-folder="all"
+                        onclick="window.filterByFolder('articles-table', 'all', 'articles-folder-chips')"
+                    >
+                        <span class="material-symbols-outlined text-[13px] opacity-80">folder_open</span>
+                        <span>{{all_folders}}</span>
+                    </button>
+                    {{folder_chips_html}}
+                </div>
                 <button
                     type="button"
-                    class="folder-chip px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-emerald-600 dark:text-white shadow-2xs transition cursor-pointer flex items-center space-x-1 shrink-0"
-                    data-folder="all"
-                    onclick="window.filterByFolder('articles-table', 'all', 'articles-folder-chips')"
+                    onclick="window.promptCreateFolder('articles', 'articles-folder-chips', 'articles-table')"
+                    class="h-7 w-7 rounded-lg text-xs bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-[var(--admin-border)] transition cursor-pointer flex items-center justify-center shrink-0"
+                    title="{{title_new_folder}}"
                 >
-                    <span class="material-symbols-outlined text-[13px]">folder_open</span>
-                    <span>{{all_folders}}</span>
+                    <span class="material-symbols-outlined text-[15px]">create_new_folder</span>
                 </button>
-                {{folder_chips_html}}
             </div>
-            <button
-                type="button"
-                onclick="window.promptCreateFolder('articles', 'articles-folder-chips', 'articles-table')"
-                class="p-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition cursor-pointer flex items-center justify-center shrink-0"
-                title="{{title_new_folder}}"
-            >
-                <span class="material-symbols-outlined text-[15px]">create_new_folder</span>
-            </button>
-        </div>
-    </div>
-
-    <div id="articles-batch-toolbar" class="hidden bg-slate-900 dark:bg-slate-800 text-white px-5 py-2.5 rounded-xl shadow-lg flex items-center justify-between text-xs shrink-0 transition-all">
-        <div class="flex items-center space-x-4">
-            <span id="articles-selected-badge" class="font-bold font-mono text-emerald-400">{{selected_count_zero}}</span>
-            <button type="button" onclick="selectAllArticles()" class="text-slate-300 hover:text-white underline">{{btn_select_all}}</button>
-            <button type="button" onclick="deselectAllArticles()" class="text-slate-300 hover:text-white underline">{{btn_deselect_all}}</button>
         </div>
 
-        <div class="flex items-center space-x-3">
-            <button type="button" onclick="window.batchMoveToFolder('articles-table', '/admin/articles/api/batch-folder', 'articles')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
-                <span class="material-symbols-outlined text-[14px]">drive_file_move</span>
-                <span>{{batch_move_folder}}</span>
-            </button>
-            <button type="button" onclick="batchTrashSelected()" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg font-bold flex items-center space-x-1 cursor-pointer">
-                <span class="material-symbols-outlined text-[14px]">delete</span>
-                <span>{{btn_soft_delete}}</span>
-            </button>
-        </div>
-    </div>
+        <div id="articles-batch-toolbar" class="hidden bg-[var(--admin-accent-soft)] border-b border-[var(--admin-accent-border)] px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 transition-all">
+            <div class="flex items-center space-x-3">
+                <span id="articles-selected-badge" class="font-semibold font-mono text-[var(--admin-accent-text)]">{{selected_count_zero}}</span>
+                <button type="button" onclick="selectAllArticles()" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] underline cursor-pointer">{{btn_select_all}}</button>
+                <button type="button" onclick="deselectAllArticles()" class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] underline cursor-pointer">{{btn_deselect_all}}</button>
+            </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="window.handleBatchExportArticlesJson && window.handleBatchExportArticlesJson()" class="h-7 px-2.5 rounded-md bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] border border-[var(--admin-border)] font-medium flex items-center space-x-1 cursor-pointer transition">
+                    <span class="material-symbols-outlined text-[14px]">file_download</span>
+                    <span>{{export_selected_json}}</span>
+                </button>
+                <button type="button" onclick="window.batchMoveToFolder('articles-table', '/admin/articles/api/batch-folder', 'articles')" class="h-7 px-2.5 rounded-md bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] border border-[var(--admin-border)] font-medium flex items-center space-x-1 cursor-pointer transition">
+                    <span class="material-symbols-outlined text-[14px]">drive_file_move</span>
+                    <span>{{batch_move_folder}}</span>
+                </button>
+                <button type="button" onclick="batchTrashSelected()" class="h-7 px-2.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-medium flex items-center space-x-1 cursor-pointer transition">
+                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                    <span>{{btn_move_to_trash}}</span>
+                </button>
+            </div>
+        </div>
+
         <div class="overflow-x-auto flex-1">
             <table id="articles-table" class="w-full border-collapse text-sm">
                 <thead>
-                <tr class="bg-slate-50/90 dark:bg-slate-900/90 border-b border-slate-200/80 dark:border-slate-700 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                <tr class="bg-[var(--admin-chrome)]/60 border-b border-[var(--admin-border)] text-[11px] font-semibold text-[var(--admin-text-muted)] uppercase tracking-wider whitespace-nowrap">
                     <th class="w-12 px-4 py-3.5 text-center whitespace-nowrap">
-                        <input type="checkbox" onchange="toggleAllArticles(this.checked)" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600 dark:accent-emerald-500" />
+                        <input type="checkbox" onchange="toggleAllArticles(this.checked)" class="w-4 h-4 rounded border-stone-300 dark:border-stone-600 bg-[var(--admin-surface)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-600 dark:accent-amber-500" />
                     </th>
-                    <th class="min-w-[200px] px-6 py-3.5 text-left cursor-pointer select-none hover:text-slate-900 dark:hover:text-white whitespace-nowrap" data-col="title" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 1, 'string')">
+                    <th class="min-w-[200px] px-6 py-3.5 text-left cursor-pointer select-none hover:text-stone-900 dark:hover:text-white whitespace-nowrap" data-col="title" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 1, 'string')">
                         <div class="flex items-center space-x-1">
                             <span>{{col_title}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'title')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'title')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
                     <th class="px-6 py-3.5 text-center col-folder whitespace-nowrap" data-col="folder">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_folder}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'folder')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'folder')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
                         </div>
                     </th>
                     <th class="px-6 py-3.5 text-center col-trans-group hidden whitespace-nowrap" data-col="trans-group">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_trans_group}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'trans-group')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'trans-group')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
                         </div>
                     </th>
-                    <th class="px-6 py-3.5 text-left col-slug hidden cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="slug" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 4, 'string')">
+                    <th class="px-6 py-3.5 text-left col-slug hidden cursor-pointer select-none hover:text-stone-900 dark:hover:text-white" data-col="slug" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 4, 'string')">
                         <div class="flex items-center space-x-1">
                             <span>{{col_slug}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'slug')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'slug')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
-                    <th class="px-6 py-3.5 text-center col-locale cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="locale" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 5, 'string')">
+                    <th class="px-6 py-3.5 text-center col-locale cursor-pointer select-none hover:text-stone-900 dark:hover:text-white" data-col="locale" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 5, 'string')">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_locale}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'locale')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'locale')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
                     <th class="px-6 py-3.5 text-center col-tags hidden" data-col="tags">{{col_tags}}</th>
-                    <th class="px-6 py-3.5 text-center col-maturity hidden cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="maturity" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 8, 'string')">
+                    <th class="px-6 py-3.5 text-center col-maturity hidden cursor-pointer select-none hover:text-stone-900 dark:hover:text-white" data-col="maturity" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 8, 'string')">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_maturity}}</span>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
-                    <th class="px-6 py-3.5 text-center col-status cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="status" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 9, 'string')">
+                    <th class="px-6 py-3.5 text-center col-status cursor-pointer select-none hover:text-stone-900 dark:hover:text-white" data-col="status" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 9, 'string')">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_status}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'status')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'status')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
-                    <th class="px-6 py-3.5 text-center col-updated cursor-pointer select-none hover:text-slate-900 dark:hover:text-white" data-col="updated" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 10, 'date')">
+                    <th class="px-6 py-3.5 text-center col-updated cursor-pointer select-none hover:text-stone-900 dark:hover:text-white" data-col="updated" onclick="window.sortTableByColumn && window.sortTableByColumn('articles-table', 10, 'date')">
                         <div class="flex items-center justify-center space-x-1">
                             <span>{{col_updated}}</span>
-                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'updated')" class="col-filter-btn p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
-                            <span class="sort-icon material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
+                            <button type="button" onclick="event.stopPropagation(); window.toggleColumnHeaderFilter(event, 'articles-table', 'updated')" class="col-filter-btn p-0.5 rounded hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-400 hover:text-stone-700 dark:hover:text-white transition cursor-pointer" title="{{filter_this_column}}"><span class="material-symbols-outlined text-[13px]">filter_alt</span></button>
+                            <span class="sort-icon material-symbols-outlined text-[15px] text-stone-400">unfold_more</span>
                         </div>
                     </th>
                     <th class="px-6 py-3.5 text-center col-actions" data-col="actions">{{col_actions}}</th>
                 </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60 text-sm">
+                <tbody class="divide-y divide-stone-100 dark:divide-stone-700/60 text-sm">
                     {{articles_table_body}}
                 </tbody>
             </table>
         </div>
 
-        <div id="articles-empty-state" class="hidden p-12 text-center text-slate-400 text-xs">
+        <div id="articles-empty-state" class="hidden p-12 text-center text-stone-400 text-xs">
             {{no_matching_records}}
         </div>
     </div>
 </div>
+<script src="/admin/js/admin-tables.js" defer></script>

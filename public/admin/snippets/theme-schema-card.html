@@ -1,39 +1,39 @@
-<div id="schema-card-{{id}}" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700 p-5 shadow-sm space-y-4">
+<div id="schema-card-{{id}}" class="bg-[var(--admin-surface)] rounded-2xl border border-[var(--admin-border)] p-5 shadow-sm space-y-4">
     <div class="flex justify-between items-start">
         <div class="flex items-center space-x-2.5">
-            <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center font-bold">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-[18px]">schema</span>
             </div>
             <div>
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{title}}</h4>
-                <p class="text-xs text-slate-400 font-mono mt-0.5">{{slug}} · {{fields_count_label}}</p>
+                <h4 class="text-sm font-bold text-stone-900 dark:text-white">{{title}}</h4>
+                <p class="text-xs text-stone-400 font-mono mt-0.5">{{slug}} · {{fields_count_label}}</p>
             </div>
         </div>
         <button
             type="button"
             onclick="window.openExportSchemaModal('{{safe_title}}', '{{slug}}', decodeURIComponent('{{safe_json_attr}}'))"
-            class="px-3 py-1.5 rounded-lg text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition flex items-center space-x-1 font-bold text-xs cursor-pointer"
+            class="px-3 py-1.5 rounded-lg text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 hover:bg-amber-100 dark:hover:bg-amber-900 transition flex items-center space-x-1 font-bold text-xs cursor-pointer"
             title="{{export_title}}"
         >
             <span class="material-symbols-outlined text-[15px]">file_download</span>
             <span>{{btn_export}}</span>
         </button>
     </div>
-    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{{summary}}</p>
-    <div class="rounded-xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden text-xs">
-        <div class="bg-slate-50 dark:bg-slate-900/60 px-3 py-2 border-b border-slate-200/60 dark:border-slate-700/60">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{fields_count_label}}</span>
+    <p class="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">{{summary}}</p>
+    <div class="rounded-xl border border-stone-200/60 dark:border-stone-700/60 overflow-hidden text-xs">
+        <div class="bg-[var(--admin-canvas)]/60 px-3 py-2 border-b border-stone-200/60 dark:border-stone-700/60">
+            <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wider">{{fields_count_label}}</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-xs">
                 <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-900/40 text-[10px] font-bold text-slate-400 uppercase border-b border-slate-200/50 dark:border-slate-700/50">
+                    <tr class="bg-[var(--admin-canvas)]/40 text-[10px] font-bold text-stone-400 uppercase border-b border-stone-200/50 dark:border-stone-700/50">
                         <th class="py-2 px-3">{{themes.schema_th_key}}</th>
                         <th class="py-2 px-3">{{themes.schema_th_label}}</th>
                         <th class="py-2 px-3">{{themes.schema_th_type}}</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody class="divide-y divide-stone-100 dark:divide-stone-800">
                     {{fields_table_rows}}
                 </tbody>
             </table>

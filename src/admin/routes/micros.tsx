@@ -76,7 +76,7 @@ microsRouter.get('/edit/:id', async (c) => {
     const id = c.req.param('id');
     const ctx = await getAdminRouteContext(c);
 
-    const node = await findNodeById(ctx.db, id);
+    const node = await findNodeById(ctx.db, id, 'micro', ctx.activeSiteId);
     if (!node) return c.redirect('/admin/micros');
 
     const deps = await getContentEditorInitData(ctx.db, ctx.activeSiteId, node);
@@ -104,7 +104,7 @@ microsRouter.post('/api/convert-to-article/:id', async (c) => {
     const pluginEngine = c.get('pluginEngine');
 
     try {
-        const node = await findNodeById(ctx.db, id);
+        const node = await findNodeById(ctx.db, id, 'micro', ctx.activeSiteId);
         if (!node) {
             return c.json({ success: false, error: t(ctx.locale, 'editor.node_not_found') }, 404);
         }

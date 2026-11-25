@@ -106,10 +106,46 @@ export function buildUpdateSiteMemberRoleStatement(
     `).bind(role, siteId, userId);
 }
 
-export function buildDeleteSiteMemberStatement(
+export function buildIncrementUserTokenVersionStatement(
     db: D1Database,
     userId: string
 ): D1PreparedStatement {
+    // Store session epoch inside system_meta user_pref JSON so existing D1 schemas need no DDL migration.
+    return db.prepare(`
+        INSERT INTO system_meta (key, value, updated_at)
+        VALUES (?, json_object('token_version', 2), CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET
+            value = json_set(COALESCE(NULLIF(TRIM(system_meta.value), ''), '{}'), '$.token_version', COALESCE(CAST(json_extract(system_meta.value, '$.token_version') AS INTEGER), 1) + 1),
+            updated_at = CURRENT_TIMESTAMP
+    `).bind(`user_pref:${userId}`);
+}
+
+export function buildDeleteUserMetadataStatement(
+    db: D1Database,
+    userId: string
+): D1PreparedStatement {
+    return db.prepare(`DELETE FROM system_meta WHERE key = ?`).bind(`user_pref:${userId}`);
+}
+
+export async function hasOtherSiteMemberships(
+    db: D1Database,
+    userId: string,
+    excludeSiteId: string
+): Promise<boolean> {
+    const row = await db.prepare(
+        `SELECT 1 FROM site_members WHERE user_id = ? AND site_id != ? LIMIT 1`
+    ).bind(userId, excludeSiteId).first<any>();
+    return Boolean(row);
+}
+
+export function buildDeleteSiteMemberStatement(
+    db: D1Database,
+    userId: string,
+    siteId?: string
+): D1PreparedStatement {
+    if (siteId) {
+        return db.prepare(`DELETE FROM site_members WHERE user_id = ? AND site_id = ?`).bind(userId, siteId);
+    }
     return db.prepare(`DELETE FROM site_members WHERE user_id = ?`).bind(userId);
 }
 

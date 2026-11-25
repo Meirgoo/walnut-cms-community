@@ -2,8 +2,8 @@
     'use strict';
 
     function getDeclaredSchemes() {
-        const raw = window.__WALNUT__ && Array.isArray(window.__WALNUT__.color_schemes)
-            ? window.__WALNUT__.color_schemes
+        const raw = window.__EDGE__ && Array.isArray(window.__EDGE__.color_schemes)
+            ? window.__EDGE__.color_schemes
             : null;
         return raw && raw.length > 0 ? raw : ['light', 'dark'];
     }
@@ -25,7 +25,7 @@
         const isDark = document.documentElement.classList.toggle('dark');
         document.documentElement.setAttribute('data-theme-mode', isDark ? 'dark' : 'light');
         try {
-            localStorage.setItem('walnut_theme_mode', isDark ? 'dark' : 'light');
+            localStorage.setItem('edge_theme_mode', isDark ? 'dark' : 'light');
         } catch(e) {}
     };
 
@@ -37,7 +37,7 @@
             window.removeEventListener('resize', activeProgressHandler);
             activeProgressHandler = null;
         }
-        const progressBars = document.querySelectorAll('[data-walnut-reading-progress], #walnut-reading-progress');
+        const progressBars = document.querySelectorAll('[data-edge-reading-progress], #edge-reading-progress');
         if (!progressBars || progressBars.length === 0) return;
         const updateProgress = function() {
             const winScroll = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
@@ -88,7 +88,7 @@
     }
 
     function ensurePoweredByVisible() {
-        const pb = window.__WALNUT__ && window.__WALNUT__.powered_by;
+        const pb = window.__EDGE__ && window.__EDGE__.powered_by;
         if (!pb || pb.enabled !== true || !pb.url || !document.body) return;
 
         const targetHref = String(pb.url).trim();
@@ -103,21 +103,86 @@
 
         if (!hasVisibleLink) {
             const bar = document.createElement('div');
-            bar.setAttribute('data-walnut-powered-by', 'fallback');
+            bar.setAttribute('data-edge-powered-by', 'fallback');
             bar.style.cssText = 'text-align:center;padding:12px 16px;font-size:12px;line-height:1.4;opacity:0.8;';
             const link = document.createElement('a');
             link.href = targetHref;
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
-            link.textContent = pb.label || 'Powered by Walnut CMS';
+            link.textContent = pb.label || 'Powered by Walnut Edge CMS';
             bar.appendChild(link);
             document.body.appendChild(bar);
         }
     }
 
+    function sanitizeExtFragment(rawHtml) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = String(rawHtml || '');
+        tpl.content.querySelectorAll('script,iframe,object,embed,style[onload]').forEach((n) => n.remove());
+        tpl.content.querySelectorAll('*').forEach((n) => {
+            for (const attr of Array.from(n.attributes)) {
+                const k = attr.name.toLowerCase();
+                const v = attr.value.trim().toLowerCase();
+                if (k.startsWith('on') || ((k === 'href' || k === 'src' || k === 'action' || k === 'formaction') && v.startsWith('javascript:'))) {
+                    n.removeAttribute(attr.name);
+                }
+            }
+        });
+        return tpl.content;
+    }
+
+    function mountExtIslands() {
+        const islands = document.querySelectorAll('[data-edge-ext-src]');
+        if (!islands || islands.length === 0) return;
+        islands.forEach((el) => {
+            const state = el.getAttribute('data-edge-ext-mounted');
+            if (state === '1' || state === 'loading') return;
+            const src = (el.getAttribute('data-edge-ext-src') || '').trim();
+            // Enforce strict same-origin /ext/ path on client before fetching.
+            if (!src.startsWith('/ext/') || src.startsWith('//') || /[\s"'<>]/.test(src)) return;
+
+            el.setAttribute('data-edge-ext-mounted', 'loading');
+            const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+            const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+
+            fetch(src, {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json, text/html;q=0.9, text/plain;q=0.8' },
+                signal: ctrl ? ctrl.signal : undefined
+            })
+                .then(async (res) => {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const ct = (res.headers.get('content-type') || '').toLowerCase();
+                    if (ct.includes('application/json')) {
+                        const data = await res.json();
+                        if (data && typeof data.html === 'string') {
+                            el.replaceChildren(sanitizeExtFragment(data.html));
+                        } else if (data && (typeof data.text === 'string' || typeof data.message === 'string')) {
+                            el.textContent = String(data.text ?? data.message);
+                        }
+                    } else {
+                        const text = await res.text();
+                        if (ct.includes('text/html') || /<[a-z][\s\S]*>/i.test(text)) {
+                            el.replaceChildren(sanitizeExtFragment(text));
+                        } else {
+                            el.textContent = text;
+                        }
+                    }
+                    el.setAttribute('data-edge-ext-mounted', '1');
+                })
+                .catch(() => {
+                    el.setAttribute('data-edge-ext-mounted', 'error');
+                })
+                .finally(() => {
+                    if (timer) clearTimeout(timer);
+                });
+        });
+    }
+
     function runVisitorBoot() {
         initReadingProgress();
         ensurePoweredByVisible();
+        mountExtIslands();
     }
 
     initBoostGuard();

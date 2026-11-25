@@ -1,6 +1,7 @@
 import type { D1Database, D1PreparedStatement } from '@cloudflare/workers-types';
-import type { Theme } from '../../types';
+import { type Theme, normalizeThemeComponentDataSlots } from '../../types';
 import { parseJson } from '../utils';
+import { buildInsertEntityVersionStatement, findEntityVersions, findEntityVersionByIdOrNumber } from './versions.dal';
 
 function unwrapComponentItem(c: any): any {
     if (!c || typeof c !== 'object') return c;
@@ -50,6 +51,7 @@ export function normalizeThemeMetadata(meta: any): any {
                 template_html: m.template_html || c.template_html,
                 default_props: m.default_props || c.default_props,
                 ui_schema: m.ui_schema || c.ui_schema,
+                ...(m.data_slots || c.data_slots ? { data_slots: m.data_slots || c.data_slots } : {}),
                 slots: m.slots || c.slots || ['main']
             };
             delete clean.metadata;
@@ -85,26 +87,24 @@ export function normalizeThemeMetadata(meta: any): any {
 
 export async function findPublishedTheme(db: D1Database, siteId: string): Promise<Theme | null> {
     const row = await db.prepare(`
-        SELECT t.* FROM themes t
+        SELECT t.*,
+               CASE
+                   WHEN s.theme_id IS NOT NULL THEN (CASE WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 1 ELSE 0 END)
+                   ELSE t.is_active
+               END as is_active
+        FROM themes t
         LEFT JOIN sites s ON s.id = ?
         WHERE t.deleted_at IS NULL
-          AND (
-            t.site_id = ?
-            OR t.id = s.theme_id
-            OR t.slug = s.theme_id
-            OR t.site_id = 'site_default'
-          )
         ORDER BY
           CASE
-            WHEN t.site_id = ? AND t.is_active = 1 THEN 1
-            WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 2
-            WHEN t.site_id = ? THEN 3
-            WHEN t.site_id = 'site_default' AND t.is_active = 1 THEN 4
-            ELSE 5
+            WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 1
+            WHEN t.site_id = ? AND t.is_active = 1 THEN 2
+            WHEN t.is_active = 1 THEN 3
+            ELSE 4
           END ASC,
           t.updated_at DESC
         LIMIT 1
-    `).bind(siteId, siteId, siteId, siteId).first<any>();
+    `).bind(siteId, siteId).first<any>();
 
     if (!row) return null;
     return {
@@ -113,11 +113,11 @@ export async function findPublishedTheme(db: D1Database, siteId: string): Promis
     };
 }
 
-export async function findLatestThemeBySite(db: D1Database, siteId: string): Promise<{ id: string; metadata?: any } | null> {
+export async function findLatestThemeBySite(db: D1Database, _siteId: string): Promise<{ id: string; metadata?: any } | null> {
     try {
         const row = await db.prepare(
-            `SELECT id, metadata FROM themes WHERE site_id = ? ORDER BY updated_at DESC LIMIT 1`
-        ).bind(siteId).first<{ id: string; metadata?: string }>();
+            `SELECT id, metadata FROM themes WHERE deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1`
+        ).first<{ id: string; metadata?: string }>();
         return row || null;
     } catch {
         return null;
@@ -188,7 +188,9 @@ export function normalizeThemeComponentItem(rawComp: any, siteId: string): any {
     const fieldMap = new Map<string, any>();
     for (const f of [...schemaFields, ...uiSchemaList]) {
         const k = f.key || f.name || f.id;
-        if (!k || RESERVED_PROPS_BLACKLIST.has(k)) continue;
+        // Permit explicit markdown fields named 'content' for standalone page prose blocks while keeping article globals guarded.
+        const isExplicitMarkdownContent = k === 'content' && (f.type === 'markdown' || f.widget === 'markdown');
+        if (!k || (RESERVED_PROPS_BLACKLIST.has(k) && !isExplicitMarkdownContent)) continue;
         const prev = fieldMap.get(k) || {};
         const widget = f.widget || prev.widget || (f.type === 'boolean' || prev.type === 'boolean' ? 'switch' : (f.type || prev.type || 'text'));
         const def = f.default !== undefined ? f.default : (prev.default !== undefined ? prev.default : (defaultProps[k] !== undefined ? defaultProps[k] : (widget === 'switch' ? false : '')));
@@ -207,6 +209,7 @@ export function normalizeThemeComponentItem(rawComp: any, siteId: string): any {
         });
     }
     const mergedFields = Array.from(fieldMap.values());
+    const dataSlots = normalizeThemeComponentDataSlots(merged.data_slots);
 
     return {
         id: rawComp.id || `comp_${slug}`,
@@ -227,6 +230,7 @@ export function normalizeThemeComponentItem(rawComp: any, siteId: string): any {
         default_props: defaultProps,
         keep_field: Array.isArray(merged.keep_field) ? merged.keep_field : [],
         field_map: merged.field_map,
+        ...(dataSlots && dataSlots.length > 0 ? { data_slots: dataSlots } : {}),
         contenteditable: Boolean(merged.contenteditable),
         ui_schema: mergedFields,
         fields: mergedFields,
@@ -238,6 +242,7 @@ export function normalizeThemeComponentItem(rawComp: any, siteId: string): any {
             ...(chain[chain.length - 1] || {}),
             slug, type: slug, name, title: name, description: summary, category, icon,
             allow_custom_js: allowCustomJs,
+            ...(dataSlots && dataSlots.length > 0 ? { data_slots: dataSlots } : {}),
             template_html: templateHtml, template_path: templatePath, default_props: defaultProps,
             ui_schema: mergedFields, fields: mergedFields, schema: { fields: mergedFields }
         },
@@ -390,7 +395,7 @@ export function buildUpsertThemeStatement(
             updated_at = CURRENT_TIMESTAMP
     `).bind(
         theme.id,
-        theme.siteId,
+        'site_default',
         theme.slug,
         theme.name,
         theme.author || 'Admin',
@@ -425,7 +430,7 @@ export function buildCreateThemeStatement(
         )
     `).bind(
         theme.id,
-        theme.siteId,
+        'site_default',
         theme.slug,
         theme.name,
         theme.author || 'Admin',
@@ -441,7 +446,7 @@ export function buildUpdateThemeInfoStatement(
     db: D1Database,
     params: {
         id: string;
-        siteId: string;
+        siteId?: string;
         name?: string;
         slug?: string;
         author?: string;
@@ -457,15 +462,14 @@ export function buildUpdateThemeInfoStatement(
             description = COALESCE(?, description),
             metadata = COALESCE(?, metadata),
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND site_id = ?
+        WHERE id = ?
     `).bind(
         params.name ?? null,
         params.slug ?? null,
         params.author ?? null,
         params.description ?? null,
         params.metadataJson !== undefined ? sanitizeThemeMetadataJson(params.metadataJson) : null,
-        params.id,
-        params.siteId
+        params.id
     );
 }
 
@@ -481,6 +485,7 @@ export function buildInsertThemeVersionStatement(
     db: D1Database,
     version: {
         id: string;
+        siteId?: string;
         themeId: string;
         versionNumber?: number;
         versionTag?: string;
@@ -489,20 +494,18 @@ export function buildInsertThemeVersionStatement(
         authorId?: string | null;
     }
 ): D1PreparedStatement {
-    return db.prepare(`
-        INSERT INTO theme_versions (
-            id, theme_id, version_number, version_tag, metadata_snapshot, commit_message, author_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO NOTHING
-    `).bind(
-        version.id,
-        version.themeId,
-        version.versionNumber || 1,
-        version.versionTag || '1.0.0',
-        sanitizeThemeMetadataJson(version.metadataSnapshot),
-        version.commitMessage || 'Theme import snapshot',
-        version.authorId || null
-    );
+    return buildInsertEntityVersionStatement(db, {
+        id: version.id,
+        siteId: version.siteId || 'site_default',
+        entityType: 'theme',
+        entityId: version.themeId,
+        versionNumber: version.versionNumber || 1,
+        versionTag: version.versionTag || '1.0.0',
+        metadataSnapshot: sanitizeThemeMetadataJson(version.metadataSnapshot),
+        commitMessage: version.commitMessage || 'Theme import snapshot',
+        authorId: version.authorId || null,
+        ignoreConflict: true
+    });
 }
 
 export async function findThemeById(
@@ -511,9 +514,16 @@ export async function findThemeById(
     siteId?: string
 ): Promise<Theme | null> {
     const query = siteId
-        ? `SELECT * FROM themes WHERE id = ? AND site_id = ? LIMIT 1`
+        ? `SELECT t.*,
+                  CASE
+                      WHEN s.theme_id IS NOT NULL THEN (CASE WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 1 ELSE 0 END)
+                      ELSE t.is_active
+                  END as is_active
+           FROM themes t
+           LEFT JOIN sites s ON s.id = ?
+           WHERE t.id = ? LIMIT 1`
         : `SELECT * FROM themes WHERE id = ? LIMIT 1`;
-    const params = siteId ? [themeId, siteId] : [themeId];
+    const params = siteId ? [siteId, themeId] : [themeId];
     const row = await db.prepare(query).bind(...params).first<any>();
     if (!row) return null;
     return {
@@ -528,8 +538,23 @@ export async function findThemesBySite(
     includeDeleted = false
 ): Promise<Theme[]> {
     const query = includeDeleted
-        ? `SELECT * FROM themes WHERE site_id = ? ORDER BY is_active DESC, updated_at DESC`
-        : `SELECT * FROM themes WHERE site_id = ? AND deleted_at IS NULL ORDER BY is_active DESC, updated_at DESC`;
+        ? `SELECT t.*,
+                  CASE
+                      WHEN s.theme_id IS NOT NULL THEN (CASE WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 1 ELSE 0 END)
+                      ELSE t.is_active
+                  END as is_active
+           FROM themes t
+           LEFT JOIN sites s ON s.id = ?
+           ORDER BY is_active DESC, t.updated_at DESC`
+        : `SELECT t.*,
+                  CASE
+                      WHEN s.theme_id IS NOT NULL THEN (CASE WHEN t.id = s.theme_id OR t.slug = s.theme_id THEN 1 ELSE 0 END)
+                      ELSE t.is_active
+                  END as is_active
+           FROM themes t
+           LEFT JOIN sites s ON s.id = ?
+           WHERE t.deleted_at IS NULL
+           ORDER BY is_active DESC, t.updated_at DESC`;
     const { results } = await db.prepare(query).bind(siteId).all<any>();
     return (results || []).map((row: any) => ({
         ...row,
@@ -541,53 +566,69 @@ export async function findThemeVersions(
     db: D1Database,
     themeId: string
 ): Promise<any[]> {
-    const { results } = await db.prepare(`
-        SELECT id, theme_id, version_number, version_tag, commit_message, author_id, created_at, deleted_at
-        FROM theme_versions
-        WHERE theme_id = ? AND deleted_at IS NULL
-        ORDER BY version_number DESC
-    `).bind(themeId).all<any>();
-    return results || [];
+    return await findEntityVersions(db, 'theme', themeId);
 }
 
 export async function countActiveThemesBySite(
     db: D1Database,
-    siteId: string
+    _siteId?: string
 ): Promise<number> {
     const row = await db.prepare(
-        `SELECT COUNT(*) as count FROM themes WHERE site_id = ? AND deleted_at IS NULL`
-    ).bind(siteId).first<{ count: number }>();
+        `SELECT COUNT(*) as count FROM themes WHERE deleted_at IS NULL`
+    ).first<{ count: number }>();
     return row?.count || 0;
+}
+
+export async function isThemeActiveOnAnySite(
+    db: D1Database,
+    themeId: string,
+    themeSlug?: string
+): Promise<boolean> {
+    const row = await db.prepare(
+        `SELECT id FROM sites WHERE status = 'active' AND (theme_id = ? OR theme_id = ?) LIMIT 1`
+    ).bind(themeId, themeSlug || themeId).first<{ id: string }>();
+    return Boolean(row);
+}
+
+export async function findSiteIdsUsingTheme(
+    db: D1Database,
+    themeId: string,
+    themeSlug?: string
+): Promise<string[]> {
+    const { results } = await db.prepare(
+        `SELECT id FROM sites WHERE status = 'active' AND (theme_id = ? OR theme_id = ?)`
+    ).bind(themeId, themeSlug || themeId).all<{ id: string }>();
+    return (results || []).map(r => r.id);
 }
 
 export function buildSoftDeleteThemeStatement(
     db: D1Database,
     themeId: string,
-    siteId: string
+    _siteId?: string
 ): D1PreparedStatement {
     return db.prepare(
-        `UPDATE themes SET deleted_at = CURRENT_TIMESTAMP, is_active = 0 WHERE id = ? AND site_id = ?`
-    ).bind(themeId, siteId);
+        `UPDATE themes SET deleted_at = CURRENT_TIMESTAMP, is_active = 0 WHERE id = ?`
+    ).bind(themeId);
 }
 
 export function buildRestoreThemeStatement(
     db: D1Database,
     themeId: string,
-    siteId: string
+    _siteId?: string
 ): D1PreparedStatement {
     return db.prepare(
-        `UPDATE themes SET deleted_at = NULL WHERE id = ? AND site_id = ?`
-    ).bind(themeId, siteId);
+        `UPDATE themes SET deleted_at = NULL WHERE id = ?`
+    ).bind(themeId);
 }
 
 export function buildPurgeThemeStatements(
     db: D1Database,
     themeId: string,
-    siteId: string
+    _siteId?: string
 ): D1PreparedStatement[] {
     return [
-        db.prepare(`DELETE FROM theme_versions WHERE theme_id = ?`).bind(themeId),
-        db.prepare(`DELETE FROM themes WHERE id = ? AND site_id = ?`).bind(themeId, siteId)
+        db.prepare(`DELETE FROM entity_versions WHERE entity_type = 'theme' AND entity_id = ?`).bind(themeId),
+        db.prepare(`DELETE FROM themes WHERE id = ?`).bind(themeId)
     ];
 }
 
@@ -611,31 +652,27 @@ export async function findThemeVersionByIdOrNumber(
     versionId?: string,
     versionNumber?: number
 ): Promise<any> {
-    const query = versionId
-        ? `SELECT * FROM theme_versions WHERE theme_id = ? AND id = ? LIMIT 1`
-        : `SELECT * FROM theme_versions WHERE theme_id = ? AND version_number = ? LIMIT 1`;
-    const param = versionId || versionNumber;
-    return await db.prepare(query).bind(themeId, param).first<any>();
+    return await findEntityVersionByIdOrNumber(db, 'theme', themeId, versionId, versionNumber);
 }
 
 export async function findThemeRawById(
     db: D1Database,
     themeId: string,
-    siteId: string
+    _siteId?: string
 ): Promise<{ id: string; deleted_at: string | null } | null> {
     return await db.prepare(
-        `SELECT id, deleted_at FROM themes WHERE id = ? AND site_id = ? LIMIT 1`
-    ).bind(themeId, siteId).first<{ id: string; deleted_at: string | null }>();
+        `SELECT id, deleted_at FROM themes WHERE id = ? LIMIT 1`
+    ).bind(themeId).first<{ id: string; deleted_at: string | null }>();
 }
 
 export async function checkThemeSlugExists(
     db: D1Database,
-    siteId: string,
+    _siteId: string,
     slug: string
 ): Promise<boolean> {
     const row = await db.prepare(
-        `SELECT id FROM themes WHERE site_id = ? AND slug = ? AND deleted_at IS NULL LIMIT 1`
-    ).bind(siteId, slug).first<{ id: string }>();
+        `SELECT id FROM themes WHERE slug = ? AND deleted_at IS NULL LIMIT 1`
+    ).bind(slug).first<{ id: string }>();
     return Boolean(row);
 }
 

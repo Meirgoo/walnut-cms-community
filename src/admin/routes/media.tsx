@@ -9,7 +9,11 @@ const mediaRouter = new Hono<AppHonoEnv>();
 mediaRouter.get('/', async (c) => {
     const ctx = await getAdminRouteContext(c);
     const siteIdFromQuery = c.req.query('site_id');
-    const activeSite = siteIdFromQuery ? ctx.sites.find(s => s.id === siteIdFromQuery) : ctx.activeSite;
+    const matchedSite = siteIdFromQuery ? ctx.sites.find(s => s.id === siteIdFromQuery) : undefined;
+    if (siteIdFromQuery && !matchedSite && !ctx.isSuperAdmin) {
+        return c.text('Forbidden', 403);
+    }
+    const activeSite = matchedSite || ctx.activeSite;
     const activeSiteId = activeSite?.id || ctx.siteId || 'site_default';
 
     const assets = await findMediaAssetsBySite(ctx.db, activeSiteId);

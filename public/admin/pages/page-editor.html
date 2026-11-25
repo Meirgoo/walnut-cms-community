@@ -1,6 +1,6 @@
 <form
     id="page-edit-form"
-    class="flex-1 flex flex-col h-full w-full min-h-0 bg-slate-50 dark:bg-slate-900 overflow-hidden"
+    class="flex-1 flex flex-col h-full w-full min-h-0 bg-[var(--admin-canvas)] overflow-hidden"
     onsubmit="event.preventDefault(); window.submitPageWithStatus();"
 >
     <input type="hidden" id="form-page-id" name="id" value="{{node_id}}" />
@@ -17,11 +17,13 @@
     <input type="hidden" id="form-permission-input" name="meta_access_permission" value="{{access_permission}}" />
     <input type="hidden" id="form-page-trans-group-id" name="meta_translation_group_id" value="{{translation_group_id}}" />
 
-    <header class="h-14 bg-white dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700 px-6 flex items-center justify-between shrink-0 z-10 gap-4">
-        <div class="flex items-center space-x-3 flex-1 min-w-0">
-            <a href="/admin/pages" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition shrink-0" title="{{return}}">
-                <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+    <header class="h-14 bg-[var(--admin-chrome)] border-b border-[var(--admin-border)] px-3 md:px-6 flex items-center justify-between shrink-0 z-10 gap-2 md:gap-4">
+        <div class="flex items-center space-x-2 md:space-x-2.5 flex-1 min-w-0">
+            <a href="/admin/pages" class="inline-flex items-center space-x-1.5 px-2 py-1 rounded-lg text-xs font-semibold text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] transition shrink-0 whitespace-nowrap" title="{{return}}">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span class="hidden sm:inline">{{nav.pages}}</span>
             </a>
+            <span class="hidden sm:inline text-[var(--admin-border)] text-sm select-none shrink-0">/</span>
 
             <div class="flex items-center space-x-2 flex-1 min-w-0">
                 <input
@@ -31,28 +33,39 @@
                     value="{{node_title}}"
                     required
                     placeholder="{{placeholder_name}}"
-                    class="text-base font-black text-slate-900 dark:text-white placeholder-slate-400 border-none outline-none w-full bg-transparent focus:ring-0"
+                    class="text-base font-black text-[var(--admin-text)] placeholder-stone-400 border-none outline-none w-full bg-transparent focus:ring-0"
                 />
             </div>
         </div>
 
-        <div class="flex items-center space-x-3 shrink-0">
+        <div class="flex items-center space-x-2 shrink-0">
+            <button
+                type="button"
+                id="btn-page-editor-contract"
+                onclick="window.openPageContractModal && window.openPageContractModal('editor')"
+                class="h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] font-semibold text-[13px] px-2.5 md:px-3 rounded-lg border border-[var(--admin-border)] transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer"
+                title="{{pages.btn_ai_contract_modal}}"
+            >
+                <span class="material-symbols-outlined text-[16px] text-[var(--admin-accent-text)]">auto_awesome</span>
+                <span class="hidden sm:inline">{{pages.btn_ai_contract_modal}}</span>
+            </button>
+
             <button
                 type="button"
                 id="page-preview-top-btn"
                 onclick="const p = document.getElementById('page-preview-full-path')?.innerText || ('/' + (document.getElementById('page-slug-input')?.value || '')); const t = document.getElementById('page-title-input')?.value || ''; window.openSandboxedPreview(p, t);"
-                class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700 transition flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                class="h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] text-[var(--admin-text)] font-semibold text-[13px] px-2.5 md:px-3 rounded-lg border border-[var(--admin-border)] transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer"
                 title="{{preview}}"
             >
                 <span class="material-symbols-outlined text-[16px]">visibility</span>
-                <span>{{preview}}</span>
+                <span class="hidden sm:inline">{{preview}}</span>
             </button>
 
             <button
                 type="button"
                 id="page-save-btn"
                 onclick="window.submitPageWithStatus()"
-                class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs px-4 py-2 rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer"
+                class="h-8 bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] font-semibold text-[13px] px-3.5 rounded-lg transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer"
             >
                 <span class="material-symbols-outlined text-[16px]">save</span>
                 <span>{{btn_save_page}}</span>
@@ -62,7 +75,7 @@
                 type="button"
                 id="page-sidebar-toggle-btn"
                 onclick="togglePageEditorSidebar()"
-                class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700 transition flex items-center justify-center cursor-pointer shadow-sm"
+                class="w-8 h-8 rounded-lg text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] transition-colors duration-75 flex items-center justify-center cursor-pointer"
                 title="{{toggle_collapse}}"
             >
                 <span id="page-sidebar-toggle-icon" class="material-symbols-outlined text-[18px]">dock_to_right</span>
@@ -71,25 +84,25 @@
     </header>
 
     <div class="flex-1 flex min-h-0 overflow-hidden relative">
-        <div class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-900 overflow-hidden p-6 space-y-4">
-            <div class="flex items-center justify-between shrink-0 bg-white dark:bg-slate-800 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
-                <div class="flex items-center space-x-1.5">
+        <div class="flex-1 flex flex-col min-w-0 bg-[var(--admin-canvas)] overflow-hidden p-6 space-y-4">
+            <div class="flex items-center justify-between shrink-0 gap-3">
+                <div class="h-8 inline-flex items-center p-0.5 rounded-lg bg-[var(--admin-surface)] border border-[var(--admin-border)] shrink-0">
                     <button
                         type="button"
                         id="tab-btn-visual"
                         onclick="switchPageEditorTab('visual')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-900 dark:bg-emerald-600 text-white shadow-sm transition flex items-center space-x-1 cursor-pointer"
+                        class="h-full px-2.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] flex items-center space-x-1.5"
                     >
-                        <span class="material-symbols-outlined text-[16px]">widgets</span>
+                        <span class="material-symbols-outlined text-[15px]">widgets</span>
                         <span>{{tab_visual}}</span>
                     </button>
                     <button
                         type="button"
                         id="tab-btn-code"
                         onclick="switchPageEditorTab('code')"
-                        class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center space-x-1 cursor-pointer"
+                        class="h-full px-2.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] flex items-center space-x-1.5"
                     >
-                        <span class="material-symbols-outlined text-[16px]">code</span>
+                        <span class="material-symbols-outlined text-[15px]">code</span>
                         <span>{{tab_code}}</span>
                     </button>
                 </div>
@@ -99,7 +112,7 @@
                         type="button"
                         id="btn-add-component"
                         onclick="openAddComponentGallery()"
-                        class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer"
+                        class="h-8 px-3 rounded-lg text-[13px] font-semibold bg-[var(--admin-accent-soft)] hover:bg-[var(--admin-accent-border)]/40 text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] transition-colors duration-75 flex items-center space-x-1.5 cursor-pointer"
                     >
                         <span class="material-symbols-outlined text-[16px]">add_circle</span>
                         <span>{{btn_add_component}}</span>
@@ -109,24 +122,24 @@
 
             <div id="pane-visual-editor" class="flex-1 flex flex-col min-w-0 overflow-y-auto space-y-2 pr-1 thin-scrollbar">
                 <div id="visual-blocks-container" class="space-y-2"></div>
-                <div id="visual-blocks-empty" class="hidden bg-white dark:bg-slate-800 p-12 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-slate-400 space-y-2">
-                    <span class="material-symbols-outlined text-[36px] text-slate-300 dark:text-slate-600">widgets</span>
-                    <p class="text-xs font-bold text-slate-500 dark:text-slate-400">
+                <div id="visual-blocks-empty" class="hidden bg-[var(--admin-surface)] p-12 rounded-2xl border border-dashed border-stone-300 dark:border-stone-700 text-center text-stone-400 space-y-2">
+                    <span class="material-symbols-outlined text-[36px] text-stone-300 dark:text-stone-600">widgets</span>
+                    <p class="text-xs font-bold text-stone-500 dark:text-stone-400">
                         {{visual_empty_tip}}
                     </p>
                 </div>
             </div>
 
-            <div id="pane-code-editor" class="hidden flex-1 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-col min-h-0">
+            <div id="pane-code-editor" class="hidden flex-1 bg-[var(--admin-surface)] p-4 rounded-2xl border border-[var(--admin-border)] shadow-sm flex flex-col min-h-0">
                 <div class="flex justify-between items-center mb-2">
-                    <label class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">{{field_payload}}</label>
-                    <span class="text-[11px] text-slate-400 font-mono">{{pages.json_schema_label}}</span>
+                    <label class="text-xs font-bold text-[var(--admin-text)] uppercase tracking-wider">{{field_payload}}</label>
+                    <span class="text-[11px] text-[var(--admin-text-muted)] font-mono">{{pages.json_schema_label}}</span>
                 </div>
                 <textarea
                     id="page-content-core"
                     name="content_raw"
                     placeholder="{{payload_placeholder}}"
-                    class="w-full flex-1 p-4 font-mono text-xs leading-relaxed border border-slate-200 dark:border-slate-700 rounded-xl outline-none resize-none bg-slate-900 text-emerald-400 focus:ring-1 focus:ring-slate-900 overflow-y-auto thin-scrollbar"
+                    class="w-full flex-1 p-4 font-mono text-xs leading-relaxed border border-[var(--admin-border)] rounded-xl outline-none resize-none bg-stone-900 text-amber-400 focus:ring-1 focus:ring-stone-900 overflow-y-auto thin-scrollbar"
                 >{{page_summary}}</textarea>
             </div>
         </div>
@@ -134,113 +147,124 @@
         <aside
             id="page-inspector-sidebar"
             style="width: 330px; min-width: 330px; max-width: 330px;"
-            class="bg-white dark:bg-slate-800 flex flex-col overflow-y-auto overflow-x-hidden thin-scrollbar shrink-0 border-l border-slate-200/80 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 transition-colors duration-75 ease-out"
+            class="bg-[var(--admin-chrome)] flex flex-col overflow-hidden shrink-0 border-l border-[var(--admin-border)] transition-colors duration-75 ease-out"
         >
-            <div class="sidebar-accordion-item w-full" id="accordion-section-page-meta">
+            <div class="shrink-0 bg-[var(--admin-chrome)] border-b border-[var(--admin-border)] p-1.5 grid grid-cols-4 gap-1 select-none" id="page-inspector-tabs">
                 <button
                     type="button"
-                    onclick="openPageSingleAccordion('page-meta')"
-                    class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition text-left cursor-pointer select-none"
-                >
-                    <div class="flex items-center space-x-2">
-                        <span class="material-symbols-outlined text-slate-600 dark:text-slate-400 text-[18px]">tune</span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_meta}}</span>
-                    </div>
-                    <span id="accordion-arrow-page-meta" class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200">
-                        expand_more
-                    </span>
-                </button>
+                    id="page-inspector-tab-props"
+                    data-tab="props"
+                    onclick="window.switchPageInspectorTab && window.switchPageInspectorTab('props')"
+                    class="py-1.5 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer bg-[var(--admin-surface)] text-[var(--admin-text)] shadow-sm border border-[var(--admin-border)]"
+                >{{editor.tab_props}}</button>
+                <button
+                    type="button"
+                    id="page-inspector-tab-seo"
+                    data-tab="seo"
+                    onclick="window.switchPageInspectorTab && window.switchPageInspectorTab('seo')"
+                    class="py-1.5 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-transparent {{seo_section_class}}"
+                >{{editor.tab_seo}}</button>
+                <button
+                    type="button"
+                    id="page-inspector-tab-i18n"
+                    data-tab="i18n"
+                    onclick="window.switchPageInspectorTab && window.switchPageInspectorTab('i18n')"
+                    class="py-1.5 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-transparent"
+                >{{editor.tab_i18n}}</button>
+                <button
+                    type="button"
+                    id="page-inspector-tab-vcs"
+                    data-tab="vcs"
+                    onclick="window.switchPageInspectorTab && window.switchPageInspectorTab('vcs')"
+                    class="py-1.5 px-2 rounded-md text-xs font-bold transition-colors cursor-pointer text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] border border-transparent"
+                >{{editor.tab_versions}}</button>
+            </div>
 
-                <div id="accordion-content-page-meta" class="px-4 pb-5 space-y-4 text-xs">
-                    <walnut-select class="block space-y-1.5 relative" id="dropdown-box-page-type" data-menu-id="dropdown-menu-page-type" data-input-id="form-page-type" data-label-id="page-type-selected-label">
-                        <label class="font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_page_type}}</label>
-                        
+            <div id="page-inspector-scroll" class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden p-4 text-[13px]">
+                <div id="page-inspector-panel-props" class="space-y-4">
+                    <edge-select class="block space-y-1.5 relative" id="dropdown-box-page-type" data-menu-id="dropdown-menu-page-type" data-input-id="form-page-type" data-label-id="page-type-selected-label">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_page_type}}</label>
                         <button
                             type="button"
                             id="dropdown-btn-page-type"
-                            class="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-sm transition text-left cursor-pointer"
+                            class="w-full h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] flex items-center justify-between transition text-left cursor-pointer"
                         >
                             <span id="page-type-selected-label" class="truncate">{{page_type_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                         </button>
-
                         <div
                             id="dropdown-menu-page-type"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700"
+                            class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)]"
                         >
-                            <div data-value="single" data-label="{{type_single_option}}" onclick="selectPageTypeOption('single', '{{type_single_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{type_single_option}}</div>
-                            <div data-value="template" data-label="{{type_template_option}}" onclick="selectPageTypeOption('template', '{{type_template_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{type_template_option}}</div>
-                            <div data-value="redirect" data-label="{{type_redirect_option}}" onclick="selectPageTypeOption('redirect', '{{type_redirect_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer font-bold text-amber-700 dark:text-amber-400">{{type_redirect_option}}</div>
+                            <div data-value="single" data-label="{{type_single_option}}" onclick="selectPageTypeOption('single', '{{type_single_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{type_single_option}}</div>
+                            <div data-value="template" data-label="{{type_template_option}}" onclick="selectPageTypeOption('template', '{{type_template_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{type_template_option}}</div>
+                            <div data-value="redirect" data-label="{{type_redirect_option}}" onclick="selectPageTypeOption('redirect', '{{type_redirect_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer font-semibold text-[var(--admin-accent-text)]">{{type_redirect_option}}</div>
                         </div>
-                    </walnut-select>
+                    </edge-select>
 
-                    <walnut-select id="field-box-page-template" class="block space-y-1.5 relative {{template_box_class}}" data-menu-id="dropdown-menu-template-page" data-input-id="form-template-page-id" data-label-id="template-page-selected-label">
+                    <edge-select id="field-box-page-template" class="block space-y-1.5 relative {{template_box_class}}" data-menu-id="dropdown-menu-template-page" data-input-id="form-template-page-id" data-label-id="template-page-selected-label">
                         <div class="flex items-center justify-between">
-                            <label class="font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_template_frame}}</label>
-                            <span class="text-[10px] text-slate-400 font-mono">{{pages.badge_template}}</span>
+                            <label class="font-bold text-[var(--admin-text)] text-[11px]">{{field_template_frame}}</label>
+                            <span class="text-[10px] text-[var(--admin-text-muted)] font-mono">{{pages.badge_template}}</span>
                         </div>
-
                         <button
                             type="button"
                             id="dropdown-btn-template-page"
-                            class="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-sm transition text-left cursor-pointer"
+                            class="w-full h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] flex items-center justify-between transition text-left cursor-pointer"
                         >
                             <span id="template-page-selected-label" class="truncate">{{template_page_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                         </button>
-
                         <div
                             id="dropdown-menu-template-page"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700 max-h-48 overflow-y-auto"
+                            class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)] max-h-48 overflow-y-auto"
                         >
                             {{template_page_options_html}}
                         </div>
-                    </walnut-select>
+                    </edge-select>
 
-                    <walnut-select class="block space-y-1.5 relative {{locale_box_class}}" id="dropdown-box-locale" data-menu-id="dropdown-menu-locale" data-input-id="form-locale-input" data-label-id="page-locale-selected-label">
-                        <label class="font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_locale_env}}</label>
-                        
-                        <button
-                            type="button"
-                            id="dropdown-btn-locale"
-                            class="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-sm transition text-left cursor-pointer"
-                        >
-                            <span id="page-locale-selected-label" class="truncate">{{page_locale_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
-                        </button>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <edge-select class="block space-y-1.5 relative min-w-0 {{locale_box_class}}" id="dropdown-box-locale" data-menu-id="dropdown-menu-locale" data-input-id="form-locale-input" data-label-id="page-locale-selected-label">
+                            <label class="block font-bold text-[var(--admin-text)] text-[11px] truncate">{{field_locale_env}}</label>
+                            <button
+                                type="button"
+                                id="dropdown-btn-locale"
+                                class="w-full h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] flex items-center justify-between transition text-left cursor-pointer"
+                            >
+                                <span id="page-locale-selected-label" class="truncate">{{page_locale_label}}</span>
+                                <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
+                            </button>
+                            <div
+                                id="dropdown-menu-locale"
+                                class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)]"
+                            >
+                                {{page_locale_options_html}}
+                            </div>
+                        </edge-select>
 
-                        <div
-                            id="dropdown-menu-locale"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700"
-                        >
-                            {{page_locale_options_html}}
-                        </div>
-                    </walnut-select>
+                        <edge-select class="block space-y-1.5 relative min-w-0 {{parent_box_class}}" id="dropdown-box-parent" data-menu-id="dropdown-menu-parent" data-input-id="form-parent-id" data-label-id="parent-selected-label">
+                            <label class="block font-bold text-[var(--admin-text)] text-[11px] truncate">{{field_parent}}</label>
+                            <button
+                                type="button"
+                                id="dropdown-btn-parent"
+                                class="w-full h-8 bg-[var(--admin-surface)] hover:bg-[var(--admin-surface-hover)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] flex items-center justify-between transition text-left cursor-pointer"
+                            >
+                                <span id="parent-selected-label" class="truncate">{{parent_label}}</span>
+                                <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
+                            </button>
+                            <div
+                                id="dropdown-menu-parent"
+                                class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)] max-h-48 overflow-y-auto"
+                            >
+                                {{parent_options_html}}
+                            </div>
+                        </edge-select>
+                    </div>
 
-                    <walnut-select class="block space-y-1.5 relative {{parent_box_class}}" id="dropdown-box-parent" data-menu-id="dropdown-menu-parent" data-input-id="form-parent-id" data-label-id="parent-selected-label">
-                        <label class="font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_parent}}</label>
-                        
-                        <button
-                            type="button"
-                            id="dropdown-btn-parent"
-                            class="w-full bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between shadow-sm transition text-left cursor-pointer"
-                        >
-                            <span id="parent-selected-label" class="truncate">{{parent_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
-                        </button>
-
-                        <div
-                            id="dropdown-menu-parent"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700 max-h-48 overflow-y-auto"
-                        >
-                            {{parent_options_html}}
-                        </div>
-                    </walnut-select>
-
-                    <div id="field-box-page-slug" class="space-y-1.5 {{slug_box_class}}">
+                    <div id="field-box-page-slug" class="space-y-1.5 pt-2 border-t border-[var(--admin-border)] {{slug_box_class}}">
                         <div class="flex justify-between items-center">
-                            <label class="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">{{field_slug}} <span class="text-red-500">*</span></label>
-                            <span class="text-[10px] text-slate-400 font-mono">{{pages.clean_url_badge}}</span>
+                            <label class="font-bold text-[var(--admin-text)] text-[11px]">{{field_slug}} <span class="text-red-500">*</span></label>
+                            <span class="text-[10px] text-[var(--admin-text-muted)] font-mono">{{pages.clean_url_badge}}</span>
                         </div>
                         <input
                             type="text"
@@ -248,125 +272,136 @@
                             name="slug"
                             value="{{node_slug}}"
                             placeholder="about, docs/intro, links"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white outline-none focus:border-slate-900 dark:focus:border-emerald-500 font-semibold shadow-sm"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] font-medium"
                         />
-                        <div id="page-preview-url-box" class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-mono truncate bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <div class="truncate">
-                                <span class="text-slate-400">https://{{domain}}</span><span id="page-preview-full-path" class="text-emerald-700 dark:text-emerald-400 font-bold">{{full_preview_path}}</span>
-                            </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <button
+                                type="button"
+                                id="page-preview-url-box"
+                                onclick="window.copyPagePreviewUrl && window.copyPagePreviewUrl()"
+                                class="flex-1 min-w-0 text-left text-[11px] text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] font-mono truncate cursor-pointer transition-colors"
+                                title="{{editor.copied_url}}"
+                            >https://{{domain}}<span id="page-preview-full-path" class="text-[var(--admin-accent-text)]">{{full_preview_path}}</span></button>
                             <button
                                 type="button"
                                 onclick="const p = document.getElementById('page-preview-full-path')?.innerText || ('/' + (document.getElementById('page-slug-input')?.value || '')); const t = document.getElementById('page-title-input')?.value || ''; window.openSandboxedPreview(p, t);"
-                                class="ml-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 shrink-0 cursor-pointer"
+                                class="text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] shrink-0 cursor-pointer"
                                 title="{{preview}}"
                             >
                                 <span class="material-symbols-outlined text-[14px]">visibility</span>
                             </button>
                         </div>
-                        <div id="page-slug-special-hint" class="hidden text-[11px] px-2.5 py-2 rounded-lg border font-medium leading-relaxed"></div>
+                        <div id="page-slug-special-hint" class="hidden text-[11px] px-2.5 py-1.5 rounded-lg border font-medium leading-relaxed"></div>
                     </div>
 
-                    <div id="field-box-page-redirect" class="space-y-3 p-3 bg-amber-50/60 dark:bg-amber-950/40 rounded-xl border border-amber-200/80 dark:border-amber-800/80 {{redirect_box_class}}">
+                    <div class="space-y-1.5 {{seo_section_class}}">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{editor.field_published_at}}</label>
+                        <input
+                            type="datetime-local"
+                            name="published_at"
+                            value="{{published_at_input}}"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[12px] font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
+                        />
+                    </div>
+
+                    <div class="space-y-1.5 {{seo_section_class}}">
+                        <div class="flex justify-between items-center">
+                            <label class="font-bold text-[var(--admin-text)] text-[11px]">{{editor.field_aliases}}</label>
+                            <span class="text-[10px] text-[var(--admin-text-muted)] font-mono">301</span>
+                        </div>
+                        <textarea
+                            name="meta_aliases"
+                            rows="2"
+                            placeholder="{{editor.aliases_placeholder}}"
+                            class="w-full bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg p-2 text-[12px] font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)] resize-none leading-relaxed"
+                        >{{meta_aliases_text}}</textarea>
+                    </div>
+
+                    <div id="field-box-page-redirect" class="space-y-3 p-3 bg-[var(--admin-accent-soft)] rounded-lg border border-[var(--admin-accent-border)] {{redirect_box_class}}">
                         <div>
-                            <label class="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">{{field_redirect_url}} *</label>
+                            <label class="block font-bold text-[var(--admin-accent-text)] text-[11px] mb-1">{{field_redirect_url}} *</label>
                             <input
                                 type="url"
                                 id="page-redirect-url-input"
                                 name="meta_redirect_url"
                                 value="{{redirect_url}}"
                                 placeholder="https://example.com/target"
-                                class="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg p-1.5 text-xs font-mono outline-none focus:border-amber-600"
+                                class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
                             />
                         </div>
-                        <walnut-select class="block relative" id="dropdown-box-redirect-code" data-menu-id="dropdown-menu-redirect-code" data-input-id="page-redirect-code-input" data-label-id="redirect-code-selected-label">
-                            <label class="block font-bold text-amber-900 dark:text-amber-300 text-[11px] mb-1">{{field_redirect_code}}</label>
+                        <edge-select class="block relative" id="dropdown-box-redirect-code" data-menu-id="dropdown-menu-redirect-code" data-input-id="page-redirect-code-input" data-label-id="redirect-code-selected-label">
+                            <label class="block font-bold text-[var(--admin-accent-text)] text-[11px] mb-1">{{field_redirect_code}}</label>
                             <input type="hidden" name="meta_redirect_code" id="page-redirect-code-input" value="{{redirect_code}}" />
                             <button
                                 type="button"
                                 id="dropdown-btn-redirect-code"
-                                class="w-full bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-700 rounded-lg px-2.5 py-1.5 text-xs font-mono flex items-center justify-between text-left cursor-pointer"
+                                class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-mono text-[var(--admin-text)] flex items-center justify-between text-left cursor-pointer"
                             >
                                 <span id="redirect-code-selected-label">{{redirect_code_label}}</span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                                <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                             </button>
                             <div
                                 id="dropdown-menu-redirect-code"
-                                class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700 font-mono"
+                                class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)] font-mono"
                             >
-                                <div data-value="301" data-label="{{redirect_301}}" onclick="selectRedirectCodeOption('301', '{{redirect_301}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{redirect_301}}</div>
-                                <div data-value="302" data-label="{{redirect_302}}" onclick="selectRedirectCodeOption('302', '{{redirect_302}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{redirect_302}}</div>
+                                <div data-value="301" data-label="{{redirect_301}}" onclick="selectRedirectCodeOption('301', '{{redirect_301}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{redirect_301}}</div>
+                                <div data-value="302" data-label="{{redirect_302}}" onclick="selectRedirectCodeOption('302', '{{redirect_302}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{redirect_302}}</div>
                             </div>
-                        </walnut-select>
+                        </edge-select>
                     </div>
                 </div>
-            </div>
 
-            <div class="sidebar-accordion-item w-full {{seo_section_class}}" id="accordion-section-page-seo">
-                <button
-                    type="button"
-                    onclick="openPageSingleAccordion('page-seo')"
-                    class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition text-left cursor-pointer select-none"
-                >
-                    <div class="flex items-center space-x-2">
-                        <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[18px]">travel_explore</span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_seo}}</span>
-                    </div>
-                    <span id="accordion-arrow-page-seo" class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200 -rotate-90">
-                        expand_more
-                    </span>
-                </button>
-
-                <div id="accordion-content-page-seo" class="hidden px-4 pb-5 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_seo_summary}}</label>
+                <div id="page-inspector-panel-seo" class="hidden space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_seo_summary}}</label>
                         <textarea
                             id="page-summary-input"
                             name="summary"
                             rows="3"
                             placeholder="{{seo_summary_placeholder}}"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-slate-900 dark:focus:border-emerald-500 resize-none leading-relaxed shadow-sm font-medium"
+                            class="w-full bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg p-2.5 text-[13px] text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] outline-none focus:border-[var(--admin-accent)] resize-none leading-relaxed"
                         >{{node_summary}}</textarea>
                     </div>
 
-                    <div>
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_canonical}}</label>
+                    <div class="space-y-1.5">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_canonical}}</label>
                         <input
                             type="url"
                             name="meta_canonical_url"
                             value="{{canonical_url}}"
                             placeholder="https://example.com/canonical"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-slate-900 dark:focus:border-emerald-500 shadow-sm font-semibold"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-mono text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] outline-none focus:border-[var(--admin-accent)]"
                         />
                     </div>
 
-                    <walnut-select class="block relative" id="dropdown-box-robots" data-menu-id="dropdown-menu-robots" data-input-id="form-robots-input" data-label-id="page-robots-selected-label">
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{robots_strategy}}</label>
+                    <edge-select class="block space-y-1.5 relative" id="dropdown-box-robots" data-menu-id="dropdown-menu-robots" data-input-id="form-robots-input" data-label-id="page-robots-selected-label">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{robots_strategy}}</label>
                         <button
                             type="button"
                             id="dropdown-btn-robots"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] outline-none flex items-center justify-between text-left cursor-pointer"
                         >
                             <span id="page-robots-selected-label">{{meta_robots}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                         </button>
                         <div
                             id="dropdown-menu-robots"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700"
+                            class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)]"
                         >
-                            <div data-value="index, follow" data-label="{{robots_index_follow}}" onclick="selectPageRobotsOption('index, follow')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{robots_index_follow}}</div>
-                            <div data-value="noindex, follow" data-label="{{robots_noindex_follow}}" onclick="selectPageRobotsOption('noindex, follow')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{robots_noindex_follow}}</div>
-                            <div data-value="noindex, nofollow" data-label="{{robots_noindex_nofollow}}" onclick="selectPageRobotsOption('noindex, nofollow')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{robots_noindex_nofollow}}</div>
+                            <div data-value="index, follow" data-label="{{robots_index_follow}}" onclick="selectPageRobotsOption('index, follow')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{robots_index_follow}}</div>
+                            <div data-value="noindex, follow" data-label="{{robots_noindex_follow}}" onclick="selectPageRobotsOption('noindex, follow')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{robots_noindex_follow}}</div>
+                            <div data-value="noindex, nofollow" data-label="{{robots_noindex_nofollow}}" onclick="selectPageRobotsOption('noindex, nofollow')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{robots_noindex_nofollow}}</div>
                         </div>
-                    </walnut-select>
+                    </edge-select>
 
-                    <div>
-                        <div class="flex justify-between items-center mb-1">
-                            <label class="block font-bold text-slate-700 dark:text-slate-300">{{field_og_image_full}}</label>
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between items-center">
+                            <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_og_image_full}}</label>
                             <div class="flex items-center space-x-1">
                                 <button
                                     type="button"
                                     onclick="window.openMediaPickerForInput('page-og-image-input', 'page-og-image-preview')"
-                                    class="text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center space-x-0.5 cursor-pointer bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded"
+                                    class="text-[11px] font-medium text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] flex items-center space-x-0.5 cursor-pointer bg-[var(--admin-surface)] border border-[var(--admin-border)] px-1.5 py-0.5 rounded-md transition"
                                     title="{{btn_pick_media_title}}"
                                 >
                                     <span class="material-symbols-outlined text-[13px]">perm_media</span>
@@ -375,7 +410,7 @@
                                 <button
                                     type="button"
                                     onclick="window.openOgCardGeneratorModal({ targetInputId: 'page-og-image-input', previewImgId: 'page-og-image-preview', titleInputId: 'page-title-input', summaryInputId: 'page-summary-input' })"
-                                    class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 flex items-center space-x-0.5 cursor-pointer bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/60"
+                                    class="text-[11px] font-medium text-[var(--admin-accent-text)] flex items-center space-x-0.5 cursor-pointer bg-[var(--admin-accent-soft)] px-1.5 py-0.5 rounded-md border border-[var(--admin-accent-border)] transition"
                                     title="{{btn_gen_og_card_title}}"
                                 >
                                     <span class="material-symbols-outlined text-[13px]">palette</span>
@@ -389,111 +424,117 @@
                             name="meta_og_image"
                             value="{{og_image}}"
                             placeholder="https://.../og-cover.png"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-slate-900 dark:focus:border-emerald-500 shadow-sm font-semibold"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-mono text-[var(--admin-text)] placeholder-[var(--admin-text-muted)] outline-none focus:border-[var(--admin-accent)]"
                         />
                         <div class="pt-1">
-                            <img id="page-og-image-preview" src="{{og_image}}" alt="{{editor.og_preview_alt}}" class="w-full h-24 object-cover rounded-xl border border-slate-200 dark:border-slate-700 {{og_image_preview_class}}" onerror="this.classList.add('hidden')" />
+                            <img id="page-og-image-preview" src="{{og_image}}" alt="{{editor.og_preview_alt}}" class="w-full h-24 object-cover rounded-lg border border-[var(--admin-border)] {{og_image_preview_class}}" onerror="this.classList.add('hidden')" />
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="sidebar-accordion-item w-full" id="accordion-section-page-vcs">
-                <button
-                    type="button"
-                    onclick="openPageSingleAccordion('page-vcs')"
-                    class="w-full p-4 flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition text-left cursor-pointer select-none"
-                >
-                    <div class="flex items-center space-x-2">
-                        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[18px]">verified_user</span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{sec_vcs}}</span>
+                <div id="page-inspector-panel-i18n" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{editor.sec_translations}}</label>
+                        <div class="flex items-center space-x-2">
+                            <edge-select class="flex-1 min-w-0 relative block" id="dropdown-box-page-tg" data-input-id="form-page-trans-group-id" data-label-id="page-trans-group-label" data-menu-id="dropdown-menu-page-tg">
+                                <button type="button" data-role="trigger" class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] outline-none flex items-center justify-between text-left cursor-pointer">
+                                    <span id="page-trans-group-label" class="truncate">{{current_trans_group_name}}</span>
+                                    <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
+                                </button>
+                                <div id="dropdown-menu-page-tg" data-role="menu" class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs max-h-48 overflow-y-auto divide-y divide-[var(--admin-border)]">
+                                    {{trans_groups_options_html}}
+                                </div>
+                            </edge-select>
+                            <button type="button" id="btn-leave-page-trans-group" onclick="unlinkPageTransGroup()" class="h-8 w-8 rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface)] text-[var(--admin-text-muted)] hover:text-red-600 flex items-center justify-center shrink-0 cursor-pointer {{leave_trans_group_class}}" title="{{editor.btn_leave_trans_group}}">
+                                <span class="material-symbols-outlined text-[15px]">link_off</span>
+                            </button>
+                        </div>
+                        <div class="space-y-1.5">{{peer_translations_html}}</div>
+                        <a id="btn-add-page-translation" href="{{add_translation_url}}" class="w-full h-8 px-3 rounded-lg bg-[var(--admin-accent-soft)] hover:bg-[var(--admin-accent-border)]/40 text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] font-semibold text-xs flex items-center justify-center space-x-1.5 transition-colors duration-75 {{add_translation_btn_class}}">
+                            <span class="material-symbols-outlined text-[15px]">add</span>
+                            <span>{{editor.btn_add_translation}}</span>
+                        </a>
                     </div>
-                    <span id="accordion-arrow-page-vcs" class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200 -rotate-90">
-                        expand_more
-                    </span>
-                </button>
+                </div>
 
-                <div id="accordion-content-page-vcs" class="hidden px-4 pb-5 space-y-4 text-xs">
-                    <walnut-select class="block relative" id="dropdown-box-page-status" data-menu-id="dropdown-menu-page-status" data-input-id="form-status-input" data-label-id="page-status-selected-label">
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{col_status}}</label>
+                <div id="page-inspector-panel-vcs" class="hidden space-y-4">
+                    <edge-select class="block space-y-1.5 relative" id="dropdown-box-page-status" data-menu-id="dropdown-menu-page-status" data-input-id="form-status-input" data-label-id="page-status-selected-label">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{col_status}}</label>
                         <button
                             type="button"
                             id="dropdown-btn-page-status"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] outline-none flex items-center justify-between text-left cursor-pointer"
                         >
                             <span id="page-status-selected-label">{{page_status_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                         </button>
                         <div
                             id="dropdown-menu-page-status"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700"
+                            class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)]"
                         >
-                            <div data-value="published" data-label="{{status_published_online}}" onclick="selectPageStatusOption('published', '{{status_published_online}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{status_published_online}}</div>
-                            <div data-value="draft" data-label="{{status_draft_hidden}}" onclick="selectPageStatusOption('draft', '{{status_draft_hidden}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{status_draft_hidden}}</div>
-                            <div data-value="scheduled" data-label="{{status_scheduled}}" onclick="selectPageStatusOption('scheduled', '{{status_scheduled}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer font-bold text-purple-600 {{scheduled_option_class}}">{{status_scheduled}}</div>
+                            <div data-value="published" data-label="{{status_published_online}}" onclick="selectPageStatusOption('published', '{{status_published_online}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{status_published_online}}</div>
+                            <div data-value="draft" data-label="{{status_draft_hidden}}" onclick="selectPageStatusOption('draft', '{{status_draft_hidden}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{status_draft_hidden}}</div>
+                            <div data-value="scheduled" data-label="{{status_scheduled}}" onclick="selectPageStatusOption('scheduled', '{{status_scheduled}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer font-semibold text-[var(--admin-accent-text)] {{scheduled_option_class}}">{{status_scheduled}}</div>
                         </div>
-                    </walnut-select>
+                    </edge-select>
 
-                    <div id="field-box-scheduled-at" class="space-y-1 {{scheduled_box_class}}">
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 text-[11px]">{{field_scheduled_time}}</label>
-                        <input type="datetime-local" name="meta_scheduled_at" value="{{meta_scheduled_at}}" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-mono outline-none" />
+                    <div id="field-box-scheduled-at" class="space-y-1.5 {{scheduled_box_class}}">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_scheduled_time}}</label>
+                        <input type="datetime-local" name="meta_scheduled_at" value="{{meta_scheduled_at}}" class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-xs font-mono text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]" />
                     </div>
 
-                    <walnut-select class="block relative" id="dropdown-box-page-permission" data-menu-id="dropdown-menu-page-permission" data-input-id="form-permission-input" data-label-id="page-permission-selected-label">
-                        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">{{field_access_permission}}</label>
+                    <edge-select class="block space-y-1.5 relative" id="dropdown-box-page-permission" data-menu-id="dropdown-menu-page-permission" data-input-id="form-permission-input" data-label-id="page-permission-selected-label">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{field_access_permission}}</label>
                         <button
                             type="button"
                             id="dropdown-btn-page-permission"
-                            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] font-medium text-[var(--admin-text)] outline-none flex items-center justify-between text-left cursor-pointer"
                         >
                             <span id="page-permission-selected-label">{{access_permission_label}}</span>
-                            <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
+                            <span class="material-symbols-outlined text-[16px] text-[var(--admin-text-muted)] shrink-0 ml-1">expand_more</span>
                         </button>
                         <div
                             id="dropdown-menu-page-permission"
-                            class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs divide-y divide-slate-50 dark:divide-slate-700"
+                            class="edge-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg shadow-xl py-1 z-50 text-xs divide-y divide-[var(--admin-border)]"
                         >
-                            <div data-value="public" data-label="{{perm_public_option}}" onclick="selectPagePermissionOption('public', '{{perm_public_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{perm_public_option}}</div>
-                            <div data-value="members_only" data-label="{{perm_members_option}}" onclick="selectPagePermissionOption('members_only', '{{perm_members_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{perm_members_option}}</div>
-                            <div data-value="password_protected" data-label="{{perm_password_option}}" onclick="selectPagePermissionOption('password_protected', '{{perm_password_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">{{perm_password_option}}</div>
-                            <div data-value="admin_only" data-label="{{perm_admin_option}}" onclick="selectPagePermissionOption('admin_only', '{{perm_admin_option}}')" class="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer font-bold text-amber-600">{{perm_admin_option}}</div>
+                            <div data-value="public" data-label="{{perm_public_option}}" onclick="selectPagePermissionOption('public', '{{perm_public_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{perm_public_option}}</div>
+                            <div data-value="members_only" data-label="{{perm_members_option}}" onclick="selectPagePermissionOption('members_only', '{{perm_members_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{perm_members_option}}</div>
+                            <div data-value="password_protected" data-label="{{perm_password_option}}" onclick="selectPagePermissionOption('password_protected', '{{perm_password_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer">{{perm_password_option}}</div>
+                            <div data-value="admin_only" data-label="{{perm_admin_option}}" onclick="selectPagePermissionOption('admin_only', '{{perm_admin_option}}')" class="px-3 py-2 hover:bg-[var(--admin-surface-hover)] cursor-pointer font-semibold text-[var(--admin-accent-text)]">{{perm_admin_option}}</div>
                         </div>
-                    </walnut-select>
-                </div>
-            </div>
+                    </edge-select>
 
-            <div class="sidebar-accordion-item w-full" id="accordion-section-page-i18n">
-                <button
-                    type="button"
-                    onclick="openPageSingleAccordion('page-i18n')"
-                    class="w-full px-4 py-3.5 flex items-center justify-between text-left hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition cursor-pointer"
-                >
-                    <div class="flex items-center space-x-2">
-                        <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[18px]">translate</span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">{{editor.sec_translations}}</span>
+                    <div class="space-y-1.5 pt-3 border-t border-[var(--admin-border)]">
+                        <label class="block font-bold text-[var(--admin-text)] text-[11px]">{{editor.field_commit}}</label>
+                        <input
+                            type="text"
+                            name="commit_message"
+                            placeholder="{{editor.field_commit_placeholder}}"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-2.5 text-[13px] text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
+                        />
                     </div>
-                    <span id="accordion-arrow-page-i18n" class="material-symbols-outlined text-slate-400 text-[18px] transition-transform duration-200 -rotate-90">expand_more</span>
-                </button>
-                <div id="accordion-content-page-i18n" class="hidden px-4 pb-5 space-y-3 text-xs">
-                    <div class="flex items-center space-x-2">
-                        <walnut-select class="flex-1 min-w-0 relative block" id="dropdown-box-page-tg" data-input-id="form-page-trans-group-id" data-label-id="page-trans-group-label" data-menu-id="dropdown-menu-page-tg">
-                            <button type="button" data-role="trigger" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none flex items-center justify-between text-left cursor-pointer">
-                                <span id="page-trans-group-label" class="truncate">{{current_trans_group_name}}</span>
-                                <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0 ml-1">unfold_more</span>
-                            </button>
-                            <div id="dropdown-menu-page-tg" data-role="menu" class="walnut-select-menu hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl py-1 z-50 text-xs max-h-48 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-700">
-                                {{trans_groups_options_html}}
-                            </div>
-                        </walnut-select>
-                        <button type="button" id="btn-leave-page-trans-group" onclick="unlinkPageTransGroup()" class="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-600 text-xs font-bold cursor-pointer {{leave_trans_group_class}}" title="{{editor.btn_leave_trans_group}}">
-                            <span class="material-symbols-outlined text-[15px]">link_off</span>
+
+                    <div class="pt-3 border-t border-[var(--admin-border)] space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="font-bold text-[var(--admin-text)] text-[11px]">{{editor.versions_title}}</label>
+                            <span id="vcs-versions-count" class="text-[11px] font-mono text-[#78716C] font-bold">{{versions_count}}</span>
+                        </div>
+                        <div id="vcs-versions-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                            {{past_versions_html}}
+                        </div>
+                    </div>
+
+                    <div class="pt-4 mt-4 border-t border-[var(--admin-border)] {{soft_delete_btn_class}}">
+                        <button
+                            type="button"
+                            onclick="window.confirmSoftDeletePage && window.confirmSoftDeletePage()"
+                            class="w-full text-red-600/80 dark:text-red-400/80 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50/70 dark:hover:bg-red-950/30 font-semibold text-xs py-2 px-3 rounded-lg transition-colors duration-75 flex items-center justify-center space-x-1.5 cursor-pointer"
+                            title="{{common.btn_move_to_trash}}"
+                        >
+                            <span class="material-symbols-outlined text-[15px]">delete</span>
+                            <span>{{common.btn_move_to_trash}}</span>
                         </button>
                     </div>
-                    <div class="space-y-1.5">{{peer_translations_html}}</div>
-                    <a id="btn-add-page-translation" href="{{add_translation_url}}" class="w-full py-2 px-3 rounded-xl bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold text-xs flex items-center justify-center space-x-1.5 transition-colors duration-75 {{add_translation_btn_class}}">
-                        <span class="material-symbols-outlined text-[15px]">add</span>
-                        <span>{{editor.btn_add_translation}}</span>
-                    </a>
                 </div>
             </div>
         </aside>
@@ -501,26 +542,33 @@
 </form>
 
 {{nested_comp_picker_modal}}
+{{page_contract_modal}}
 
-<div id="add-component-gallery-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4" onclick="if(event.target===this) closeAddComponentGallery()">
-    <div class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] max-h-[88vh] min-h-0 flex flex-col overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-4 shrink-0">
+<div id="add-component-gallery-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onclick="if(event.target===this) closeAddComponentGallery()">
+    <div class="bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] max-h-[88vh] min-h-0 flex flex-col overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--admin-border)] bg-[var(--admin-chrome)] flex items-center justify-between gap-4 shrink-0">
             <div class="flex items-center space-x-2.5">
-                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[22px]">widgets</span>
+                <span class="material-symbols-outlined text-[var(--admin-accent-text)] text-[22px]">widgets</span>
                 <div>
-                    <h3 class="text-sm font-black text-slate-900 dark:text-white">{{pages.gallery_title}}</h3>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400">{{pages.gallery_subtitle}}</p>
+                    <h3 class="text-sm font-black text-[var(--admin-text)]">{{pages.gallery_title}}</h3>
+                    <p class="text-[11px] text-[var(--admin-text-muted)]">{{pages.gallery_subtitle}}</p>
                 </div>
             </div>
-            <button type="button" onclick="closeAddComponentGallery()" class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors duration-75 cursor-pointer">
+            <button type="button" onclick="closeAddComponentGallery()" class="p-1.5 rounded-xl text-[var(--admin-text-muted)] hover:text-[var(--admin-text)] hover:bg-[var(--admin-surface-hover)] transition-colors duration-75 cursor-pointer">
                 <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
         </div>
-        <div id="comp-gallery-filters" class="px-6 py-3 border-b border-slate-100 dark:border-slate-800/80 flex items-center flex-wrap gap-2 shrink-0 bg-slate-50/70 dark:bg-slate-950/40"></div>
-        <div id="comp-gallery-grid" class="flex-1 min-h-0 overflow-y-auto thin-scrollbar p-6 grid grid-cols-1 md:grid-cols-2 gap-5 auto-rows-max content-start"></div>
+        <div id="comp-gallery-filters" class="px-6 py-3 border-b border-[var(--admin-border)] flex items-center flex-wrap gap-2 shrink-0 bg-[var(--admin-chrome)]/60"></div>
+        <div id="comp-gallery-grid" class="flex-1 min-h-0 overflow-y-auto thin-scrollbar p-6 grid grid-cols-1 md:grid-cols-2 gap-5 auto-rows-max content-start bg-[var(--admin-canvas)]"></div>
     </div>
 </div>
 
+<template id="commercial-ext-island-slot">{{slot_ext_island_card}}</template>
+<script id="vcs-versions-data" type="application/json">{{vcs_versions_json}}</script>
 <script id="theme-components-data" type="application/json">{{theme_components_json}}</script>
 <script id="theme-templates-data" type="application/json">{{theme_templates_json}}</script>
+<script id="page-datasets-data" type="application/json">{{page_datasets_json}}</script>
+<script src="/admin/js/page-editor-fields.js?v={{engine_version}}"></script>
+<script src="/admin/js/page-editor-gallery.js?v={{engine_version}}"></script>
+<script src="/admin/js/page-contract-modal.js?v={{engine_version}}"></script>
 <script src="/admin/js/page-editor.js?v={{engine_version}}"></script>

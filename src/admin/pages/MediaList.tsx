@@ -28,10 +28,13 @@ export const MediaListPage = async (props: {
                 const assetJson = JSON.stringify(normalizedAsset).replace(/"/g, '&quot;');
                 let thumbContent: string;
 
-                const makeThumb = (col: string, ico: string, txt: string) => `<div class="flex flex-col items-center justify-center text-${col}-500"><span class="material-symbols-outlined text-[42px]">${ico}</span><span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase font-mono mt-0.5">${txt}</span></div>`;
+                const makeThumb = (col: string, ico: string, txt: string) => `<div class="flex flex-col items-center justify-center text-${col}-500"><span class="material-symbols-outlined text-[42px]">${ico}</span><span class="text-[10px] font-bold text-stone-600 dark:text-stone-300 uppercase font-mono mt-0.5">${txt}</span></div>`;
 
                 if (asset.mime_type && asset.mime_type.startsWith('image/')) {
-                    thumbContent = `<img src="${displayUrl}" alt="${asset.file_name}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />`;
+                    const isSvg = asset.mime_type === 'image/svg+xml' || asset.file_name.toLowerCase().endsWith('.svg');
+                    thumbContent = isSvg
+                        ? `<img src="${displayUrl}" alt="${asset.file_name}" class="w-full h-full object-contain p-4 bg-[var(--admin-chrome)] group-hover:scale-105 transition" loading="lazy" />`
+                        : `<img src="${displayUrl}" alt="${asset.file_name}" class="w-full h-full object-cover group-hover:scale-105 transition" loading="lazy" />`;
                 } else if (asset.file_name.endsWith('.pdf') || asset.mime_type === 'application/pdf') {
                     thumbContent = makeThumb('red', 'picture_as_pdf', 'PDF');
                 } else if (asset.mime_type?.startsWith('audio/') || /\.(mp3|wav)$/.test(asset.file_name)) {

@@ -1,88 +1,155 @@
 <div class="w-full h-full overflow-y-auto thin-scrollbar">
-    <div class="px-8 py-8 md:px-12 md:py-10 max-w-4xl mx-auto w-full space-y-10">
-        <div class="border-b border-slate-200/80 dark:border-slate-800 pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div class="px-6 md:px-10 py-8 w-full space-y-8">
+        <div class="border-b border-[var(--admin-border)] pb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{{page_title}}</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">{{page_subtitle}}</p>
+                <h1 class="text-xl font-bold text-[var(--admin-text)] tracking-tight">{{page_title}}</h1>
+                <p class="text-xs text-[var(--admin-text-muted)] mt-1">{{page_subtitle}}</p>
             </div>
 
             <div class="flex items-center space-x-2 shrink-0">
-                <span class="text-xs font-mono font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span class="text-xs font-mono font-semibold bg-[var(--admin-surface)] text-[var(--admin-text-muted)] px-3 py-1 rounded-lg border border-[var(--admin-border)]">
                     UID: {{user_id}}
                 </span>
             </div>
         </div>
 
-        <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
-            <div class="flex items-center space-x-2.5">
-                <span class="material-symbols-outlined text-slate-700 dark:text-slate-300 text-[20px]">badge</span>
-                <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{account_profile_title}}</h2>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8 border-b border-[var(--admin-border)]">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[18px]">badge</span>
+                    <h2 class="text-sm font-bold text-[var(--admin-text)]">{{account_profile_title}}</h2>
+                </div>
+                <p class="text-xs text-[var(--admin-text-muted)] leading-relaxed">{{profile.account_desc}}</p>
             </div>
 
-            <div class="flex items-center space-x-5">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-700 dark:from-emerald-600 dark:to-slate-800 text-white font-black text-2xl flex items-center justify-center shadow-md shrink-0">
-                    {{avatar_initial}}
-                </div>
-                <div class="space-y-1 flex-1 min-w-0">
-                    <div class="flex items-center flex-wrap gap-2">
-                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{username}}</h3>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {{role_badge_class}}">{{role_badge_text}}</span>
+            <div class="lg:col-span-2 space-y-5">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] font-bold text-lg flex items-center justify-center shrink-0">
+                        {{avatar_initial}}
                     </div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">{{email}}</p>
+                    <div class="space-y-1 flex-1 min-w-0">
+                        <div class="flex items-center flex-wrap gap-2">
+                            <h3 class="text-base font-bold text-[var(--admin-text)]">{{username}}</h3>
+                            <span class="{{role_badge_class}}">{{role_badge_text}}</span>
+                        </div>
+                        <p class="text-xs text-[var(--admin-text-muted)] font-mono truncate">{{email}}</p>
+                    </div>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
-                <div class="bg-slate-100/70 dark:bg-slate-900/70 px-4 py-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                    <span class="text-slate-400 block text-[10px] uppercase">{{field_global_role}}</span>
-                    <span class="font-bold text-slate-800 dark:text-slate-200 text-xs mt-1 block">{{global_role}}</span>
-                </div>
-                <div class="bg-slate-100/70 dark:bg-slate-900/70 px-4 py-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                    <span class="text-slate-400 block text-[10px] uppercase">{{field_site_role}}</span>
-                    <span class="font-bold text-emerald-700 dark:text-emerald-400 text-xs mt-1 block">{{site_role}}</span>
-                </div>
-                <div class="bg-slate-100/70 dark:bg-slate-900/70 px-4 py-3 rounded-xl border border-slate-200/70 dark:border-slate-800">
-                    <span class="text-slate-400 block text-[10px] uppercase">{{cf_access_binding}}</span>
-                    <span class="font-bold text-slate-700 dark:text-slate-300 text-xs mt-1 block truncate" title="{{cf_access_email}}">
-                        {{cf_access_display}}
-                    </span>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                    <div class="bg-[var(--admin-surface)] px-3.5 py-2.5 rounded-lg border border-[var(--admin-border)]">
+                        <span class="text-[var(--admin-text-muted)] block text-[10px] uppercase">{{field_global_role}}</span>
+                        <span class="font-bold text-[var(--admin-text)] text-xs mt-1 block">{{global_role}}</span>
+                    </div>
+                    <div class="bg-[var(--admin-surface)] px-3.5 py-2.5 rounded-lg border border-[var(--admin-border)]">
+                        <span class="text-[var(--admin-text-muted)] block text-[10px] uppercase">{{field_site_role}}</span>
+                        <span class="font-bold text-[var(--admin-accent-text)] text-xs mt-1 block">{{site_role}}</span>
+                    </div>
+                    <div class="bg-[var(--admin-surface)] px-3.5 py-2.5 rounded-lg border border-[var(--admin-border)]">
+                        <span class="text-[var(--admin-text-muted)] block text-[10px] uppercase">{{cf_access_binding}}</span>
+                        <span class="font-bold text-[var(--admin-text)] text-xs mt-1 block truncate" title="{{cf_access_email}}">
+                            {{cf_access_display}}
+                        </span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
-            <div class="flex items-center space-x-2.5">
-                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[20px]">tune</span>
-                <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{profile.preferences_title}}</h2>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8 border-b border-[var(--admin-border)]">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[18px]">tune</span>
+                    <h2 class="text-sm font-bold text-[var(--admin-text)]">{{profile.preferences_title}}</h2>
+                </div>
+                <p class="text-xs text-[var(--admin-text-muted)] leading-relaxed">{{profile.preferences_desc}}</p>
             </div>
 
-            <form hx-post="/admin/profile/api/preferences" hx-target="#preferences-feedback" class="space-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <form hx-post="/admin/profile/api/preferences" hx-target="#preferences-feedback" class="lg:col-span-2 space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{profile.pref_timezone}}</label>
-                        <walnut-select name="timezone" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{profile.pref_palette}}</label>
+                        <edge-select
+                            id="profile-palette-select"
+                            onchange="window.setAdminPalette && window.setAdminPalette(this.value)"
+                            class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium text-[var(--admin-text)] block"
+                        >
+                            {{pref_palette_options_html}}
+                        </edge-select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{profile.pref_timezone}}</label>
+                        <edge-select name="timezone" class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium text-[var(--admin-text)] block">
                             {{pref_tz_options_html}}
-                        </walnut-select>
+                        </edge-select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{profile.pref_editor_mode}}</label>
-                        <walnut-select name="editor_split_mode" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{profile.pref_editor_mode}}</label>
+                        <edge-select name="editor_split_mode" class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium text-[var(--admin-text)] block">
                             {{pref_split_options_html}}
-                        </walnut-select>
+                        </edge-select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{profile.pref_page_size}}</label>
-                        <walnut-select name="list_page_size" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 dark:text-slate-200 block">
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{profile.pref_page_size}}</label>
+                        <edge-select name="list_page_size" class="w-full h-8 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 text-xs font-medium text-[var(--admin-text)] block">
                             {{pref_size_options_html}}
-                        </walnut-select>
+                        </edge-select>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{settings.field_quick_action_shortcut}}</label>
+                    <walnut-shortcut-recorder
+                        class="block"
+                        data-default="alt+k,cmd+k"
+                        data-record-label="{{settings.btn_record_shortcut}}"
+                        data-recording-label="{{settings.btn_recording_shortcut}}"
+                        data-add-label="{{settings.btn_add_shortcut}}"
+                        data-reset-label="{{settings.btn_reset_shortcut}}"
+                        data-empty-hint="{{settings.shortcut_empty_hint}}"
+                    >
+                        <input type="hidden" name="quick_action_shortcut" data-role="shortcut-input" value="{{quick_action_shortcut}}" />
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <div
+                                data-role="recorder-box"
+                                tabindex="0"
+                                class="flex-1 min-h-[32px] bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg px-3 py-1 flex flex-wrap items-center gap-1.5 cursor-pointer hover:border-[var(--admin-accent)] focus:border-[var(--admin-accent)] outline-none transition select-none"
+                            >
+                                <div data-role="badges-container" class="flex flex-wrap items-center gap-1.5"></div>
+                                <span data-role="status-text" class="text-xs font-mono text-[var(--admin-text-muted)]"></span>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    data-role="record-btn"
+                                    class="h-8 px-3 rounded-lg text-xs font-semibold bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] shadow-sm transition cursor-pointer"
+                                >
+                                    {{settings.btn_record_shortcut}}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-role="add-btn"
+                                    class="h-8 px-3 rounded-lg text-xs font-medium bg-[var(--admin-surface)] hover:bg-[var(--admin-chrome)] text-[var(--admin-text)] border border-[var(--admin-border)] transition cursor-pointer"
+                                >
+                                    {{settings.btn_add_shortcut}}
+                                </button>
+                                <button
+                                    type="button"
+                                    data-role="reset-btn"
+                                    class="h-8 px-3 rounded-lg text-xs font-medium bg-[var(--admin-surface)] hover:bg-[var(--admin-chrome)] text-[var(--admin-text-muted)] border border-[var(--admin-border)] transition cursor-pointer"
+                                >
+                                    {{settings.btn_reset_shortcut}}
+                                </button>
+                            </div>
+                        </div>
+                    </walnut-shortcut-recorder>
+                    <span class="text-[11px] text-[var(--admin-text-muted)] mt-1.5 block">{{settings.tip_quick_action_shortcut}}</span>
                 </div>
 
                 <div class="flex items-center justify-between pt-1">
                     <div id="preferences-feedback" class="text-xs font-bold"></div>
                     <button
                         type="submit"
-                        class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-sm transition-colors duration-75 ease-out cursor-pointer flex items-center space-x-1.5"
+                        class="h-8 px-4 rounded-lg text-[13px] font-semibold bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] shadow-sm transition-colors duration-75 ease-out cursor-pointer inline-flex items-center space-x-1.5"
                     >
                         <span class="material-symbols-outlined text-[16px]">check</span>
                         <span>{{profile.btn_save_preferences}}</span>
@@ -91,37 +158,38 @@
             </form>
         </section>
 
-        <section class="pb-10 border-b border-slate-200/80 dark:border-slate-800 space-y-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2.5">
-                    <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[20px]">lock_reset</span>
-                    <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{change_password_title}}</h2>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8 border-b border-[var(--admin-border)]">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[18px]">lock_reset</span>
+                    <h2 class="text-sm font-bold text-[var(--admin-text)]">{{change_password_title}}</h2>
                 </div>
-                <span class="text-[10px] font-bold bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-2.5 py-0.5 rounded-full {{cf_quick_auth_class}}">{{cf_quick_auth_tip}}</span>
+                <p class="text-xs text-[var(--admin-text-muted)] leading-relaxed">{{profile.change_password_desc}}</p>
+                <span class="inline-block mt-2 text-[10px] font-semibold bg-[var(--admin-accent-soft)] text-[var(--admin-accent-text)] border border-[var(--admin-accent-border)] px-2 py-0.5 rounded-full {{cf_quick_auth_class}}">{{cf_quick_auth_tip}}</span>
             </div>
 
-            <form hx-post="/admin/profile/api/change-password" hx-target="#password-feedback" class="space-y-5">
-                <div class="bg-purple-50/60 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 p-3.5 rounded-xl space-y-2 {{auth_mode_selector_class}}">
-                    <label class="block text-xs font-bold text-purple-900 dark:text-purple-300">{{auth_method_label}}</label>
+            <form hx-post="/admin/profile/api/change-password" hx-target="#password-feedback" class="lg:col-span-2 space-y-4">
+                <div class="bg-[var(--admin-accent-soft)] border border-[var(--admin-accent-border)] p-3 rounded-lg space-y-2 {{auth_mode_selector_class}}">
+                    <label class="block text-xs font-semibold text-[var(--admin-accent-text)]">{{auth_method_label}}</label>
                     <div class="flex items-center space-x-5 text-xs">
-                        <label class="flex items-center space-x-1.5 cursor-pointer font-semibold text-slate-700 dark:text-slate-300">
+                        <label class="flex items-center space-x-1.5 cursor-pointer font-medium text-[var(--admin-text)]">
                             <input
                                 type="radio"
                                 name="auth_mode"
                                 value="password"
                                 checked
                                 onchange="document.getElementById('old-password-field').classList.remove('hidden');"
-                                class="text-emerald-600 focus:ring-0"
+                                class="accent-[var(--admin-accent)]"
                             />
                             <span>{{old_password_auth}}</span>
                         </label>
-                        <label class="flex items-center space-x-1.5 cursor-pointer font-semibold text-purple-900 dark:text-purple-300">
+                        <label class="flex items-center space-x-1.5 cursor-pointer font-medium text-[var(--admin-accent-text)]">
                             <input
                                 type="radio"
                                 name="auth_mode"
                                 value="cf_access"
                                 onchange="document.getElementById('old-password-field').classList.add('hidden');"
-                                class="text-purple-600 focus:ring-0"
+                                class="accent-[var(--admin-accent)]"
                             />
                             <span>{{cf_access_auth}}</span>
                         </label>
@@ -129,36 +197,36 @@
                 </div>
 
                 <div id="old-password-field" class="max-w-md">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_old_password}}</label>
+                    <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{field_old_password}}</label>
                     <input
                         type="password"
                         name="old_password"
                         placeholder="{{placeholder_old_password}}"
-                        class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500"
+                        class="w-full h-8 px-3 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
                     />
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_password}}</label>
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{profile.field_new_password}}</label>
                         <input
                             type="password"
                             name="new_password"
                             required
                             minlength="6"
                             placeholder="{{password_placeholder_new}}"
-                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500"
+                            class="w-full h-8 px-3 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
                         />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{{field_confirm_password}}</label>
+                        <label class="block text-xs font-semibold text-[var(--admin-text-muted)] mb-1.5">{{field_confirm_password}}</label>
                         <input
                             type="password"
                             name="confirm_password"
                             required
                             minlength="6"
                             placeholder="{{password_confirm_placeholder}}"
-                            class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-slate-900 dark:focus:border-emerald-500"
+                            class="w-full h-8 px-3 bg-[var(--admin-surface)] border border-[var(--admin-border)] rounded-lg text-xs text-[var(--admin-text)] outline-none focus:border-[var(--admin-accent)]"
                         />
                     </div>
                 </div>
@@ -167,7 +235,7 @@
                     <div id="password-feedback" class="text-xs font-bold"></div>
                     <button
                         type="submit"
-                        class="bg-slate-900 hover:bg-black dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-md transition-colors duration-75 ease-out cursor-pointer flex items-center space-x-1.5"
+                        class="h-8 px-4 rounded-lg text-[13px] font-semibold bg-[var(--admin-accent)] hover:bg-[var(--admin-accent-hover)] text-[var(--admin-accent-on)] shadow-sm transition-colors duration-75 ease-out cursor-pointer inline-flex items-center space-x-1.5"
                     >
                         <span class="material-symbols-outlined text-[16px]">save</span>
                         <span>{{btn_save_changes}}</span>
@@ -176,18 +244,19 @@
             </form>
         </section>
 
-        <section class="pb-4 space-y-5 {{recent_activity_card_class}}">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2.5">
-                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-[20px]">history</span>
-                    <h2 class="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{{profile.recent_activity_title}}</h2>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-4 {{recent_activity_card_class}}">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined text-[var(--admin-text-muted)] text-[18px]">history</span>
+                    <h2 class="text-sm font-bold text-[var(--admin-text)]">{{profile.recent_activity_title}}</h2>
                 </div>
-                <span class="text-[10px] font-mono text-slate-400">{{profile.recent_activity_limit}}</span>
+                <span class="inline-block text-[11px] font-mono text-[var(--admin-text-muted)]">{{profile.recent_activity_limit}}</span>
             </div>
 
-            <div class="rounded-xl border border-slate-200/80 dark:border-slate-800 overflow-hidden bg-slate-50/50 dark:bg-slate-900/50">
+            <div class="lg:col-span-2 rounded-xl border border-[var(--admin-border)] overflow-hidden bg-[var(--admin-surface)]">
                 {{recent_logs_html}}
             </div>
         </section>
     </div>
 </div>
+<script src="/admin/js/shortcut-recorder.js" defer></script>
